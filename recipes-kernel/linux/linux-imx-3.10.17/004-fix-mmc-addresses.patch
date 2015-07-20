@@ -1,0 +1,22 @@
+Index: git/drivers/mmc/card/block.c
+===================================================================
+--- git.orig/drivers/mmc/card/block.c	2015-02-04 18:24:08.186426900 +0100
++++ git/drivers/mmc/card/block.c	2015-02-04 19:29:05.942426900 +0100
+@@ -1977,7 +1977,7 @@
+ 	 * index anymore so we keep track of a name index.
+ 	 */
+ 	if (!subname) {
+-		md->name_idx = find_first_zero_bit(name_use, max_devices);
++		md->name_idx = card->host->index;//find_first_zero_bit(name_use, max_devices);
+ 		__set_bit(md->name_idx, name_use);
+ 	} else
+ 		md->name_idx = ((struct mmc_blk_data *)
+@@ -2031,7 +2031,7 @@
+ 	 */
+ 
+ 	snprintf(md->disk->disk_name, sizeof(md->disk->disk_name),
+-		 "mmcblk%d%s", md->name_idx, subname ? subname : "");
++		 "mmcblk%d%s", card->host->index, subname ? subname : "");
+ 
+ 	if (mmc_card_mmc(card))
+ 		blk_queue_logical_block_size(md->queue.queue,
