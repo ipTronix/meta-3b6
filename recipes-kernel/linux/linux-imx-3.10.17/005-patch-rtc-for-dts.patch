@@ -1,0 +1,19 @@
+Index: git/drivers/rtc/rtc-bq32k.c
+===================================================================
+--- git.orig/drivers/rtc/rtc-bq32k.c	2015-07-20 13:42:54.188209000 +0200
++++ git/drivers/rtc/rtc-bq32k.c	2015-07-21 11:09:42.400209000 +0200
+@@ -169,6 +169,14 @@
+ };
+ MODULE_DEVICE_TABLE(i2c, bq32k_id);
+ 
++#ifdef CONFIG_OF
++static const struct of_device_id bq32k_of_match[] = {
++        { .compatible = "ti,bq32k" },
++        {}
++};
++MODULE_DEVICE_TABLE(of, bq32k_of_match);
++#endif
++
+ static struct i2c_driver bq32k_driver = {
+ 	.driver = {
+ 		.name	= "bq32k",

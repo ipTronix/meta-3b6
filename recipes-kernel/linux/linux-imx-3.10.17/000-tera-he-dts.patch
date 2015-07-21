@@ -1,7 +1,7 @@
 Index: git/arch/arm/boot/dts/Makefile
 ===================================================================
---- git.orig/arch/arm/boot/dts/Makefile	2015-02-04 18:23:10.526426900 +0100
-+++ git/arch/arm/boot/dts/Makefile	2015-02-04 18:25:03.938426900 +0100
+--- git.orig/arch/arm/boot/dts/Makefile	2015-07-21 13:06:05.272209000 +0200
++++ git/arch/arm/boot/dts/Makefile	2015-07-21 13:06:47.468209000 +0200
 @@ -113,6 +113,7 @@
  	imx53-mba53.dtb \
  	imx53-qsb.dtb \
@@ -21,7 +21,7 @@ Index: git/arch/arm/boot/dts/Makefile
 Index: git/arch/arm/boot/dts/imx6dl-tera-he.dts
 ===================================================================
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ git/arch/arm/boot/dts/imx6dl-tera-he.dts	2015-02-04 18:25:03.938426900 +0100
++++ git/arch/arm/boot/dts/imx6dl-tera-he.dts	2015-07-21 13:06:47.468209000 +0200
 @@ -0,0 +1,30 @@
 +/*
 + * Copyright (C) 2013 Freescale Semiconductor, Inc.
@@ -56,7 +56,7 @@ Index: git/arch/arm/boot/dts/imx6dl-tera-he.dts
 Index: git/arch/arm/boot/dts/imx6q-tera-he.dts
 ===================================================================
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ git/arch/arm/boot/dts/imx6q-tera-he.dts	2015-02-04 18:25:03.938426900 +0100
++++ git/arch/arm/boot/dts/imx6q-tera-he.dts	2015-07-21 13:06:47.468209000 +0200
 @@ -0,0 +1,129 @@
 +/*
 + * Copyright 2012 Freescale Semiconductor, Inc.
@@ -190,7 +190,7 @@ Index: git/arch/arm/boot/dts/imx6q-tera-he.dts
 Index: git/arch/arm/boot/dts/imx6q-tera-he.dtsi
 ===================================================================
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ git/arch/arm/boot/dts/imx6q-tera-he.dtsi	2015-02-04 18:25:03.938426900 +0100
++++ git/arch/arm/boot/dts/imx6q-tera-he.dtsi	2015-07-21 13:06:47.468209000 +0200
 @@ -0,0 +1,235 @@
 +
 +/*
@@ -430,8 +430,8 @@ Index: git/arch/arm/boot/dts/imx6q-tera-he.dtsi
 Index: git/arch/arm/boot/dts/imx6qdl-tera-he-base.dtsi
 ===================================================================
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ git/arch/arm/boot/dts/imx6qdl-tera-he-base.dtsi	2015-02-04 18:25:03.938426900 +0100
-@@ -0,0 +1,1431 @@
++++ git/arch/arm/boot/dts/imx6qdl-tera-he-base.dtsi	2015-07-21 13:32:14.392209000 +0200
+@@ -0,0 +1,1436 @@
 +/*
 + * Copyright 2011 Freescale Semiconductor, Inc.
 + * Copyright 2011 Linaro Ltd.
@@ -1523,15 +1523,6 @@ Index: git/arch/arm/boot/dts/imx6qdl-tera-he-base.dtsi
 +				MX6QDL_PAD_CSI0_DAT6__AUD3_TXFS 0x130b0
 +			>;
 +		};
-+		/* I2S1 */
-+		pinctrl_audmux_4: audmux-4 {
-+			fsl,pins = <
-+				MX6QDL_PAD_SD2_DAT2__AUD4_TXD			0x130b0
-+				MX6QDL_PAD_SD2_DAT3__AUD4_TXC  0x130b0
-+				MX6QDL_PAD_SD2_DAT1__AUD4_TXFS 0x130b0
-+				MX6QDL_PAD_SD2_DAT0__AUD4_RXD  0x130b0
-+			>;
-+		};
 +	};
 +
 +
@@ -1757,6 +1748,20 @@ Index: git/arch/arm/boot/dts/imx6qdl-tera-he-base.dtsi
 +		};
 +	};
 +
++        usdhc2 {
++                pinctrl_usdhc2_1: usdhc2grp-1 {
++                        fsl,pins = <
++                                MX6QDL_PAD_SD2_CMD__SD2_CMD    0x17071
++                                MX6QDL_PAD_SD2_CLK__SD2_CLK    0x10071
++                                MX6QDL_PAD_SD2_DAT0__SD2_DATA0 0x17071
++                                MX6QDL_PAD_SD2_DAT1__SD2_DATA1 0x17071
++                                MX6QDL_PAD_SD2_DAT2__SD2_DATA2 0x17071
++                                MX6QDL_PAD_SD2_DAT3__SD2_DATA3 0x17071
++                        >;
++                };
++        };
++
++
 +	usdhc3 {
 +		pinctrl_usdhc3_1: usdhc3grp-1 {
 +			fsl,pins = <
@@ -1866,8 +1871,8 @@ Index: git/arch/arm/boot/dts/imx6qdl-tera-he-base.dtsi
 Index: git/arch/arm/boot/dts/imx6qdl-tera-he.dtsi
 ===================================================================
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ git/arch/arm/boot/dts/imx6qdl-tera-he.dtsi	2015-02-04 20:09:35.030426900 +0100
-@@ -0,0 +1,404 @@
++++ git/arch/arm/boot/dts/imx6qdl-tera-he.dtsi	2015-07-21 13:32:40.280209000 +0200
+@@ -0,0 +1,400 @@
 +/*
 + * Copyright 2012 Freescale Semiconductor, Inc.
 + * Copyright 2011 Linaro Ltd.
@@ -2023,7 +2028,7 @@ Index: git/arch/arm/boot/dts/imx6qdl-tera-he.dtsi
 +
 +&audmux {
 +	pinctrl-names = "default";
-+	pinctrl-0 = <&pinctrl_audmux_2 &pinctrl_audmux_4>;
++	pinctrl-0 = <&pinctrl_audmux_2>;
 +	status = "okay";
 +};
 +
@@ -2116,8 +2121,6 @@ Index: git/arch/arm/boot/dts/imx6qdl-tera-he.dtsi
 +				MX6QDL_PAD_GPIO_0__GPIO1_IO00        0x80000000
 +				MX6QDL_PAD_GPIO_2__GPIO1_IO02        0x80000000
 +				MX6QDL_PAD_GPIO_6__GPIO1_IO06        0x80000000
-+				MX6QDL_PAD_SD2_CLK__GPIO1_IO10       0x80000000
-+				MX6QDL_PAD_SD2_CMD__GPIO1_IO11       0x80000000
 +				MX6QDL_PAD_NANDF_D0__GPIO2_IO00      0x80000000
 +				MX6QDL_PAD_NANDF_D1__GPIO2_IO01      0x80000000
 +				MX6QDL_PAD_NANDF_D2__GPIO2_IO02      0x80000000
@@ -2260,11 +2263,9 @@ Index: git/arch/arm/boot/dts/imx6qdl-tera-he.dtsi
 +        status = "okay";
 +};
 +
-+&usdhc4 {
-+        pinctrl-names = "default", "state_100mhz", "state_200mhz";
-+        pinctrl-0 = <&pinctrl_usdhc4_1>;
-+        pinctrl-1 = <&pinctrl_usdhc4_1_100mhz>;
-+        pinctrl-2 = <&pinctrl_usdhc4_1_200mhz>;
++&usdhc2 {
++        pinctrl-names = "default";
++        pinctrl-0 = <&pinctrl_usdhc2_1>;
 +        bus-width = <4>;
 +        no-1-8-v;
 +        non-removable;
