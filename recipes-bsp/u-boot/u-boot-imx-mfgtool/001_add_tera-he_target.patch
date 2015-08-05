@@ -282,18 +282,18 @@ Index: git/board/3b6/mx6q-tera-he/mx6q.cfg
 +DATA 4 0x020e05c4 0x00000030
 +DATA 4 0x021b001c 0x00008000
 +DATA 4 0x021b0800 0xA1390003
-+DATA 4 0x021b080c 0x000D0016
-+DATA 4 0x021b0810 0x001D0016
-+DATA 4 0x021b480c 0x0008001F
-+DATA 4 0x021b4810 0x00080014
-+DATA 4 0x021b083c 0x03440354
-+DATA 4 0x021b0840 0x033C033C
-+DATA 4 0x021b483c 0x03540358
-+DATA 4 0x021b4840 0x033C0318
-+DATA 4 0x021b0848 0x4032363A
-+DATA 4 0x021b4848 0x40423248
-+DATA 4 0x021b0850 0x30383432
-+DATA 4 0x021b4850 0x40304034
++DATA 4 0x021b080c 0x0015001A
++DATA 4 0x021b0810 0x0021001D
++DATA 4 0x021b480c 0x0007001C
++DATA 4 0x021b4810 0x0015001A
++DATA 4 0x021b083c 0x03480350
++DATA 4 0x021b0840 0x0348033C
++DATA 4 0x021b483c 0x03440350
++DATA 4 0x021b4840 0x033C0314
++DATA 4 0x021b0848 0x483A3C46
++DATA 4 0x021b4848 0x44423E4A
++DATA 4 0x021b0850 0x3A343C32
++DATA 4 0x021b4850 0x40324636
 +DATA 4 0x021b081c 0x33333333
 +DATA 4 0x021b0820 0x33333333
 +DATA 4 0x021b0824 0x33333333
@@ -492,7 +492,7 @@ Index: git/board/3b6/mx6q-tera-he/mx6q-tera-he.c
 +	MX6_PAD_RGMII_RD3__RGMII_RD3       | MUX_PAD_CTRL(ENET_PAD_CTRL),
 +	MX6_PAD_RGMII_RX_CTL__RGMII_RX_CTL | MUX_PAD_CTRL(ENET_PAD_CTRL),
 +
-+	MX6_PAD_ENET_CRS_DV__GPIO1_IO25    | MUX_PAD_CTRL(ENET_PAD_CTRL),
++	//MX6_PAD_ENET_CRS_DV__GPIO1_IO25    | MUX_PAD_CTRL(ENET_PAD_CTRL),
 +};
 +
 +/* I2C1 Management */
@@ -625,7 +625,7 @@ Index: git/board/3b6/mx6q-tera-he/mx6q-tera-he.c
 +	/* need ubstract 1 to map to the mmc3 device id
 +	 * see the comments in board_mmc_init function
 +	 */
-+	if (dev_no>0) dev_no--;
++	//if (dev_no>0) dev_no--;
 +
 +	return dev_no;
 +}
@@ -920,9 +920,9 @@ Index: git/board/3b6/mx6q-tera-he/mx6q-tera-he.c
 +
 +int board_eth_init(bd_t *bis)
 +{
-+	// TODO
 +	// reset PHY and ensure RX_DV is pulled high to enable TX_REF_CLK
-+	gpio_direction_input(IMX_GPIO_NR(1,4));
++	gpio_direction_input(IMX_GPIO_NR(6,24));//MX6QDL_PAD_RGMII_RX_CTL__GPIO6_IO24
++	gpio_direction_input(IMX_GPIO_NR(1,25));
 +	udelay(50000);
 +
 +	setup_iomux_enet();
@@ -970,11 +970,11 @@ Index: git/board/3b6/mx6q-tera-he/mx6q-tera-he.c
 +int board_early_init_f(void)
 +{
 +	// assert carrier_pwr_ok to allow UART to be visible
-+	gpio_direction_output(IMX_GPIO_NR(4, 5), 1); 
++	//gpio_direction_output(IMX_GPIO_NR(4, 5), 1); 
 +	// Reset PHY and ensure RX_DV is pulled high to enable REF_CLK
-+	gpio_direction_output(IMX_GPIO_NR(1,4),0);//TODO
++	gpio_direction_output(IMX_GPIO_NR(1,25),0);
 +	imx_iomux_v3_setup_pad(NEW_PAD_CTRL(MX6_PAD_RGMII_RX_CTL__RGMII_RX_CTL, ENET_PAD_CTRL));
-+  imx_iomux_v3_setup_pad(NEW_PAD_CTRL(MX6_PAD_RGMII_RXC__RGMII_RXC      , ENET_PAD_CTRL));
++	imx_iomux_v3_setup_pad(NEW_PAD_CTRL(MX6_PAD_RGMII_RXC__RGMII_RXC      , ENET_PAD_CTRL));
 +
 +	setup_iomux_uart();
 +
@@ -1957,8 +1957,8 @@ Index: git/include/configs/mx6q-tera-he.h
 +#define CONFIG_MXC_USB_FLAGS   0
 +#define CONFIG_USB_MAX_CONTROLLER_COUNT 2 /* Enabled USB controller number */
 +
-+#define CONFIG_SYS_FSL_USDHC_NUM	2
-+#define CONFIG_SYS_MMC_ENV_DEV		1  /* SDHC3 */
++#define CONFIG_SYS_FSL_USDHC_NUM	3
++#define CONFIG_SYS_MMC_ENV_DEV		2  /* SDHC3 */
 +#define CONFIG_SYS_MMC_ENV_PART                0       /* user partition */
 +
 +
@@ -2045,7 +2045,7 @@ Index: git/include/configs/mx6q-tera-he_common.h
 +#define IMX_FEC_BASE			ENET_BASE_ADDR
 +#define CONFIG_FEC_XCV_TYPE		RGMII
 +#define CONFIG_ETHPRIME			"FEC"
-+#define CONFIG_FEC_MXC_PHYADDR		0
++#define CONFIG_FEC_MXC_PHYADDR		4
 +
 +#define CONFIG_PHYLIB
 +#define CONFIG_PHY_MICREL

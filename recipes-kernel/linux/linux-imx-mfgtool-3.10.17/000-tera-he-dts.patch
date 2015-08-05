@@ -1,7 +1,7 @@
 Index: git/arch/arm/boot/dts/Makefile
 ===================================================================
---- git.orig/arch/arm/boot/dts/Makefile	2015-02-04 18:23:10.526426900 +0100
-+++ git/arch/arm/boot/dts/Makefile	2015-02-04 18:25:03.938426900 +0100
+--- git.orig/arch/arm/boot/dts/Makefile	2015-07-21 17:25:08.456209000 +0200
++++ git/arch/arm/boot/dts/Makefile	2015-07-21 17:25:52.560209000 +0200
 @@ -113,6 +113,7 @@
  	imx53-mba53.dtb \
  	imx53-qsb.dtb \
@@ -21,7 +21,7 @@ Index: git/arch/arm/boot/dts/Makefile
 Index: git/arch/arm/boot/dts/imx6dl-tera-he.dts
 ===================================================================
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ git/arch/arm/boot/dts/imx6dl-tera-he.dts	2015-02-04 18:25:03.938426900 +0100
++++ git/arch/arm/boot/dts/imx6dl-tera-he.dts	2015-07-21 17:38:53.504209000 +0200
 @@ -0,0 +1,30 @@
 +/*
 + * Copyright (C) 2013 Freescale Semiconductor, Inc.
@@ -56,7 +56,7 @@ Index: git/arch/arm/boot/dts/imx6dl-tera-he.dts
 Index: git/arch/arm/boot/dts/imx6q-tera-he.dts
 ===================================================================
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ git/arch/arm/boot/dts/imx6q-tera-he.dts	2015-02-04 18:25:03.938426900 +0100
++++ git/arch/arm/boot/dts/imx6q-tera-he.dts	2015-07-21 17:38:53.736209000 +0200
 @@ -0,0 +1,129 @@
 +/*
 + * Copyright 2012 Freescale Semiconductor, Inc.
@@ -87,8 +87,8 @@ Index: git/arch/arm/boot/dts/imx6q-tera-he.dts
 +};
 +
 +&i2c1 {
-+       pcf8563: rtc@51 {
-+               compatible = "nxp,pcf8563";
++       bq32000: rtc@51 {
++               compatible = "nxp,bq32000";
 +               reg = <0x51>;
 +       };
 +
@@ -190,7 +190,7 @@ Index: git/arch/arm/boot/dts/imx6q-tera-he.dts
 Index: git/arch/arm/boot/dts/imx6q-tera-he.dtsi
 ===================================================================
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ git/arch/arm/boot/dts/imx6q-tera-he.dtsi	2015-02-04 18:25:03.938426900 +0100
++++ git/arch/arm/boot/dts/imx6q-tera-he.dtsi	2015-07-21 17:38:53.744209000 +0200
 @@ -0,0 +1,235 @@
 +
 +/*
@@ -430,8 +430,8 @@ Index: git/arch/arm/boot/dts/imx6q-tera-he.dtsi
 Index: git/arch/arm/boot/dts/imx6qdl-tera-he-base.dtsi
 ===================================================================
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ git/arch/arm/boot/dts/imx6qdl-tera-he-base.dtsi	2015-02-04 18:25:03.938426900 +0100
-@@ -0,0 +1,1431 @@
++++ git/arch/arm/boot/dts/imx6qdl-tera-he-base.dtsi	2015-07-21 17:38:53.752209000 +0200
+@@ -0,0 +1,1437 @@
 +/*
 + * Copyright 2011 Freescale Semiconductor, Inc.
 + * Copyright 2011 Linaro Ltd.
@@ -459,6 +459,7 @@ Index: git/arch/arm/boot/dts/imx6qdl-tera-he-base.dtsi
 +		gpio5 = &gpio6;
 +		gpio6 = &gpio7;
 +		ipu0 = &ipu1;
++		ipu1 = &ipu2;
 +		serial0 = &uart1;
 +		serial1 = &uart2;
 +		serial2 = &uart3;
@@ -1296,17 +1297,7 @@ Index: git/arch/arm/boot/dts/imx6qdl-tera-he-base.dtsi
 +				interrupts = <0 24 0x04>;
 +				clocks = <&clks 165>, <&clks 165>, <&clks 165>;
 +				clock-names = "ipg", "ahb", "per";
-+				bus-width = <4>;
-+				status = "disabled";
-+			};
-+
-+			usdhc4: usdhc@0219c000 {
-+				compatible = "fsl,imx6q-usdhc";
-+				reg = <0x0219c000 0x4000>;
-+				interrupts = <0 25 0x04>;
-+				clocks = <&clks 166>, <&clks 166>, <&clks 166>;
-+				clock-names = "ipg", "ahb", "per";
-+				bus-width = <4>;
++				bus-width = <8>;
 +				status = "disabled";
 +			};
 +
@@ -1464,72 +1455,89 @@ Index: git/arch/arm/boot/dts/imx6qdl-tera-he-base.dtsi
 +			reg = <0x02400000 0x400000>;
 +			interrupts = <0 6 0x4 0 5 0x4>;
 +			clocks = <&clks 130>, <&clks 131>, <&clks 132>,
-+				 <&clks 39>, <&clks 40>,
-+				 <&clks 135>, <&clks 136>;
++			         <&clks 39>, <&clks 40>,
++			         <&clks 135>, <&clks 136>;
 +			clock-names = "bus", "di0", "di1",
-+				      "di0_sel", "di1_sel",
-+				      "ldb_di0", "ldb_di1";
++			              "di0_sel", "di1_sel",
++			              "ldb_di0", "ldb_di1";
 +			resets = <&src 2>;
 +			bypass_reset = <0>;
 +		};
++
++		ipu2: ipu@02800000 {
++			compatible = "fsl,imx6q-ipu";
++			reg = <0x02800000 0x400000>;
++			interrupts = <0 8 0x4 0 7 0x4>;
++			clocks = <&clks 133>, <&clks 134>, <&clks 137>,
++			         <&clks 41>, <&clks 42>,
++			         <&clks 135>, <&clks 136>;
++			clock-names = "bus", "di0", "di1",
++			              "di0_sel", "di1_sel",
++			              "ldb_di0", "ldb_di1";
++			resets = <&src 4>;
++			bypass_reset = <0>;
++		};
++
 +	};
 +};
 +
 +
 +&iomuxc {
-+	/*SPI0*/
-+	ecspi4 {
-+		pinctrl_ecspi4_cs_1: ecspi4_cs_grp-1 {
++
++		pinctrl_ecspi1: ecspi1grp {
 +			fsl,pins = <
-+				MX6QDL_PAD_EIM_D29__ECSPI4_SS0 0x100b1
-+				MX6QDL_PAD_EIM_A25__ECSPI4_SS1 0x100b1
++				MX6QDL_PAD_CSI0_DAT6__ECSPI1_MISO		0x100b1
++				MX6QDL_PAD_CSI0_DAT5__ECSPI1_MOSI		0x100b1
++				MX6QDL_PAD_CSI0_DAT4__ECSPI1_SCLK		0x100b1
++				MX6QDL_PAD_CSI0_DAT7__ECSPI1_SS0		0x1b0b0
 +			>;
 +		};
 +
-+		pinctrl_ecspi4_1: ecspi4grp-1 {
++		pinctrl_ecspi2: ecspi2grp {
 +			fsl,pins = <
-+				MX6QDL_PAD_EIM_D22__ECSPI4_MISO 0x100b1
-+				MX6QDL_PAD_EIM_D28__ECSPI4_MOSI 0x100b1
-+				MX6QDL_PAD_EIM_D21__ECSPI4_SCLK 0x100b1
-+			>;
-+		};
-+	};
-+
-+	/*SPI1*/
-+	ecspi2 {
-+		pinctrl_ecspi2_cs_1: ecspi2_cs_grp-1 {
-+			fsl,pins = <
-+				MX6QDL_PAD_EIM_RW__ECSPI2_SS0 0x100b1
-+				MX6QDL_PAD_EIM_LBA__ECSPI2_SS1 0x100b1
++				MX6QDL_PAD_EIM_OE__ECSPI2_MISO		0x100b1
++				MX6QDL_PAD_EIM_CS1__ECSPI2_MOSI		0x100b1
++				MX6QDL_PAD_EIM_CS0__ECSPI2_SCLK		0x100b1
++				MX6QDL_PAD_EIM_RW__ECSPI2_SS0		0x1b0b0
 +			>;
 +		};
 +
-+		pinctrl_ecspi2_1: ecspi2grp-1 {
++		pinctrl_ecspi3: ecspi3grp {
 +			fsl,pins = <
-+				MX6QDL_PAD_EIM_OE__ECSPI2_MISO 0x100b1
-+				MX6QDL_PAD_EIM_CS1__ECSPI2_MOSI 0x100b1
-+				MX6QDL_PAD_EIM_CS0__ECSPI2_SCLK 0x100b1
++				MX6QDL_PAD_DISP0_DAT2__ECSPI3_MISO	0x100b1
++				MX6QDL_PAD_DISP0_DAT1__ECSPI3_MOSI	0x100b1
++				MX6QDL_PAD_DISP0_DAT0__ECSPI3_SCLK	0x100b1
++				MX6QDL_PAD_DISP0_DAT3__ECSPI3_SS0	0x1b0b0
 +			>;
 +		};
 +
-+	};
++		pinctrl_ecspi4: ecspi4grp {
++			fsl,pins = <
++				MX6QDL_PAD_EIM_D22__ECSPI4_MISO		0x100b1
++				MX6QDL_PAD_EIM_D28__ECSPI4_MOSI		0x100b1
++				MX6QDL_PAD_EIM_D21__ECSPI4_SCLK		0x100b1
++				MX6QDL_PAD_EIM_D29__ECSPI4_SS0		0x1b0b0
++			>;
++		};
++
++
 +	audmux {
 +		/* I2S0 */
-+		pinctrl_audmux_2: audmux-2 {
++		pinctrl_audmux_4: audmux-4 {
 +			fsl,pins = <
-+				MX6QDL_PAD_CSI0_DAT7__AUD3_RXD  0x130b0
-+				MX6QDL_PAD_CSI0_DAT4__AUD3_TXC  0x130b0
-+				MX6QDL_PAD_CSI0_DAT5__AUD3_TXD  0x110b0
-+				MX6QDL_PAD_CSI0_DAT6__AUD3_TXFS 0x130b0
++				MX6QDL_PAD_DISP0_DAT19__AUD4_RXC  0x130b0
++				MX6QDL_PAD_DISP0_DAT23__AUD4_RXD  0x130b0
++				MX6QDL_PAD_DISP0_DAT21__AUD4_TXD  0x130b0
++				MX6QDL_PAD_DISP0_DAT18__AUD4_RXFS 0x110b0
 +			>;
 +		};
 +		/* I2S1 */
-+		pinctrl_audmux_4: audmux-4 {
++		pinctrl_audmux_6: audmux-6 {
 +			fsl,pins = <
-+				MX6QDL_PAD_SD2_DAT2__AUD4_TXD			0x130b0
-+				MX6QDL_PAD_SD2_DAT3__AUD4_TXC  0x130b0
-+				MX6QDL_PAD_SD2_DAT1__AUD4_TXFS 0x130b0
-+				MX6QDL_PAD_SD2_DAT0__AUD4_RXD  0x130b0
++				MX6QDL_PAD_DI0_PIN4__AUD6_RXD	   0x130b0
++				MX6QDL_PAD_DI0_PIN15__AUD6_TXC  0x130b0
++				MX6QDL_PAD_DI0_PIN2__AUD6_TXD   0x130b0
++				MX6QDL_PAD_DI0_PIN3__AUD6_TXFS  0x130b0
 +			>;
 +		};
 +	};
@@ -1570,7 +1578,7 @@ Index: git/arch/arm/boot/dts/imx6qdl-tera-he-base.dtsi
 +	};
 +
 +	flexcan1 {
-+		pinctrl_flexcan1_1: flexcan1grp-1 {
++		pinctrl_flexcan1: flexcan1grp-1 {
 +			fsl,pins = <
 +				MX6QDL_PAD_GPIO_8__FLEXCAN1_RX 0x80000000
 +				MX6QDL_PAD_GPIO_7__FLEXCAN1_TX 0x80000000
@@ -1579,7 +1587,7 @@ Index: git/arch/arm/boot/dts/imx6qdl-tera-he-base.dtsi
 +	};
 +
 +	flexcan2 {
-+		pinctrl_flexcan2_1: flexcan2grp-1 {
++		pinctrl_flexcan2: flexcan2grp-1 {
 +			fsl,pins = <
 +				MX6QDL_PAD_KEY_COL4__FLEXCAN2_TX 0x80000000
 +				MX6QDL_PAD_KEY_ROW4__FLEXCAN2_RX 0x80000000
@@ -1682,7 +1690,25 @@ Index: git/arch/arm/boot/dts/imx6qdl-tera-he-base.dtsi
 +				MX6QDL_PAD_CSI0_DAT17__IPU1_CSI0_DATA17    0x80000000
 +				MX6QDL_PAD_CSI0_DAT18__IPU1_CSI0_DATA18    0x80000000
 +				MX6QDL_PAD_CSI0_DAT19__IPU1_CSI0_DATA19    0x80000000
++				MX6QDL_PAD_CSI0_DATA_EN__IPU1_CSI0_DATA_EN 0x80000000
 +				MX6QDL_PAD_CSI0_PIXCLK__IPU1_CSI0_PIXCLK   0x80000000
++			>;
++		};
++	};
++
++	ipu2 {
++		pinctrl_ipu2_1: ipu2grp-1 {
++			fsl,pins = <
++				MX6QDL_PAD_EIM_A17__IPU2_CSI1_DATA12   0x80000000
++				MX6QDL_PAD_EIM_A18__IPU2_CSI1_DATA13   0x80000000
++				MX6QDL_PAD_EIM_A19__IPU2_CSI1_DATA14   0x80000000
++				MX6QDL_PAD_EIM_A20__IPU2_CSI1_DATA15   0x80000000
++				MX6QDL_PAD_EIM_A21__IPU2_CSI1_DATA16   0x80000000
++				MX6QDL_PAD_EIM_A22__IPU2_CSI1_DATA17   0x80000000
++				MX6QDL_PAD_EIM_A23__IPU2_CSI1_DATA18   0x80000000
++				MX6QDL_PAD_EIM_A24__IPU2_CSI1_DATA19   0x80000000
++				MX6QDL_PAD_EIM_DA10__IPU2_CSI1_DATA_EN 0x80000000
++				MX6QDL_PAD_EIM_D17__IPU2_CSI1_PIXCLK   0x80000000
 +			>;
 +		};
 +	};
@@ -1699,10 +1725,14 @@ Index: git/arch/arm/boot/dts/imx6qdl-tera-he-base.dtsi
 +	uart1 {
 +		pinctrl_uart1_1: uart1grp-1 {
 +			fsl,pins = <
-+				MX6QDL_PAD_CSI0_DAT10__UART1_TX_DATA 0x1b0b1
-+				MX6QDL_PAD_CSI0_DAT11__UART1_RX_DATA 0x1b0b1
-+				MX6QDL_PAD_EIM_D20__UART1_RTS_B 0x1b0b1
-+				MX6QDL_PAD_EIM_D19__UART1_CTS_B 0x1b0b1
++				MX6QDL_PAD_CSI0_DAT11__UART1_RX_DATA   0x1b0b1
++				MX6QDL_PAD_CSI0_DAT10__UART1_TX_DATA   0x1b0b1
++				MX6QDL_PAD_EIM_D19__UART1_CTS_B        0x1b0b1
++				MX6QDL_PAD_EIM_D23__UART1_DCD_B	       0x1b0b1
++				MX6QDL_PAD_EIM_D25__UART1_DSR_B        0x1b0b1
++				MX6QDL_PAD_EIM_D24__UART1_DTR_B        0x1b0b1
++				MX6QDL_PAD_EIM_EB3__UART1_RI_B         0x1b0b1
++				MX6QDL_PAD_EIM_D20__UART1_RTS_B        0x1b0b1
 +			>;
 +		};
 +	};
@@ -1710,8 +1740,8 @@ Index: git/arch/arm/boot/dts/imx6qdl-tera-he-base.dtsi
 +	uart2 {
 +		pinctrl_uart2_1: uart2grp-1 {
 +			fsl,pins = <
-+				MX6QDL_PAD_EIM_D26__UART2_TX_DATA 0x1b0b1
-+				MX6QDL_PAD_EIM_D27__UART2_RX_DATA 0x1b0b1
++				MX6QDL_PAD_EIM_D27__UART2_RX_DATA   0x1b0b1
++				MX6QDL_PAD_EIM_D26__UART2_TX_DATA   0x1b0b1
 +			>;
 +		};
 +	};
@@ -1719,10 +1749,10 @@ Index: git/arch/arm/boot/dts/imx6qdl-tera-he-base.dtsi
 +	uart3 {
 +		pinctrl_uart3_1: uart3grp-1 {
 +			fsl,pins = <
-+			  MX6QDL_PAD_EIM_D25__UART3_RX_DATA 0x1b0b1
-+				MX6QDL_PAD_EIM_D24__UART3_TX_DATA 0x1b0b1
-+				MX6QDL_PAD_EIM_D23__UART3_CTS_B   0x1b0b1
-+				MX6QDL_PAD_EIM_EB3__UART3_RTS_B   0x1b0b1
++				MX6QDL_PAD_SD4_CLK__UART3_RX_DATA   0x1b0b1
++				MX6QDL_PAD_SD4_CMD__UART3_TX_DATA   0x1b0b1
++				MX6QDL_PAD_EIM_D30__UART3_CTS_B     0x1b0b1
++				MX6QDL_PAD_EIM_D31__UART3_RTS_B	     0x1b0b1
 +			>;
 +		};
 +	};
@@ -1730,8 +1760,17 @@ Index: git/arch/arm/boot/dts/imx6qdl-tera-he-base.dtsi
 +	uart4 {
 +		pinctrl_uart4_1: uart4grp-1 {
 +			fsl,pins = <
-+				MX6QDL_PAD_KEY_COL0__UART4_TX_DATA 0x1b0b1
-+				MX6QDL_PAD_KEY_ROW0__UART4_RX_DATA 0x1b0b1
++				MX6QDL_PAD_KEY_ROW0__UART4_RX_DATA   0x1b0b1
++				MX6QDL_PAD_KEY_COL0__UART4_TX_DATA   0x1b0b1
++			>;
++		};
++	};
++
++	uart5 {
++		pinctrl_uart5_1: uart5grp-1 {
++			fsl,pins = <
++				MX6QDL_PAD_KEY_ROW1__UART5_RX_DATA   0x1b0b1
++				MX6QDL_PAD_KEY_COL1__UART5_TX_DATA   0x1b0b1
 +			>;
 +		};
 +	};
@@ -1739,7 +1778,7 @@ Index: git/arch/arm/boot/dts/imx6qdl-tera-he-base.dtsi
 +	usbotg {
 +		pinctrl_usbotg_1: usbotggrp-1 {
 +			fsl,pins = <
-+				MX6QDL_PAD_GPIO_1__USB_OTG_ID 0x17059
++				MX6QDL_PAD_ENET_RX_ER__USB_OTG_ID 0x17059
 +			>;
 +		};
 +	};
@@ -1747,12 +1786,27 @@ Index: git/arch/arm/boot/dts/imx6qdl-tera-he-base.dtsi
 +	usdhc1 {
 +		pinctrl_usdhc1_1: usdhc1grp-1 {
 +			fsl,pins = <
++				MX6QDL_PAD_GPIO_1__SD1_CD_B    0x17071
 +				MX6QDL_PAD_SD1_CMD__SD1_CMD    0x17071
 +				MX6QDL_PAD_SD1_CLK__SD1_CLK    0x10071
 +				MX6QDL_PAD_SD1_DAT0__SD1_DATA0 0x17071
 +				MX6QDL_PAD_SD1_DAT1__SD1_DATA1 0x17071
 +				MX6QDL_PAD_SD1_DAT2__SD1_DATA2 0x17071
 +				MX6QDL_PAD_SD1_DAT3__SD1_DATA3 0x17071
++				MX6QDL_PAD_GPIO_9__SD1_WP      0x17071
++			>;
++		};
++	};
++
++	usdhc2 {
++		pinctrl_usdhc21_1: usdhc2grp-1 {
++			fsl,pins = <
++				MX6QDL_PAD_SD2_CLK__SD2_CLK    0x17071
++				MX6QDL_PAD_SD2_CMD__SD2_CMD    0x10071
++				MX6QDL_PAD_SD2_DAT0__SD2_DATA0 0x17071
++				MX6QDL_PAD_SD2_DAT1__SD2_DATA1 0x17071
++				MX6QDL_PAD_SD2_DAT2__SD2_DATA2 0x17071
++				MX6QDL_PAD_SD2_DAT3__SD2_DATA3 0x17071
 +			>;
 +		};
 +	};
@@ -1770,6 +1824,7 @@ Index: git/arch/arm/boot/dts/imx6qdl-tera-he-base.dtsi
 +				MX6QDL_PAD_SD3_DAT5__SD3_DATA5 0x17059
 +				MX6QDL_PAD_SD3_DAT6__SD3_DATA6 0x17059
 +				MX6QDL_PAD_SD3_DAT7__SD3_DATA7 0x17059
++				MX6QDL_PAD_SD3_RST__SD3_RESET  0x17059
 +			>;
 +		};
 +
@@ -1785,6 +1840,7 @@ Index: git/arch/arm/boot/dts/imx6qdl-tera-he-base.dtsi
 +				MX6QDL_PAD_SD3_DAT5__SD3_DATA5 0x170B9
 +				MX6QDL_PAD_SD3_DAT6__SD3_DATA6 0x170B9
 +				MX6QDL_PAD_SD3_DAT7__SD3_DATA7 0x170B9
++				MX6QDL_PAD_SD3_RST__SD3_RESET  0x17059
 +			>;
 +		};
 +
@@ -1800,59 +1856,9 @@ Index: git/arch/arm/boot/dts/imx6qdl-tera-he-base.dtsi
 +				MX6QDL_PAD_SD3_DAT5__SD3_DATA5 0x170F9
 +				MX6QDL_PAD_SD3_DAT6__SD3_DATA6 0x170F9
 +				MX6QDL_PAD_SD3_DAT7__SD3_DATA7 0x170F9
++				MX6QDL_PAD_SD3_RST__SD3_RESET  0x17059
 +			>;
 +		};
-+	};
-+
-+	usdhc4 {
-+		pinctrl_usdhc4_1: usdhc4grp-1 {
-+			fsl,pins = <
-+				MX6QDL_PAD_SD4_CMD__SD4_CMD     0x17059
-+				MX6QDL_PAD_SD4_CLK__SD4_CLK     0x10059
-+				MX6QDL_PAD_SD4_DAT0__SD4_DATA0  0x17059
-+				MX6QDL_PAD_SD4_DAT1__SD4_DATA1  0x17059
-+				MX6QDL_PAD_SD4_DAT2__SD4_DATA2  0x17059
-+				MX6QDL_PAD_SD4_DAT3__SD4_DATA3  0x17059
-+				MX6QDL_PAD_SD4_DAT4__SD4_DATA4  0x17059
-+				MX6QDL_PAD_SD4_DAT5__SD4_DATA5  0x17059
-+				MX6QDL_PAD_SD4_DAT6__SD4_DATA6  0x17059
-+				MX6QDL_PAD_SD4_DAT7__SD4_DATA7  0x17059
-+				MX6QDL_PAD_NANDF_ALE__SD4_RESET 0x17059
-+			>;
-+		};
-+
-+                pinctrl_usdhc4_1_100mhz: usdhc4grp-1-100mhz {
-+                        fsl,pins = <
-+                                MX6QDL_PAD_SD4_CMD__SD4_CMD     0x170B9
-+                                MX6QDL_PAD_SD4_CLK__SD4_CLK     0x100B9
-+                                MX6QDL_PAD_SD4_DAT0__SD4_DATA0  0x170B9
-+                                MX6QDL_PAD_SD4_DAT1__SD4_DATA1  0x170B9
-+                                MX6QDL_PAD_SD4_DAT2__SD4_DATA2  0x170B9
-+                                MX6QDL_PAD_SD4_DAT3__SD4_DATA3  0x170B9
-+                                MX6QDL_PAD_SD4_DAT4__SD4_DATA4  0x170B9
-+                                MX6QDL_PAD_SD4_DAT5__SD4_DATA5  0x170B9
-+                                MX6QDL_PAD_SD4_DAT6__SD4_DATA6  0x170B9
-+                                MX6QDL_PAD_SD4_DAT7__SD4_DATA7  0x170B9
-+                                MX6QDL_PAD_NANDF_ALE__SD4_RESET 0x170B9
-+                        >;
-+                };
-+
-+                pinctrl_usdhc4_1_200mhz: usdhc4grp-1-200mhz {
-+                        fsl,pins = <
-+                                MX6QDL_PAD_SD4_CMD__SD4_CMD     0x170F9
-+                                MX6QDL_PAD_SD4_CLK__SD4_CLK     0x100F9
-+                                MX6QDL_PAD_SD4_DAT0__SD4_DATA0  0x170F9
-+                                MX6QDL_PAD_SD4_DAT1__SD4_DATA1  0x170F9
-+                                MX6QDL_PAD_SD4_DAT2__SD4_DATA2  0x170F9
-+                                MX6QDL_PAD_SD4_DAT3__SD4_DATA3  0x170F9
-+                                MX6QDL_PAD_SD4_DAT4__SD4_DATA4  0x170F9
-+                                MX6QDL_PAD_SD4_DAT5__SD4_DATA5  0x170F9
-+                                MX6QDL_PAD_SD4_DAT6__SD4_DATA6  0x170F9
-+                                MX6QDL_PAD_SD4_DAT7__SD4_DATA7  0x170F9
-+                                MX6QDL_PAD_NANDF_ALE__SD4_RESET 0x170F9
-+                        >;
-+                };
-+
 +	};
 +
 +	wdog {
@@ -1866,8 +1872,8 @@ Index: git/arch/arm/boot/dts/imx6qdl-tera-he-base.dtsi
 Index: git/arch/arm/boot/dts/imx6qdl-tera-he.dtsi
 ===================================================================
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ git/arch/arm/boot/dts/imx6qdl-tera-he.dtsi	2015-02-04 20:09:35.030426900 +0100
-@@ -0,0 +1,404 @@
++++ git/arch/arm/boot/dts/imx6qdl-tera-he.dtsi	2015-07-21 17:38:53.760209000 +0200
+@@ -0,0 +1,434 @@
 +/*
 + * Copyright 2012 Freescale Semiconductor, Inc.
 + * Copyright 2011 Linaro Ltd.
@@ -1996,49 +2002,64 @@ Index: git/arch/arm/boot/dts/imx6qdl-tera-he.dtsi
 +		status = "okay";
 +	};
 +
-+        lcd@0 {
-+                compatible = "fsl,lcd";
-+                ipu_id = <0>;
-+                disp_id = <0>;
-+                default_ifmt = "RGB565";
-+                pinctrl-names = "default";
-+                pinctrl-0 = <&pinctrl_ipu1_1>;
-+                status = "okay";
-+        };
++	lcd@0 {
++		compatible = "fsl,lcd";
++		ipu_id = <0>;
++		disp_id = <0>;
++		default_ifmt = "RGB565";
++		pinctrl-names = "default";
++		pinctrl-0 = <&pinctrl_ipu1_1>;
++		status = "okay";
++	};
 +
 +	i2c@0 {
-+               compatible = "i2c-gpio";
-+               gpios = <&gpio1  10  0 /* sda */
-+                       &gpio1 11 0 /* scl */
-+               >;
-+               i2c-gpio,sda-open-drain;
-+               i2c-gpio,scl-open-drain;
-+               i2c-gpio,delay-us = <5>;        /* ~100 kHz */
-+               i2c-gpio,timeout-ms = <100>;
-+               #address-cells = <1>;
-+               #size-cells  = <0>;
++		compatible = "i2c-gpio";
++		gpios = <&gpio1  10  0 /* sda */
++						&gpio1 11 0 /* scl */
++		>;
++		i2c-gpio,sda-open-drain;
++		i2c-gpio,scl-open-drain;
++		i2c-gpio,delay-us = <5>;        /* ~100 kHz */
++		i2c-gpio,timeout-ms = <100>;
++		#address-cells = <1>;
++		#size-cells  = <0>;
 +	};
 +
 +};
 +
 +&audmux {
 +	pinctrl-names = "default";
-+	pinctrl-0 = <&pinctrl_audmux_2 &pinctrl_audmux_4>;
++	pinctrl-0 = <&pinctrl_audmux_4 &pinctrl_audmux_6>;
 +	status = "okay";
++};
++
++
++&ecspi1 {
++	fsl,spi-num-chipselects = <1>;
++/*	cs-gpios = <&gpio2 26 0 &gpio2 27 0>;*/
++	pinctrl-names = "default";
++	pinctrl-0 = <&pinctrl_ecspi1>;
 +};
 +
 +&ecspi2 {
 +	fsl,spi-num-chipselects = <2>;
-+	cs-gpios = <&gpio2 26 0 &gpio2 27 0>;
++/*	cs-gpios = <&gpio3 29 0 &gpio5 2 0>;*/
 +	pinctrl-names = "default";
-+	pinctrl-0 = <&pinctrl_ecspi2_1 &pinctrl_ecspi2_cs_1>;
++	pinctrl-0 = <&pinctrl_ecspi2>;
++};
++
++&ecspi3 {
++	fsl,spi-num-chipselects = <1>;
++/*	cs-gpios = <&gpio2 26 0 &gpio2 27 0>;*/
++	pinctrl-names = "default";
++	pinctrl-0 = <&pinctrl_ecspi3>;
 +};
 +
 +&ecspi4 {
 +	fsl,spi-num-chipselects = <2>;
-+	cs-gpios = <&gpio3 29 0 &gpio5 2 0>;
++/*	cs-gpios = <&gpio3 29 0 &gpio5 2 0>;*/
 +	pinctrl-names = "default";
-+	pinctrl-0 = <&pinctrl_ecspi4_1 &pinctrl_ecspi4_cs_1>;
++	pinctrl-0 = <&pinctrl_ecspi4>;
 +};
 +
 +&esai {
@@ -2113,47 +2134,56 @@ Index: git/arch/arm/boot/dts/imx6qdl-tera-he.dtsi
 +	hog {
 +		pinctrl_hog: hoggrp {
 +			fsl,pins = <
-+				MX6QDL_PAD_GPIO_0__GPIO1_IO00        0x80000000
-+				MX6QDL_PAD_GPIO_2__GPIO1_IO02        0x80000000
-+				MX6QDL_PAD_GPIO_6__GPIO1_IO06        0x80000000
-+				MX6QDL_PAD_SD2_CLK__GPIO1_IO10       0x80000000
-+				MX6QDL_PAD_SD2_CMD__GPIO1_IO11       0x80000000
-+				MX6QDL_PAD_NANDF_D0__GPIO2_IO00      0x80000000
-+				MX6QDL_PAD_NANDF_D1__GPIO2_IO01      0x80000000
-+				MX6QDL_PAD_NANDF_D2__GPIO2_IO02      0x80000000
-+				MX6QDL_PAD_NANDF_D3__GPIO2_IO03      0x80000000
-+				MX6QDL_PAD_NANDF_D4__GPIO2_IO04      0x80000000
-+				MX6QDL_PAD_NANDF_D5__GPIO2_IO05      0x80000000
-+				MX6QDL_PAD_NANDF_D6__GPIO2_IO06      0x80000000
-+				MX6QDL_PAD_NANDF_D7__GPIO2_IO07      0x80000000
-+				MX6QDL_PAD_EIM_A16__GPIO2_IO22       0x80000000
-+				MX6QDL_PAD_EIM_DA6__GPIO3_IO06       0x80000000
-+				MX6QDL_PAD_EIM_DA7__GPIO3_IO07       0x80000000
-+				MX6QDL_PAD_EIM_DA8__GPIO3_IO08       0x80000000
-+				MX6QDL_PAD_EIM_DA9__GPIO3_IO09       0x80000000
-+				MX6QDL_PAD_EIM_DA13__GPIO3_IO13      0x80000000
-+				MX6QDL_PAD_EIM_DA14__GPIO3_IO14      0x80000000
-+				MX6QDL_PAD_EIM_DA15__GPIO3_IO15      0x80000000
-+				MX6QDL_PAD_EIM_D18__GPIO3_IO18       0x80000000
-+				MX6QDL_PAD_EIM_D30__GPIO3_IO30       0x80000000
-+				MX6QDL_PAD_EIM_D31__GPIO3_IO31       0x80000000
-+				MX6QDL_PAD_GPIO_19__GPIO4_IO05       0x80000000
-+				MX6QDL_PAD_KEY_COL1__GPIO4_IO08      0x80000000
-+				MX6QDL_PAD_KEY_ROW1__GPIO4_IO09      0x80000000
-+				MX6QDL_PAD_KEY_COL2__GPIO4_IO10      0x80000000
-+				MX6QDL_PAD_EIM_WAIT__GPIO5_IO00      0x80000000
-+				MX6QDL_PAD_CSI0_DATA_EN__GPIO5_IO20  0x80000000
-+				MX6QDL_PAD_CSI0_VSYNC__GPIO5_IO21    0x80000000
-+				MX6QDL_PAD_NANDF_CLE__GPIO6_IO07     0x80000000
-+				MX6QDL_PAD_NANDF_WP_B__GPIO6_IO09    0x80000000
-+				MX6QDL_PAD_NANDF_RB0__GPIO6_IO10     0x80000000
-+				MX6QDL_PAD_NANDF_CS0__GPIO6_IO11     0x80000000
-+				MX6QDL_PAD_NANDF_CS1__GPIO6_IO14     0x80000000
-+				MX6QDL_PAD_EIM_BCLK__GPIO6_IO31      0x80000000
-+				MX6QDL_PAD_SD3_RST__GPIO7_IO08       0x80000000
-+				
-+				
-+				
++
++				MX6QDL_PAD_DISP0_DAT4__GPIO4_IO25    0x80000000		/* LED_R                */
++				MX6QDL_PAD_DISP0_DAT5__GPIO4_IO26    0x80000000		/* LED_Y                */
++				MX6QDL_PAD_DISP0_DAT8__GPIO4_IO29    0x80000000		/* L-OUT0_ACTIVE_H      */
++				MX6QDL_PAD_GPIO_4__GPIO1_IO04        0x80000000		/* L-OUT0_ACTIVE_L      */
++				MX6QDL_PAD_DISP0_DAT10__GPIO4_IO31   0x80000000		/* L-OUT1_ACTIVE_H      */
++				MX6QDL_PAD_GPIO_6__GPIO1_IO06        0x80000000		/* L-OUT1_ACTIVE_L      */
++				MX6QDL_PAD_DISP0_DAT7__GPIO4_IO28    0x80000000		/* NFC_I2C_IRQ          */
++				MX6QDL_PAD_DISP0_DAT9__GPIO4_IO30    0x80000000		/* W DOG_B              */
++				MX6QDL_PAD_DISP0_DAT11__GPIO5_IO05   0x80000000		/* WL_IRQ               */
++				MX6QDL_PAD_DISP0_DAT12__GPIO5_IO06   0x80000000		/* GPS_PW R_EN          */
++				MX6QDL_PAD_DISP0_DAT13__GPIO5_IO07   0x80000000		/* BT_EN                */
++				MX6QDL_PAD_DISP0_DAT14__GPIO5_IO08   0x80000000		/* W L_EN               */
++				MX6QDL_PAD_DISP0_DAT16__GPIO5_IO10   0x80000000		/* ACCL_INT_IN          */
++				MX6QDL_PAD_DISP0_DAT17__GPIO5_IO11   0x80000000		/* Gyroscope_Error_FIFO */
++				MX6QDL_PAD_DISP0_DAT18__GPIO5_IO12   0x80000000		/* BT_AUD_FS            */
++				MX6QDL_PAD_DISP0_DAT19__GPIO5_IO13   0x80000000		/* BT_AUD_CLK           */
++				MX6QDL_PAD_DISP0_DAT20__GPIO5_IO14   0x80000000		/* NFC_RST              */
++				MX6QDL_PAD_DISP0_DAT21__GPIO5_IO15   0x80000000		/* BT_AUD_RXD           */
++				MX6QDL_PAD_DISP0_DAT22__GPIO5_IO16   0x80000000		/* PMIC_IRQ             */
++				MX6QDL_PAD_DISP0_DAT23__GPIO5_IO17   0x80000000		/* BT_AUD_TXD           */
++				MX6QDL_PAD_GPIO_2__GPIO1_IO02        0x80000000		/*SENSOR_LIGHT_INT      */
++				MX6QDL_PAD_KEY_COL2__GPIO4_IO10      0x80000000		/* KEY_DX_1             */
++				MX6QDL_PAD_KEY_ROW2__GPIO4_IO11      0x80000000		/* KEY_DX_2             */
++				MX6QDL_PAD_NANDF_CS0__GPIO6_IO11     0x80000000		/* KEY_DX_3             */
++				MX6QDL_PAD_NANDF_CS1__GPIO6_IO14     0x80000000		/* KEY_DX_4             */
++				MX6QDL_PAD_NANDF_CS3__GPIO6_IO16     0x80000000		/* KEY_RX_1             */
++				MX6QDL_PAD_NANDF_ALE__GPIO6_IO08     0x80000000		/* KEY_RX_2             */
++				MX6QDL_PAD_NANDF_CLE__GPIO6_IO07     0x80000000		/* KEY_RX_3             */
++				MX6QDL_PAD_NANDF_WP_B__GPIO6_IO09    0x80000000		/* KEY_RX_4             */
++				MX6QDL_PAD_NANDF_RB0__GPIO6_IO10     0x80000000		/* BUZZER_EXT           */
++				MX6QDL_PAD_NANDF_D0__GPIO2_IO00      0x80000000		/* LCD_ON_C             */
++				MX6QDL_PAD_NANDF_D1__GPIO2_IO01      0x80000000		/* BKL_ON               */
++				MX6QDL_PAD_NANDF_CS2__GPIO6_IO15     0x80000000		/* +5V_BKL_KEY_EN       */
++				MX6QDL_PAD_NANDF_D2__GPIO2_IO02      0x80000000		/* LVDS_SELLVDS         */
++				MX6QDL_PAD_NANDF_D3__GPIO2_IO03      0x80000000		/* LVDS_SEL68           */
++				MX6QDL_PAD_NANDF_D4__GPIO2_IO04      0x80000000		/* LVDS_SCAN_DIRECTION  */
++				MX6QDL_PAD_NANDF_D5__GPIO2_IO05      0x80000000		/* GPS_RESET_B          */
++				MX6QDL_PAD_NANDF_D6__GPIO2_IO06      0x80000000		/* USB_RESET            */
++				MX6QDL_PAD_NANDF_D7__GPIO2_IO07      0x80000000		/* L-OUT3               */
++				MX6QDL_PAD_SD4_CLK__GPIO7_IO10       0x80000000		/* BT_HCI_RX_3V3        */
++				MX6QDL_PAD_SD4_CMD__GPIO7_IO09       0x80000000		/* BT_HCI_TX_3V3        */
++				MX6QDL_PAD_SD4_DAT0__GPIO2_IO08      0x80000000		/* CAN12_STB            */
++				MX6QDL_PAD_SD4_DAT1__GPIO2_IO09      0x80000000		/* BKL_PW M             */
++				MX6QDL_PAD_SD4_DAT2__GPIO2_IO10      0x80000000		/* BUZ_PWM              */
++				MX6QDL_PAD_SD4_DAT3__GPIO2_IO11      0x80000000		/* CAN34_STB            */
++				MX6QDL_PAD_SD4_DAT4__GPIO2_IO12      0x80000000		/* CAN4_INT             */
++				MX6QDL_PAD_SD4_DAT5__GPIO2_IO13      0x80000000		/* CAN4_RST             */
++				MX6QDL_PAD_SD4_DAT6__GPIO2_IO14      0x80000000		/* CAN3_INT             */
++				MX6QDL_PAD_SD4_DAT7__GPIO2_IO15      0x80000000		/* CAN3_RST             */
 +			>;
 +		};
 +	};
@@ -2161,13 +2191,13 @@ Index: git/arch/arm/boot/dts/imx6qdl-tera-he.dtsi
 +
 +&flexcan1 {
 +	pinctrl-names = "default";
-+	pinctrl-0 = <&pinctrl_flexcan1_1>;
++	pinctrl-0 = <&pinctrl_flexcan1>;
 +	status = "okay"; /* pin conflict with fec */
 +};
 +
 +&flexcan2 {
 +	pinctrl-names = "default";
-+	pinctrl-0 = <&pinctrl_flexcan2_1>;
++	pinctrl-0 = <&pinctrl_flexcan2>;
 +	status = "okay";
 +};
 +
@@ -2224,6 +2254,12 @@ Index: git/arch/arm/boot/dts/imx6qdl-tera-he.dtsi
 +	status = "okay";
 +};
 +
++&uart5 {
++	pinctrl-names = "default";
++	pinctrl-0 = <&pinctrl_uart5_1>;
++	status = "okay";
++};
++
 +&usbotg {
 +	vbus-supply = <&reg_usb_otg_vbus>;
 +	pinctrl-names = "default";
@@ -2239,8 +2275,21 @@ Index: git/arch/arm/boot/dts/imx6qdl-tera-he.dtsi
 +&usdhc1 {
 +        pinctrl-names = "default";
 +        pinctrl-0 = <&pinctrl_usdhc1_1>;
-+        cd-gpios = <&gpio2 1 0>;
-+        wp-gpios = <&gpio2 0 0>;
++        //cd-gpios = <&gpio2 1 0>;
++        //wp-gpios = <&gpio2 0 0>;
++        no-1-8-v;
++        keep-power-in-suspend;
++        enable-sdio-wakeup;
++        status = "okay";
++};
++
++&usdhc2 {
++        pinctrl-names = "default", "state_100mhz", "state_200mhz";
++        pinctrl-0 = <&pinctrl_usdhc3_1>;
++        pinctrl-1 = <&pinctrl_usdhc3_1_100mhz>;
++        pinctrl-2 = <&pinctrl_usdhc3_1_200mhz>;
++        non-removable;
++        bus-width = <4>;
 +        no-1-8-v;
 +        keep-power-in-suspend;
 +        enable-sdio-wakeup;
@@ -2252,20 +2301,7 @@ Index: git/arch/arm/boot/dts/imx6qdl-tera-he.dtsi
 +        pinctrl-0 = <&pinctrl_usdhc3_1>;
 +        pinctrl-1 = <&pinctrl_usdhc3_1_100mhz>;
 +        pinctrl-2 = <&pinctrl_usdhc3_1_200mhz>;
-+        non-removable;
 +        bus-width = <8>;
-+        no-1-8-v;
-+        keep-power-in-suspend;
-+        enable-sdio-wakeup;
-+        status = "okay";
-+};
-+
-+&usdhc4 {
-+        pinctrl-names = "default", "state_100mhz", "state_200mhz";
-+        pinctrl-0 = <&pinctrl_usdhc4_1>;
-+        pinctrl-1 = <&pinctrl_usdhc4_1_100mhz>;
-+        pinctrl-2 = <&pinctrl_usdhc4_1_200mhz>;
-+        bus-width = <4>;
 +        no-1-8-v;
 +        non-removable;
 +        keep-power-in-suspend;

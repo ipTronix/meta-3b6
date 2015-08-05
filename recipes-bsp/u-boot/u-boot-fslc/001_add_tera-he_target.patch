@@ -1,7 +1,7 @@
 Index: git/arch/arm/Kconfig
 ===================================================================
---- git.orig/arch/arm/Kconfig	2015-07-20 19:32:12.876209000 +0200
-+++ git/arch/arm/Kconfig	2015-07-20 19:32:13.656209000 +0200
+--- git.orig/arch/arm/Kconfig	2015-08-05 17:19:38.488605600 +0200
++++ git/arch/arm/Kconfig	2015-08-05 17:19:39.692605600 +0200
 @@ -396,6 +396,9 @@
  config TARGET_MX6QARM2
  	bool "Support mx6qarm2"
@@ -23,7 +23,7 @@ Index: git/arch/arm/Kconfig
 Index: git/board/3b6/mx6q-tera-he/Kconfig
 ===================================================================
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ git/board/3b6/mx6q-tera-he/Kconfig	2015-07-20 19:32:13.660209000 +0200
++++ git/board/3b6/mx6q-tera-he/Kconfig	2015-08-05 17:19:39.692605600 +0200
 @@ -0,0 +1,18 @@
 +if TARGET_MX6QTERAHE
 +
@@ -46,7 +46,7 @@ Index: git/board/3b6/mx6q-tera-he/Kconfig
 Index: git/board/3b6/mx6q-tera-he/MAINTAINERS
 ===================================================================
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ git/board/3b6/mx6q-tera-he/MAINTAINERS	2015-07-20 19:32:13.660209000 +0200
++++ git/board/3b6/mx6q-tera-he/MAINTAINERS	2015-08-05 17:19:39.692605600 +0200
 @@ -0,0 +1,6 @@
 +MX6QTERAHE BOARD
 +M:	Dario Pennisi <dario@iptronix.com>
@@ -57,7 +57,7 @@ Index: git/board/3b6/mx6q-tera-he/MAINTAINERS
 Index: git/board/3b6/mx6q-tera-he/Makefile
 ===================================================================
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ git/board/3b6/mx6q-tera-he/Makefile	2015-07-20 19:32:13.660209000 +0200
++++ git/board/3b6/mx6q-tera-he/Makefile	2015-08-05 17:19:39.692605600 +0200
 @@ -0,0 +1,9 @@
 +#
 +# Copyright (C) 2014, Dario Pennisi <dario@iptronix.com>
@@ -71,7 +71,7 @@ Index: git/board/3b6/mx6q-tera-he/Makefile
 Index: git/board/3b6/mx6q-tera-he/imximage.cfg
 ===================================================================
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ git/board/3b6/mx6q-tera-he/imximage.cfg	2015-07-20 19:40:09.832209000 +0200
++++ git/board/3b6/mx6q-tera-he/imximage.cfg	2015-08-05 17:19:39.696605600 +0200
 @@ -0,0 +1,152 @@
 +/*
 + * Copyright (C) 2014 Freescale Semiconductor, Inc.
@@ -165,18 +165,18 @@ Index: git/board/3b6/mx6q-tera-he/imximage.cfg
 +DATA 4 0x020e05c4 0x00000030
 +DATA 4 0x021b001c 0x00008000
 +DATA 4 0x021b0800 0xA1390003
-+DATA 4 0x021b080c 0x000D0016
-+DATA 4 0x021b0810 0x001D0016
-+DATA 4 0x021b480c 0x0008001F
-+DATA 4 0x021b4810 0x00080014
-+DATA 4 0x021b083c 0x03440354
-+DATA 4 0x021b0840 0x033C033C
-+DATA 4 0x021b483c 0x03540358
-+DATA 4 0x021b4840 0x033C0318
-+DATA 4 0x021b0848 0x4032363A
-+DATA 4 0x021b4848 0x40423248
-+DATA 4 0x021b0850 0x30383432
-+DATA 4 0x021b4850 0x40304034
++DATA 4 0x021b080c 0x0015001A
++DATA 4 0x021b0810 0x0021001D
++DATA 4 0x021b480c 0x0007001C
++DATA 4 0x021b4810 0x0015001A
++DATA 4 0x021b083c 0x03480350
++DATA 4 0x021b0840 0x0348033C
++DATA 4 0x021b483c 0x03440350
++DATA 4 0x021b4840 0x033C0314
++DATA 4 0x021b0848 0x483A3C46
++DATA 4 0x021b4848 0x44423E4A
++DATA 4 0x021b0850 0x3A343C32
++DATA 4 0x021b4850 0x40324636
 +DATA 4 0x021b081c 0x33333333
 +DATA 4 0x021b0820 0x33333333
 +DATA 4 0x021b0824 0x33333333
@@ -228,7 +228,7 @@ Index: git/board/3b6/mx6q-tera-he/imximage.cfg
 Index: git/board/3b6/mx6q-tera-he/mx6dl.cfg
 ===================================================================
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ git/board/3b6/mx6q-tera-he/mx6dl.cfg	2015-07-20 19:40:34.724209000 +0200
++++ git/board/3b6/mx6q-tera-he/mx6dl.cfg	2015-08-05 17:19:39.696605600 +0200
 @@ -0,0 +1,152 @@
 +/*
 + * Copyright (C) 2014 Freescale Semiconductor, Inc.
@@ -385,8 +385,8 @@ Index: git/board/3b6/mx6q-tera-he/mx6dl.cfg
 Index: git/board/3b6/mx6q-tera-he/mx6q-tera-he.c
 ===================================================================
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ git/board/3b6/mx6q-tera-he/mx6q-tera-he.c	2015-07-20 19:50:21.916209000 +0200
-@@ -0,0 +1,567 @@
++++ git/board/3b6/mx6q-tera-he/mx6q-tera-he.c	2015-08-05 17:19:39.696605600 +0200
+@@ -0,0 +1,569 @@
 +/*
 + * Copyright (C) 2012 Freescale Semiconductor, Inc.
 + *
@@ -435,6 +435,9 @@ Index: git/board/3b6/mx6q-tera-he/mx6q-tera-he.c
 +#define I2C_PAD_CTRL	(PAD_CTL_PUS_100K_UP |			\
 +	PAD_CTL_SPEED_MED | PAD_CTL_DSE_40ohm | PAD_CTL_HYS |	\
 +	PAD_CTL_ODE | PAD_CTL_SRE_FAST)
++
++#define CLKO2_PAD_CTRL (PAD_CTL_PUS_100K_UP |                   \
++        PAD_CTL_SPEED_MED | PAD_CTL_DSE_40ohm | PAD_CTL_HYS)
 +
 +#define PC MUX_PAD_CTRL(I2C_PAD_CTRL)
 +
@@ -495,7 +498,7 @@ Index: git/board/3b6/mx6q-tera-he/mx6q-tera-he.c
 +	MX6_PAD_RGMII_RD3__RGMII_RD3       | MUX_PAD_CTRL(ENET_PAD_CTRL),
 +	MX6_PAD_RGMII_RX_CTL__RGMII_RX_CTL | MUX_PAD_CTRL(ENET_PAD_CTRL),
 +
-+	MX6_PAD_ENET_CRS_DV__GPIO1_IO25    | MUX_PAD_CTRL(ENET_PAD_CTRL),
++	//MX6_PAD_ENET_CRS_DV__GPIO1_IO25    | MUX_PAD_CTRL(ENET_PAD_CTRL),
 +};
 +
 +/* I2C1 Management */
@@ -610,7 +613,7 @@ Index: git/board/3b6/mx6q-tera-he/mx6q-tera-he.c
 +	 * see the comments in board_mmc_init function
 +	 */
 +
-+	if (dev_no>0) dev_no--;
++//	if (dev_no>0) dev_no--;
 +
 +	return dev_no;
 +}
@@ -715,9 +718,9 @@ Index: git/board/3b6/mx6q-tera-he/mx6q-tera-he.c
 +int board_eth_init(bd_t *bis)
 +{
 +	// reset PHY and ensure RX_DV is pulled high to enable TX_REF_CLK
-+	gpio_direction_input(IMX_GPIO_NR(1,4));
++	gpio_direction_input(IMX_GPIO_NR(6,24));//MX6QDL_PAD_RGMII_RX_CTL__GPIO6_IO24
++	gpio_direction_input(IMX_GPIO_NR(1,25));
 +	udelay(50000);
-+
 +	setup_iomux_enet();
 +
 +	return cpu_eth_init(bis);
@@ -817,11 +820,11 @@ Index: git/board/3b6/mx6q-tera-he/mx6q-tera-he.c
 +{
 +
 +	// assert carrier_pwr_ok to allow UART to be visible
-+	gpio_direction_output(IMX_GPIO_NR(4, 5), 1); 
++	//gpio_direction_output(IMX_GPIO_NR(4, 5), 1); 
 +	// Reset PHY and ensure RX_DV is pulled high to enable REF_CLK
-+	gpio_direction_output(IMX_GPIO_NR(1,4),0);
++	gpio_direction_output(IMX_GPIO_NR(1,25),0);
 +	imx_iomux_v3_setup_pad(NEW_PAD_CTRL(MX6_PAD_RGMII_RX_CTL__RGMII_RX_CTL,ENET_PAD_CTRL));
-+        imx_iomux_v3_setup_pad(NEW_PAD_CTRL(MX6_PAD_RGMII_RXC__RGMII_RXC,ENET_PAD_CTRL));
++	imx_iomux_v3_setup_pad(NEW_PAD_CTRL(MX6_PAD_RGMII_RXC__RGMII_RXC,ENET_PAD_CTRL));
 +	setup_iomux_uart();
 +#ifdef CONFIG_VIDEO_IPUV3
 +	setup_display();
@@ -833,16 +836,16 @@ Index: git/board/3b6/mx6q-tera-he/mx6q-tera-he.c
 +	0x11,	//data size
 +	0x24,	//VID LSB
 +	0x04,	//VID_MSB
-+	0x12,	//PID LSB
++	0x14,	//PID LSB
 +	0x25, //PID MSB
-+	0xa0, //DID LSB
-+	0x0a, //DID MSB
-+	0x8D, //CFG1
-+	0x10,	//CFG2
++	0xB3, //DID LSB
++	0x0B, //DID MSB
++	0x9B, //CFG1
++	0x20,	//CFG2
 +	0x00,	//CFG3
 +	0x00,	//NRD
-+	0x08,	//PDS
-+	0x08,	//PDB
++	0x00,	//PDS
++	0x00,	//PDB
 +	0x01,	//MAXPS
 +	0x32,	//MAXPB
 +	0x01,	//HCMS
@@ -854,14 +857,10 @@ Index: git/board/3b6/mx6q-tera-he/mx6q-tera-he.c
 +	0x01
 +};
 +
-+static unsigned char CPLD_init_blob[] = {
-+	0x10,
-+	0xff
-+};
-+
 +int board_init(void)
 +{
 +	struct pmic *p;
++	struct mxc_ccm_reg *mxc_ccm = (struct mxc_ccm_reg *)CCM_BASE_ADDR;
 +	u32 reg;
 +
 +	/* address of boot parameters */
@@ -873,19 +872,22 @@ Index: git/board/3b6/mx6q-tera-he/mx6q-tera-he.c
 +        setup_i2c(1, CONFIG_SYS_I2C_SPEED, 0x7f, &i2c_pad_info2);
 +        /* I2C 3 setup */
 +        setup_i2c(2, CONFIG_SYS_I2C_SPEED, 0x7f, &i2c_pad_info3);
++	/* set up USB HUB clock */
++	imx_iomux_v3_setup_pad(NEW_PAD_CTRL(MX6_PAD_GPIO_3__CCM_CLKO2,CLKO2_PAD_CTRL));
++	writel(0x10e0001,&mxc_ccm->ccosr);
++
 +        /* USB HUB reset */
-+        gpio_direction_output(IMX_GPIO_NR(7,8),0);
-+        udelay(1);
-+        gpio_direction_output(IMX_GPIO_NR(7,8),1);
-+	       /* USB HUB initialization */
-+	       I2C_SET_BUS(0);
-+	       i2c_write(0x2c,0,1,usb_init_blob, sizeof(usb_init_blob));
-+        i2c_write(0x2c,0xff,1,usb_init_blob2, sizeof(usb_init_blob2));
-+	       /* Remove Carrier from Reset*/
-+	       i2c_write(0x1,0,1,CPLD_init_blob, sizeof(CPLD_init_blob));
-+	       /* Turn on LCD panel*/
-+        gpio_direction_output(IMX_GPIO_NR(1, 0), 1); 
-+        gpio_direction_output(IMX_GPIO_NR(1, 2), 1); 
++	printf("USB RESET\n");
++	udelay(10);
++        gpio_direction_output(IMX_GPIO_NR(2,6),0);
++        udelay(10);
++        gpio_direction_output(IMX_GPIO_NR(2,6),1);
++	/* USB HUB initialization */
++	printf("USB PROGRAM\n");
++	udelay(500);
++	I2C_SET_BUS(0);
++	i2c_write(0x2c,0,1,usb_init_blob, sizeof(usb_init_blob));
++	i2c_write(0x2c,0xff,1,usb_init_blob2, sizeof(usb_init_blob2));
 +
 +	power_ltc3676_init(2);
 +	p = pmic_get("LTC3676_PMIC");
@@ -957,7 +959,7 @@ Index: git/board/3b6/mx6q-tera-he/mx6q-tera-he.c
 Index: git/configs/mx6q-tera-he_defconfig
 ===================================================================
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ git/configs/mx6q-tera-he_defconfig	2015-07-20 19:32:13.660209000 +0200
++++ git/configs/mx6q-tera-he_defconfig	2015-08-05 17:19:39.696605600 +0200
 @@ -0,0 +1,3 @@
 +CONFIG_SYS_EXTRA_OPTIONS="IMX_CONFIG=board/3b6/mx6q-tera-he/imximage.cfg,MX6Q"
 +CONFIG_ARM=y
@@ -965,7 +967,7 @@ Index: git/configs/mx6q-tera-he_defconfig
 Index: git/include/configs/mx6q-tera-he.h
 ===================================================================
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ git/include/configs/mx6q-tera-he.h	2015-07-20 19:53:15.668209000 +0200
++++ git/include/configs/mx6q-tera-he.h	2015-08-05 19:40:47.830988900 +0200
 @@ -0,0 +1,51 @@
 +/*
 + * Copyright (C) 2012 Freescale Semiconductor, Inc.
@@ -982,7 +984,7 @@ Index: git/include/configs/mx6q-tera-he.h
 +#define CONFIG_MXC_UART_BASE	UART1_BASE
 +#define CONFIG_CONSOLE_DEV		"ttymxc0"
 +#if defined CONFIG_MX6Q
-+#define CONFIG_DEFAULT_FDT_FILE	"imx6q-tera-he.dtb"
++#define CONFIG_DEFAULT_FDT_FILE	"zImage-imx6q-tera-he.dtb"
 +#endif
 +#define CONFIG_MMCROOT			"/dev/mmcblk2p2"
 +#define PHYS_SDRAM_SIZE		(1u * 1024 * 1024 * 1024)
@@ -1021,7 +1023,7 @@ Index: git/include/configs/mx6q-tera-he.h
 Index: git/include/configs/mx6-tera-he_common.h
 ===================================================================
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ git/include/configs/mx6-tera-he_common.h	2015-07-20 19:55:32.916209000 +0200
++++ git/include/configs/mx6-tera-he_common.h	2015-08-05 17:19:39.696605600 +0200
 @@ -0,0 +1,281 @@
 +/*
 + * Copyright (C) 2012 Freescale Semiconductor, Inc.
@@ -1088,7 +1090,7 @@ Index: git/include/configs/mx6-tera-he_common.h
 +#define IMX_FEC_BASE			ENET_BASE_ADDR
 +#define CONFIG_FEC_XCV_TYPE		RGMII
 +#define CONFIG_ETHPRIME			"FEC"
-+#define CONFIG_FEC_MXC_PHYADDR		0
++#define CONFIG_FEC_MXC_PHYADDR		4
 +
 +#define CONFIG_PHYLIB
 +#define CONFIG_PHY_MICREL
@@ -1123,7 +1125,7 @@ Index: git/include/configs/mx6-tera-he_common.h
 +
 +#ifdef CONFIG_SUPPORT_EMMC_BOOT
 +#define EMMC_ENV \
-+	"emmcdev=1\0" \
++	"emmcdev=2\0" \
 +	"update_emmc_firmware=" \
 +		"if test ${ip_dyn} = yes; then " \
 +			"setenv get_cmd dhcp; " \

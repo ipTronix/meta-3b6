@@ -7,7 +7,9 @@ FILESEXTRAPATHS_prepend := "${THISDIR}/${PN}-${PV}:"
 SRC_URI_append_tera-he = " \
    file://000-tera-he-dts.patch \
    file://001-ltc3676.patch \
+   file://002-lsm330.patch \
    file://004-fix-mmc-addresses.patch \
+   file://005-patch-rtc-for-dts.patch \
    file://defconfig \
 "
 
