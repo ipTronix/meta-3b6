@@ -10,6 +10,10 @@ SRC_URI_append_tera-he = " \
    file://002-lsm330.patch \
    file://004-fix-mmc-addresses.patch \
    file://005-patch-rtc-for-dts.patch \
+   file://006-altera_framebuffer.patch \
+   file://007-add-advancedsilicon-multitouch.patch \
    file://defconfig \
 "
 
+
+KERNEL_IMAGE_BASE_NAME ?= "${KERNEL_IMAGETYPE}-${PKGE}-${PKGV}-${PKGR}"

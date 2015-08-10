@@ -1,7 +1,7 @@
 Index: git/arch/arm/boot/dts/Makefile
 ===================================================================
---- git.orig/arch/arm/boot/dts/Makefile	2015-08-05 17:49:59.060605600 +0200
-+++ git/arch/arm/boot/dts/Makefile	2015-08-05 17:53:36.604605600 +0200
+--- git.orig/arch/arm/boot/dts/Makefile	2015-08-10 11:17:41.325486400 +0200
++++ git/arch/arm/boot/dts/Makefile	2015-08-10 11:18:35.301486400 +0200
 @@ -113,6 +113,7 @@
  	imx53-mba53.dtb \
  	imx53-qsb.dtb \
@@ -21,7 +21,7 @@ Index: git/arch/arm/boot/dts/Makefile
 Index: git/arch/arm/boot/dts/imx6dl-tera-he.dts
 ===================================================================
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ git/arch/arm/boot/dts/imx6dl-tera-he.dts	2015-08-05 17:53:36.604605600 +0200
++++ git/arch/arm/boot/dts/imx6dl-tera-he.dts	2015-08-10 11:18:35.301486400 +0200
 @@ -0,0 +1,30 @@
 +/*
 + * Copyright (C) 2013 Freescale Semiconductor, Inc.
@@ -56,8 +56,8 @@ Index: git/arch/arm/boot/dts/imx6dl-tera-he.dts
 Index: git/arch/arm/boot/dts/imx6q-tera-he.dts
 ===================================================================
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ git/arch/arm/boot/dts/imx6q-tera-he.dts	2015-08-05 17:53:36.604605600 +0200
-@@ -0,0 +1,128 @@
++++ git/arch/arm/boot/dts/imx6q-tera-he.dts	2015-08-10 11:32:26.597486400 +0200
+@@ -0,0 +1,161 @@
 +/*
 + * Copyright 2012 Freescale Semiconductor, Inc.
 + * Copyright 2011 Linaro Ltd.
@@ -81,90 +81,123 @@ Index: git/arch/arm/boot/dts/imx6q-tera-he.dts
 +};
 +
 +&cpu0 {
-+       arm-supply = <&sw3_reg>;
-+       soc-supply = <&sw1_reg>;
-+       pu-supply = <&pu_dummy>; /* use pu_dummy if VDDSOC share with VDDPU */
++	arm-supply = <&sw3_reg>;
++	soc-supply = <&sw1_reg>;
++	pu-supply = <&pu_dummy>; /* use pu_dummy if VDDSOC share with VDDPU */
 +};
 +
 +&i2c1 {
-+       bq32000: rtc@51 {
-+               compatible = "nxp,bq32000";
-+               reg = <0x51>;
-+       };
++	bq32000: rtc@68 {
++		compatible = "nxp,bq32000";
++		reg = <0x68>;
++	};
 +
-+       ltc3676: pmic@3c {
-+               compatible = "lltc,ltc3676";
-+               reg = <0x3c>;
++	ltc3676: pmic@3c {
++		compatible = "lltc,ltc3676";
++		reg = <0x3c>;
 +
-+               regulators {
-+                       sw1_reg: sw1 {
-+                               regulator-min-microvolt = <779625>;
-+                               regulator-max-microvolt = <1512000>;
-+                               lltc,fb-voltage-divider = <187000 200000>;
-+                               regulator-ramp-delay = <7000>;
-+                               regulator-boot-on;
-+                               regulator-always-on;
-+                       };
++		regulators {
++			sw1_reg: sw1 {
++				regulator-min-microvolt = <779625>;
++				regulator-max-microvolt = <1512000>;
++				lltc,fb-voltage-divider = <187000 200000>;
++				regulator-ramp-delay = <7000>;
++				regulator-boot-on;
++				regulator-always-on;
++			};
 +
-+                       sw2_reg: sw2 {
-+                               regulator-min-microvolt = <1031250>;
-+                               regulator-max-microvolt = <2000000>;
-+                               lltc,fb-voltage-divider = <270000 180000>;
-+                               regulator-ramp-delay = <7000>;
-+                               regulator-boot-on;
-+                               regulator-always-on;
-+                       };
++			sw2_reg: sw2 {
++				regulator-min-microvolt = <1031250>;
++				regulator-max-microvolt = <2000000>;
++				lltc,fb-voltage-divider = <270000 180000>;
++				regulator-ramp-delay = <7000>;
++				regulator-boot-on;
++				regulator-always-on;
++			};
 +
-+                       sw3_reg: sw3 {
-+                               regulator-min-microvolt = <779625>;
-+                               regulator-max-microvolt = <1512000>;
-+                               lltc,fb-voltage-divider = <187000 200000>;
-+                               regulator-ramp-delay = <7000>;
-+                               regulator-boot-on;
-+                               regulator-always-on;
-+                       };
++			sw3_reg: sw3 {
++				regulator-min-microvolt = <779625>;
++				regulator-max-microvolt = <1512000>;
++				lltc,fb-voltage-divider = <187000 200000>;
++				regulator-ramp-delay = <7000>;
++				regulator-boot-on;
++				regulator-always-on;
++			};
 +
-+                       sw4_reg: sw4 {
-+                               regulator-min-microvolt = <855937>;
-+                               regulator-max-microvolt = <1660000>;
-+                               lltc,fb-voltage-divider = <215000 200000>;
-+                               regulator-ramp-delay = <7000>;
-+                               regulator-boot-on;
-+                               regulator-always-on;
-+                       };
++			sw4_reg: sw4 {
++				regulator-min-microvolt = <855937>;
++				regulator-max-microvolt = <1660000>;
++				lltc,fb-voltage-divider = <215000 200000>;
++				regulator-ramp-delay = <7000>;
++				regulator-boot-on;
++				regulator-always-on;
++			};
 +
-+                       ldo1_reg: ldo1 {
-+                               regulator-min-microvolt = <0>;
-+                               regulator-max-microvolt = <0>;
-+                               lltc,fb-voltage-divider = <0 0>;
-+                               regulator-boot-on;
-+                               regulator-always-on;
-+                       };
++			ldo1_reg: ldo1 {
++				regulator-min-microvolt = <0>;
++				regulator-max-microvolt = <0>;
++				lltc,fb-voltage-divider = <0 0>;
++				regulator-boot-on;
++				regulator-always-on;
++			};
 +
-+                       ldo2_reg: ldo2 {
-+                               regulator-min-microvolt = <2972500>;
-+                               regulator-max-microvolt = <2972500>;
-+                               lltc,fb-voltage-divider = <0 0>;
-+                               regulator-boot-on;
-+                               regulator-always-on;
-+                       };
++			ldo2_reg: ldo2 {
++				regulator-min-microvolt = <2972500>;
++				regulator-max-microvolt = <2972500>;
++				lltc,fb-voltage-divider = <0 0>;
++				regulator-boot-on;
++				regulator-always-on;
++			};
 +
-+                       ldo3_reg: ldo3 {
-+                               regulator-min-microvolt = <1800000>;
-+                               regulator-max-microvolt = <1800000>;
-+                               lltc,fb-voltage-divider = <0 0>;
-+                               regulator-boot-on;
-+                       };
++			ldo3_reg: ldo3 {
++				regulator-min-microvolt = <1800000>;
++				regulator-max-microvolt = <1800000>;
++				lltc,fb-voltage-divider = <0 0>;
++				regulator-boot-on;
++			};
 +
-+                       ldo4_reg: ldo4 {
-+                               regulator-min-microvolt = <1207125>;
-+                               regulator-max-microvolt = <1207125>;
-+                               lltc,fb-voltage-divider = <0 0>;
-+                               regulator-boot-on;
-+                               regulator-always-on;
-+                       };
-+               };
-+       };
++			ldo4_reg: ldo4 {
++				regulator-min-microvolt = <1207125>;
++				regulator-max-microvolt = <1207125>;
++				lltc,fb-voltage-divider = <0 0>;
++				regulator-boot-on;
++				regulator-always-on;
++			};
++		};
++	};
++
++	lsm330_acc: lsm330_acc@1d {
++		compatible = "st,lsm330_acc";
++		reg = <0x1d>;
++	};
++
++	lsm330_gyr: lsm330_gyr@6b {
++		compatible = "st,lsm330_gyr";
++		reg = <0x6b>;
++	};
++
++};
++
++&i2c2 {
++	tvp5150_1: tvp5150_1@5c {
++		compatible = "tvp5150";
++		reg = <0x5c>;
++	};
++	tvp5150_2: tvp5150_2@5d {
++		compatible = "tvp5150";
++		reg = <0x5d>;
++	};
++};
++
++&i2c3 {
++	tvp5150_3: tvp5150_3@5c {
++		compatible = "tvp5150";
++		reg = <0x5c>;
++	};
++	tvp5150_4: tvp5150_4@5d {
++		compatible = "tvp5150";
++		reg = <0x5d>;
++	};
 +};
 +
 +&mxcfb1 {
@@ -189,7 +222,7 @@ Index: git/arch/arm/boot/dts/imx6q-tera-he.dts
 Index: git/arch/arm/boot/dts/imx6q-tera-he.dtsi
 ===================================================================
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ git/arch/arm/boot/dts/imx6q-tera-he.dtsi	2015-08-05 17:53:36.608605600 +0200
++++ git/arch/arm/boot/dts/imx6q-tera-he.dtsi	2015-08-10 11:18:35.301486400 +0200
 @@ -0,0 +1,234 @@
 +/*
 + * Copyright 2013 Freescale Semiconductor, Inc.
@@ -428,8 +461,8 @@ Index: git/arch/arm/boot/dts/imx6q-tera-he.dtsi
 Index: git/arch/arm/boot/dts/imx6qdl-tera-he-base.dtsi
 ===================================================================
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ git/arch/arm/boot/dts/imx6qdl-tera-he-base.dtsi	2015-08-05 17:53:36.608605600 +0200
-@@ -0,0 +1,1379 @@
++++ git/arch/arm/boot/dts/imx6qdl-tera-he-base.dtsi	2015-08-10 11:18:35.301486400 +0200
+@@ -0,0 +1,1389 @@
 +/*
 + * Copyright 2011 Freescale Semiconductor, Inc.
 + * Copyright 2011 Linaro Ltd.
@@ -1801,6 +1834,15 @@ Index: git/arch/arm/boot/dts/imx6qdl-tera-he-base.dtsi
 +		};
 +	};
 +
++	/* wl12xx/wl18xx card enable/irq GPIOs. */
++	pinctrl_wlan: wlangrp-1 {
++		fsl,pins = <
++			MX6QDL_PAD_DISP0_DAT11__GPIO5_IO05   0x80000000		/* WL_IRQ */
++			MX6QDL_PAD_DISP0_DAT13__GPIO5_IO07   0x80000000		/* BT_EN  */
++			MX6QDL_PAD_DISP0_DAT14__GPIO5_IO08   0x80000000		/* WL_EN  */
++		>;
++	};
++
 +	wdog {
 +		pinctrl_wdog: wdoggrp-1 {
 +			fsl,pins = <
@@ -1808,12 +1850,13 @@ Index: git/arch/arm/boot/dts/imx6qdl-tera-he-base.dtsi
 +			>;
 +		};
 +	};
++
 +};
 Index: git/arch/arm/boot/dts/imx6qdl-tera-he.dtsi
 ===================================================================
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ git/arch/arm/boot/dts/imx6qdl-tera-he.dtsi	2015-08-05 18:23:04.392605600 +0200
-@@ -0,0 +1,397 @@
++++ git/arch/arm/boot/dts/imx6qdl-tera-he.dtsi	2015-08-10 11:18:35.301486400 +0200
+@@ -0,0 +1,411 @@
 +/*
 + * Copyright 2012 Freescale Semiconductor, Inc.
 + * Copyright 2011 Linaro Ltd.
@@ -2056,10 +2099,10 @@ Index: git/arch/arm/boot/dts/imx6qdl-tera-he.dtsi
 +				MX6QDL_PAD_GPIO_6__GPIO1_IO06        0x80000000		/* L-OUT1_ACTIVE_L      */
 +				MX6QDL_PAD_DISP0_DAT7__GPIO4_IO28    0x80000000		/* NFC_I2C_IRQ          */
 +				MX6QDL_PAD_DISP0_DAT9__GPIO4_IO30    0x80000000		/* W DOG_B              */
-+				MX6QDL_PAD_DISP0_DAT11__GPIO5_IO05   0x80000000		/* WL_IRQ               */
++//				MX6QDL_PAD_DISP0_DAT11__GPIO5_IO05   0x80000000		/* WL_IRQ               */
 +				MX6QDL_PAD_DISP0_DAT12__GPIO5_IO06   0x80000000		/* GPS_PW R_EN          */
-+				MX6QDL_PAD_DISP0_DAT13__GPIO5_IO07   0x80000000		/* BT_EN                */
-+				MX6QDL_PAD_DISP0_DAT14__GPIO5_IO08   0x80000000		/* W L_EN               */
++//				MX6QDL_PAD_DISP0_DAT13__GPIO5_IO07   0x80000000		/* BT_EN                */
++//				MX6QDL_PAD_DISP0_DAT14__GPIO5_IO08   0x80000000		/* WL_EN                */
 +				MX6QDL_PAD_DISP0_DAT16__GPIO5_IO10   0x80000000		/* ACCL_INT_IN          */
 +				MX6QDL_PAD_DISP0_DAT17__GPIO5_IO11   0x80000000		/* Gyroscope_Error_FIFO */
 +				MX6QDL_PAD_DISP0_DAT20__GPIO5_IO14   0x80000000		/* NFC_RST              */
@@ -2173,7 +2216,6 @@ Index: git/arch/arm/boot/dts/imx6qdl-tera-he.dtsi
 +
 +&usbh1 {
 +        status = "okay";
-+	clocks = <&clks 201>;
 +};
 +
 +&usdhc1 {
@@ -2189,13 +2231,28 @@ Index: git/arch/arm/boot/dts/imx6qdl-tera-he.dtsi
 +
 +&usdhc2 {
 +        pinctrl-names = "default";
-+        pinctrl-0 = <&pinctrl_usdhc2_1>;
++        pinctrl-0 = <&pinctrl_usdhc2_1 &pinctrl_wlan>;
 +        bus-width = <4>;
 +        no-1-8-v;
 +        non-removable;
 +        keep-power-in-suspend;
 +        enable-sdio-wakeup;
++
++//				ti,non-removable;
++//				ti,needs-special-hs-handling;
++				cap-power-off-card;
++//				keep-power-in-suspend;
 +        status = "okay";
++
++				#address-cells = <1>;
++				#size-cells = <0>;
++				wlcore: wlcore@0 {
++					compatible = "ti,wlcore";
++					reg = <2>;
++					interrupt-parent = <&gpio5>;
++					interrupts = <5 4>;
++					interrupt-names = "wlan0";
++				};
 +};
 +
 +&usdhc3 {
