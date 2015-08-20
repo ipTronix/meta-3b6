@@ -1,7 +1,7 @@
 Index: git/arch/arm/Kconfig
 ===================================================================
---- git.orig/arch/arm/Kconfig	2015-08-05 17:19:38.488605600 +0200
-+++ git/arch/arm/Kconfig	2015-08-05 17:19:39.692605600 +0200
+--- git.orig/arch/arm/Kconfig	2015-08-12 10:48:20.872083700 +0200
++++ git/arch/arm/Kconfig	2015-08-12 10:48:22.752083700 +0200
 @@ -396,6 +396,9 @@
  config TARGET_MX6QARM2
  	bool "Support mx6qarm2"
@@ -23,7 +23,7 @@ Index: git/arch/arm/Kconfig
 Index: git/board/3b6/mx6q-tera-he/Kconfig
 ===================================================================
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ git/board/3b6/mx6q-tera-he/Kconfig	2015-08-05 17:19:39.692605600 +0200
++++ git/board/3b6/mx6q-tera-he/Kconfig	2015-08-12 10:48:22.752083700 +0200
 @@ -0,0 +1,18 @@
 +if TARGET_MX6QTERAHE
 +
@@ -46,7 +46,7 @@ Index: git/board/3b6/mx6q-tera-he/Kconfig
 Index: git/board/3b6/mx6q-tera-he/MAINTAINERS
 ===================================================================
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ git/board/3b6/mx6q-tera-he/MAINTAINERS	2015-08-05 17:19:39.692605600 +0200
++++ git/board/3b6/mx6q-tera-he/MAINTAINERS	2015-08-12 10:48:22.752083700 +0200
 @@ -0,0 +1,6 @@
 +MX6QTERAHE BOARD
 +M:	Dario Pennisi <dario@iptronix.com>
@@ -57,7 +57,7 @@ Index: git/board/3b6/mx6q-tera-he/MAINTAINERS
 Index: git/board/3b6/mx6q-tera-he/Makefile
 ===================================================================
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ git/board/3b6/mx6q-tera-he/Makefile	2015-08-05 17:19:39.692605600 +0200
++++ git/board/3b6/mx6q-tera-he/Makefile	2015-08-12 10:48:22.752083700 +0200
 @@ -0,0 +1,9 @@
 +#
 +# Copyright (C) 2014, Dario Pennisi <dario@iptronix.com>
@@ -71,7 +71,7 @@ Index: git/board/3b6/mx6q-tera-he/Makefile
 Index: git/board/3b6/mx6q-tera-he/imximage.cfg
 ===================================================================
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ git/board/3b6/mx6q-tera-he/imximage.cfg	2015-08-05 17:19:39.696605600 +0200
++++ git/board/3b6/mx6q-tera-he/imximage.cfg	2015-08-12 10:48:22.752083700 +0200
 @@ -0,0 +1,152 @@
 +/*
 + * Copyright (C) 2014 Freescale Semiconductor, Inc.
@@ -228,7 +228,7 @@ Index: git/board/3b6/mx6q-tera-he/imximage.cfg
 Index: git/board/3b6/mx6q-tera-he/mx6dl.cfg
 ===================================================================
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ git/board/3b6/mx6q-tera-he/mx6dl.cfg	2015-08-05 17:19:39.696605600 +0200
++++ git/board/3b6/mx6q-tera-he/mx6dl.cfg	2015-08-12 10:48:22.752083700 +0200
 @@ -0,0 +1,152 @@
 +/*
 + * Copyright (C) 2014 Freescale Semiconductor, Inc.
@@ -385,8 +385,8 @@ Index: git/board/3b6/mx6q-tera-he/mx6dl.cfg
 Index: git/board/3b6/mx6q-tera-he/mx6q-tera-he.c
 ===================================================================
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ git/board/3b6/mx6q-tera-he/mx6q-tera-he.c	2015-08-05 17:19:39.696605600 +0200
-@@ -0,0 +1,569 @@
++++ git/board/3b6/mx6q-tera-he/mx6q-tera-he.c	2015-08-20 17:16:10.725654100 +0200
+@@ -0,0 +1,650 @@
 +/*
 + * Copyright (C) 2012 Freescale Semiconductor, Inc.
 + *
@@ -925,6 +925,83 @@ Index: git/board/3b6/mx6q-tera-he/mx6q-tera-he.c
 +};
 +#endif
 +
++enum ldo_reg {
++        LDO_ARM,
++        LDO_SOC,
++        LDO_PU,
++};
++
++
++
++static void clear_ldo_ramp(void)
++{
++        struct anatop_regs *anatop = (struct anatop_regs *)ANATOP_BASE_ADDR;
++        int reg;
++
++        /* ROM may modify LDO ramp up time according to fuse setting, so in
++         * order to be in the safe side we neeed to reset these settings to
++         * match the reset value: 0'b00
++         */
++        reg = readl(&anatop->ana_misc2);
++        reg &= ~(0x3f << 24);
++        writel(reg, &anatop->ana_misc2);
++}
++
++
++
++/*
++ * Set the PMU_REG_CORE register
++ *
++ * Set LDO_SOC/PU/ARM regulators to the specified millivolt level.
++ * Possible values are from 0.725V to 1.450V in steps of
++ * 0.025V (25mV).
++ */
++static int set_ldo_voltage(enum ldo_reg ldo, u32 mv)
++{
++        struct anatop_regs *anatop = (struct anatop_regs *)ANATOP_BASE_ADDR;
++        u32 val, step, old, reg = readl(&anatop->reg_core);
++        u8 shift;
++
++        if (mv < 725)
++                val = 0x00;     /* Power gated off */
++        else if (mv > 1450)
++                val = 0x1F;     /* Power FET switched full on. No regulation */
++        else
++                val = (mv - 700) / 25;
++
++        clear_ldo_ramp();
++
++        switch (ldo) {
++        case LDO_SOC:
++                shift = 18;
++                break;
++        case LDO_PU:
++                shift = 9;
++                break;
++        case LDO_ARM:
++                shift = 0;
++                break;
++        default:
++                return -EINVAL;
++        }
++
++        old = (reg & (0x1F << shift)) >> shift;
++        step = abs(val - old);
++        if (step == 0)
++                return 0;
++
++        reg = (reg & ~(0x1F << shift)) | (val << shift);
++        writel(reg, &anatop->reg_core);
++
++        /*
++         * The LDO ramp-up is based on 64 clock cycles of 24 MHz = 2.6 us per
++         * step
++         */
++        udelay(3 * step);
++
++        return 0;
++}
++
 +int board_late_init(void)
 +{
 +#ifdef CONFIG_CMD_BMODE
@@ -934,6 +1011,10 @@ Index: git/board/3b6/mx6q-tera-he/mx6q-tera-he.c
 +#ifdef CONFIG_ENV_IS_IN_MMC
 +	board_late_mmc_env_init();
 +#endif
++	set_ldo_voltage(LDO_ARM,1460);
++        set_ldo_voltage(LDO_SOC,1460);
++        set_ldo_voltage(LDO_PU,1460);
++
 +	return 0;
 +}
 +
@@ -959,7 +1040,7 @@ Index: git/board/3b6/mx6q-tera-he/mx6q-tera-he.c
 Index: git/configs/mx6q-tera-he_defconfig
 ===================================================================
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ git/configs/mx6q-tera-he_defconfig	2015-08-05 17:19:39.696605600 +0200
++++ git/configs/mx6q-tera-he_defconfig	2015-08-12 10:48:22.752083700 +0200
 @@ -0,0 +1,3 @@
 +CONFIG_SYS_EXTRA_OPTIONS="IMX_CONFIG=board/3b6/mx6q-tera-he/imximage.cfg,MX6Q"
 +CONFIG_ARM=y
@@ -967,7 +1048,7 @@ Index: git/configs/mx6q-tera-he_defconfig
 Index: git/include/configs/mx6q-tera-he.h
 ===================================================================
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ git/include/configs/mx6q-tera-he.h	2015-08-05 19:40:47.830988900 +0200
++++ git/include/configs/mx6q-tera-he.h	2015-08-12 10:48:22.752083700 +0200
 @@ -0,0 +1,51 @@
 +/*
 + * Copyright (C) 2012 Freescale Semiconductor, Inc.
@@ -1023,7 +1104,7 @@ Index: git/include/configs/mx6q-tera-he.h
 Index: git/include/configs/mx6-tera-he_common.h
 ===================================================================
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ git/include/configs/mx6-tera-he_common.h	2015-08-05 17:19:39.696605600 +0200
++++ git/include/configs/mx6-tera-he_common.h	2015-08-12 10:48:22.752083700 +0200
 @@ -0,0 +1,281 @@
 +/*
 + * Copyright (C) 2012 Freescale Semiconductor, Inc.

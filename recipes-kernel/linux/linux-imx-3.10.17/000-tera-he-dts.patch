@@ -1,7 +1,7 @@
 Index: git/arch/arm/boot/dts/Makefile
 ===================================================================
---- git.orig/arch/arm/boot/dts/Makefile	2015-08-11 17:54:48.602889200 +0200
-+++ git/arch/arm/boot/dts/Makefile	2015-08-11 17:57:53.418889200 +0200
+--- git.orig/arch/arm/boot/dts/Makefile	2015-08-20 16:14:14.585654100 +0200
++++ git/arch/arm/boot/dts/Makefile	2015-08-20 16:15:01.465654100 +0200
 @@ -113,6 +113,7 @@
  	imx53-mba53.dtb \
  	imx53-qsb.dtb \
@@ -21,7 +21,7 @@ Index: git/arch/arm/boot/dts/Makefile
 Index: git/arch/arm/boot/dts/imx6dl-tera-he.dts
 ===================================================================
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ git/arch/arm/boot/dts/imx6dl-tera-he.dts	2015-08-11 17:57:53.418889200 +0200
++++ git/arch/arm/boot/dts/imx6dl-tera-he.dts	2015-08-20 16:15:01.465654100 +0200
 @@ -0,0 +1,30 @@
 +/*
 + * Copyright (C) 2013 Freescale Semiconductor, Inc.
@@ -56,7 +56,7 @@ Index: git/arch/arm/boot/dts/imx6dl-tera-he.dts
 Index: git/arch/arm/boot/dts/imx6q-tera-he.dts
 ===================================================================
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ git/arch/arm/boot/dts/imx6q-tera-he.dts	2015-08-11 18:29:35.582889200 +0200
++++ git/arch/arm/boot/dts/imx6q-tera-he.dts	2015-08-20 16:15:01.465654100 +0200
 @@ -0,0 +1,177 @@
 +/*
 + * Copyright 2012 Freescale Semiconductor, Inc.
@@ -238,8 +238,8 @@ Index: git/arch/arm/boot/dts/imx6q-tera-he.dts
 Index: git/arch/arm/boot/dts/imx6q-tera-he.dtsi
 ===================================================================
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ git/arch/arm/boot/dts/imx6q-tera-he.dtsi	2015-08-11 18:57:19.390889200 +0200
-@@ -0,0 +1,234 @@
++++ git/arch/arm/boot/dts/imx6q-tera-he.dtsi	2015-08-20 17:05:48.849654100 +0200
+@@ -0,0 +1,232 @@
 +/*
 + * Copyright 2013 Freescale Semiconductor, Inc.
 + *
@@ -268,19 +268,17 @@ Index: git/arch/arm/boot/dts/imx6q-tera-he.dtsi
 +			next-level-cache = <&L2>;
 +			operating-points = <
 +				/* kHz    uV */
-+				1200000 1275750
 +				996000  1252125
 +				852000  1252125
-+				792000  1157625
++				792000  1275750
 +				396000  992250
 +			>;
 +			fsl,soc-operating-points = <
 +				/* ARM kHz  SOC-PU uV */
-+				1200000       1275750
-+				996000        1252125
++				996000        1252125 
 +				852000        1252125
 +				792000        1181250
-+				396000        1181250
++				396000        1181250 
 +			>;
 +			clock-latency = <61036>; /* two CLK32 periods */
 +			clocks = <&clks 104>, <&clks 6>, <&clks 16>,
@@ -477,7 +475,7 @@ Index: git/arch/arm/boot/dts/imx6q-tera-he.dtsi
 Index: git/arch/arm/boot/dts/imx6qdl-tera-he-base.dtsi
 ===================================================================
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ git/arch/arm/boot/dts/imx6qdl-tera-he-base.dtsi	2015-08-11 17:57:53.422889200 +0200
++++ git/arch/arm/boot/dts/imx6qdl-tera-he-base.dtsi	2015-08-20 16:15:01.465654100 +0200
 @@ -0,0 +1,1403 @@
 +/*
 + * Copyright 2011 Freescale Semiconductor, Inc.
@@ -1885,8 +1883,8 @@ Index: git/arch/arm/boot/dts/imx6qdl-tera-he-base.dtsi
 Index: git/arch/arm/boot/dts/imx6qdl-tera-he.dtsi
 ===================================================================
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ git/arch/arm/boot/dts/imx6qdl-tera-he.dtsi	2015-08-11 18:46:33.358889200 +0200
-@@ -0,0 +1,536 @@
++++ git/arch/arm/boot/dts/imx6qdl-tera-he.dtsi	2015-08-20 16:17:46.013654100 +0200
+@@ -0,0 +1,528 @@
 +/*
 + * Copyright 2012 Freescale Semiconductor, Inc.
 + * Copyright 2011 Linaro Ltd.
@@ -1965,15 +1963,6 @@ Index: git/arch/arm/boot/dts/imx6qdl-tera-he.dtsi
 +
 +	regulators {
 +		compatible = "simple-bus";
-+
-+		reg_usb_otg_vbus: usb_otg_vbus {
-+			compatible = "regulator-fixed";
-+			regulator-name = "usb_otg_vbus";
-+			regulator-min-microvolt = <5000000>;
-+			regulator-max-microvolt = <5000000>;
-+			gpio = <&gpio1 28 GPIO_ACTIVE_HIGH>;
-+			enable-active-high;
-+		};
 +
 +		reg_sd1_vmmc: sd1_vmmc{
 +			compatible = "regulator-fixed";
@@ -2372,16 +2361,17 @@ Index: git/arch/arm/boot/dts/imx6qdl-tera-he.dtsi
 +};
 +
 +&usbotg {
-+	vbus-supply = <&reg_usb_otg_vbus>;
 +	pinctrl-names = "default";
 +	pinctrl-0 = <&pinctrl_usbotg_1>;
 +	imx6-usb-charger-detection;
++	dr_mode = "peripheral";
 +	status = "okay";
 +};
 +
 +&usbh1 {
 +	status = "okay";
-+	clocks = <&clks 201>;
++	dr_mode = "host";
++/*	clocks = <&clks 201>;*/
 +};
 +
 +&usdhc1 {
