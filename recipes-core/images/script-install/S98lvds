@@ -1,0 +1,42 @@
+#! /bin/sh
+
+# ##############################################################
+# LVDS
+# 
+# LCD_ON_C             GPIO2_IO00   32
+# BKL_ON               GPIO2_IO01   33
+# LVDS_SELLVDS         GPIO2_IO02   34
+# LVDS_SEL68           GPIO2_IO03   35 6/8bits LVDS data input selection [H: 8bits L/NC: 6bit]
+# LVDS_SCAN_DIRECTION  GPIO2_IO04   36 Reverse Scan Function [H: Enable; L/NC: Disable]
+# BLK_PWM              GPIO2_IO09   41
+# +12V_TFT_EN          GPIO5_IO02  130
+# +3V3_TFT_EN          GPIO6_IO31  191
+
+echo 35 > /sys/class/gpio/export
+echo out > /sys/class/gpio/gpio35/direction
+echo 0 > /sys/class/gpio/gpio35/value
+
+echo 32 > /sys/class/gpio/export
+echo out > /sys/class/gpio/gpio32/direction
+echo 1 > /sys/class/gpio/gpio32/value
+
+echo 33 > /sys/class/gpio/export
+echo out > /sys/class/gpio/gpio33/direction
+echo 1 > /sys/class/gpio/gpio33/value
+
+echo 130 > /sys/class/gpio/export
+echo out > /sys/class/gpio/gpio130/direction
+echo 1 > /sys/class/gpio/gpio130/value
+
+echo 191 > /sys/class/gpio/export
+echo out > /sys/class/gpio/gpio191/direction
+echo 1 > /sys/class/gpio/gpio191/value
+
+echo 41 > /sys/class/gpio/export
+echo out > /sys/class/gpio/gpio41/direction
+# echo 1 > /sys/class/gpio/gpio41/value
+
+
+echo 0 > /sys/class/graphics/fbcon/cursor_blink
+
+Qt5_CinematicExperience -platform eglfs &

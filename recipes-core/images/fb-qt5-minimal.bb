@@ -1,11 +1,9 @@
-DESCRIPTION = "dev Image Frame Buffer Image QT5"
+iDESCRIPTION = "dev Image Frame Buffer Image QT5"
 
 LICENSE = "MIT"
 
 inherit core-image
-
-IMAGE_FSTYPES = "tar.bz2"
-
+ 
 IMAGE_INSTALL_append = " \
     firmware-imx-vpu-imx6q \
     firmware-imx-vpu-imx6d \
@@ -13,19 +11,20 @@ IMAGE_INSTALL_append = " \
  
 IMAGE_OVERHEAD_FACTOR = "2.0"
 
-export IMAGE_BASENAME = "dev-fb-qt5"
+export IMAGE_BASENAME = "fb-qt5-minimal"
 
 EXTRA_IMAGE_FEATURES = "debug-tweaks ssh-server-openssh "
 
 IMAGE_INSTALL_append = " binutils libgcc libstdc++ \
-ccache chkconfig glib-networking glibmm \
-packagegroup-core-buildessential pkgconfig  \
-boost cmake zlib glib-2.0 \
+    ccache chkconfig glib-networking glibmm \
+    packagegroup-core-buildessential pkgconfig  \
+    boost cmake zlib glib-2.0 glive \
     packagegroup-qt5-qtcreator-debug \    
     cpufrequtils \
     gdb \
     gstreamer \
     gst-meta-video \
+    gst-fsl-plugin \
     gst-plugins-base-app \
     gst-plugins-base \
     gst-plugins-good \
@@ -35,6 +34,7 @@ boost cmake zlib glib-2.0 \
     gst-plugins-good-rtp \
     gst-plugins-good-video4linux2 \
     openssh-sftp-server \
+    packagegroup-fsl-gstreamer \
     imx-vpu \
     imx-test \    	
     qtbase-fonts \
@@ -58,12 +58,8 @@ boost cmake zlib glib-2.0 \
     qtgraphicaleffects-qmlplugins \
     qtconnectivity-qmlplugins \
     cairo pango fontconfig freetype pulseaudio dbus \
-    alsa-lib alsa-tools alsa-state fsl-alsa-plugins \
-    tslib evtest tslib-conf tslib-tests tslib-calibrate \
-    i2c-tools \ 
-    mtd-utils imx-kobs mtd-utils-ubifs \
-    e2fsprogs \
-    cinematicexperience \
+    alsa-lib alsa-tools alsa-state alsa-utils-alsaconf fsl-alsa-plugins \
+    tslib tslib-conf  \
     "
 
 DISTRO_FEATURES_remove = "x11 wayland"
