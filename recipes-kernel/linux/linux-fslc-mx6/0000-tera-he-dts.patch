@@ -1,8 +1,8 @@
 Index: git/arch/arm/boot/dts/imx6q-tera-he.dts
 ===================================================================
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ git/arch/arm/boot/dts/imx6q-tera-he.dts	2015-10-26 13:20:06.000000000 +0100
-@@ -0,0 +1,223 @@
++++ git/arch/arm/boot/dts/imx6q-tera-he.dts	2015-10-27 13:30:40.000000000 +0100
+@@ -0,0 +1,221 @@
 +/*
 + * Copyright 2012 Freescale Semiconductor, Inc.
 + * Copyright 2011 Linaro Ltd.
@@ -193,11 +193,10 @@ Index: git/arch/arm/boot/dts/imx6q-tera-he.dts
 +	status = "okay";
 +
 +	can4: can@4 {
-+		compatible = "microchip,mcp251x", "mcp251x";
++		compatible = "microchip,mcp2515";
 +		reg = <0>;
 +		spi-max-frequency = <5000000>;
-+/* TODO */
-+		clocks = <&clks IMX6QDL_CLK_ECSPI2>, <&clks IMX6QDL_CLK_ECSPI2>;
++		clocks = <&can34_osc>;
 +		interrupt-parent = <&gpio2>;
 +		interrupts = <12 IRQ_TYPE_EDGE_FALLING>;
 +		status = "okay";
@@ -208,11 +207,10 @@ Index: git/arch/arm/boot/dts/imx6q-tera-he.dts
 +	status = "okay";
 +
 +	can3: can@3 {
-+		compatible = "microchip,mcp251x", "mcp251x";
++		compatible = "microchip,mcp2515";
 +		reg = <0>;
 +		spi-max-frequency = <5000000>;
-+/* TODO */
-+		clocks = <&clks IMX6QDL_CLK_ECSPI2>, <&clks IMX6QDL_CLK_ECSPI2>;
++		clocks = <&can34_osc>;
 +		interrupt-parent = <&gpio2>;
 +		interrupts = <14 IRQ_TYPE_EDGE_FALLING>;
 +		status = "okay";
@@ -229,8 +227,8 @@ Index: git/arch/arm/boot/dts/imx6q-tera-he.dts
 Index: git/arch/arm/boot/dts/imx6q-tera-he.dtsi
 ===================================================================
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ git/arch/arm/boot/dts/imx6q-tera-he.dtsi	2015-10-26 13:20:06.000000000 +0100
-@@ -0,0 +1,668 @@
++++ git/arch/arm/boot/dts/imx6q-tera-he.dtsi	2015-10-27 13:24:34.000000000 +0100
+@@ -0,0 +1,675 @@
 +/*
 + * Copyright 2012 Freescale Semiconductor, Inc.
 + * Copyright 2011 Linaro Ltd.
@@ -310,6 +308,13 @@ Index: git/arch/arm/boot/dts/imx6q-tera-he.dtsi
 +			compatible = "fixed-clock";
 +			#clock-cells = <0>;
 +			clock-frequency = <24576000>;
++		};
++
++		/* mcp2515 oscillator */
++		can34_osc: can34_osc {
++			compatible = "fixed-clock";
++			#clock-cells = <0>;
++			clock-frequency  = <16000000>;
 +		};
 +	};
 +
@@ -901,8 +906,8 @@ Index: git/arch/arm/boot/dts/imx6q-tera-he.dtsi
 +};
 Index: git/arch/arm/boot/dts/Makefile
 ===================================================================
---- git.orig/arch/arm/boot/dts/Makefile	2015-10-26 12:17:55.909567681 +0100
-+++ git/arch/arm/boot/dts/Makefile	2015-10-26 12:18:11.701567564 +0100
+--- git.orig/arch/arm/boot/dts/Makefile	2015-10-26 13:22:08.561539258 +0100
++++ git/arch/arm/boot/dts/Makefile	2015-10-26 13:22:13.621539220 +0100
 @@ -179,6 +179,7 @@
  	imx6q-sabresd-uart.dtb \
  	imx6q-sabresd-hdcp.dtb \
