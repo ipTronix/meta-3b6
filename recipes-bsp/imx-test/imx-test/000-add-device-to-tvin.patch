@@ -1,0 +1,24 @@
+Index: imx-test-5.2/test/mxc_v4l2_test/mxc_v4l2_tvin.c
+===================================================================
+--- imx-test-5.2.orig/test/mxc_v4l2_test/mxc_v4l2_tvin.c	2015-08-18 17:06:44.000000000 +0200
++++ imx-test-5.2/test/mxc_v4l2_test/mxc_v4l2_tvin.c	2015-11-02 18:15:58.074702100 +0100
+@@ -643,6 +643,9 @@
+ 		else if (strcmp(argv[i], "-tb") == 0) {
+ 			g_tb = 1;
+ 		}
++		else if (strcmp(argv[i], "-d")==0) {
++			strcpy(v4l_capture_dev,argv[++i]);
++		}
+ 		else if (strcmp(argv[i], "-help") == 0) {
+ 			printf("MXC Video4Linux TVin Test\n\n" \
+ 				   "Syntax: mxc_v4l2_tvin.out\n" \
+@@ -653,7 +656,8 @@
+ 							   " -r <rotation> -c <capture counter> \n"
+ 				   " -m <motion> 0:medium 1:low 2:high, 0-default\n"
+ 				   " -tb top field first, bottom field first-default\n"
+-				   " -f <format, only YU12, YUYV, UYVY and NV12 are supported> \n");
++				   " -f <format, only YU12, YUYV, UYVY and NV12 are supported> \n"
++				   " -d <device> \n");
+ 			return TFAIL;
+ 		}
+ 	}
