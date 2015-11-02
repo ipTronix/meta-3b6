@@ -1,7 +1,7 @@
 Index: git/arch/arm/boot/dts/imx6q-tera-he.dts
 ===================================================================
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ git/arch/arm/boot/dts/imx6q-tera-he.dts	2015-10-27 13:30:40.000000000 +0100
++++ git/arch/arm/boot/dts/imx6q-tera-he.dts	2015-11-02 14:05:23.234702100 +0100
 @@ -0,0 +1,221 @@
 +/*
 + * Copyright 2012 Freescale Semiconductor, Inc.
@@ -140,9 +140,9 @@ Index: git/arch/arm/boot/dts/imx6q-tera-he.dts
 +};
 +
 +&i2c2 {
-+	tvp5150_1: tvp5150_1@5c {
++	tvp5150_1: tvp5150_1@5d {
 +		compatible = "tvp5150";
-+		reg = <0x5c>;
++		reg = <0x5d>;
 +		pinctrl-names = "default";
 +		pinctrl-0 = <&pinctrl_ipu1>;
 +		clocks = <&clks 201>;
@@ -152,9 +152,9 @@ Index: git/arch/arm/boot/dts/imx6q-tera-he.dts
 +		csi_id = <0>;
 +	};
 +/*
-+	tvp5150_2: tvp5150_2@5d {
++	tvp5150_2: tvp5150_2@5c {
 +		compatible = "tvp5150";
-+		reg = <0x5d>;
++		reg = <0x5c>;
 +		pinctrl-names = "default";
 +		pinctrl-0 = <&pinctrl_ipu2>;
 +		clocks = <&clks 201>;
@@ -227,7 +227,7 @@ Index: git/arch/arm/boot/dts/imx6q-tera-he.dts
 Index: git/arch/arm/boot/dts/imx6q-tera-he.dtsi
 ===================================================================
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ git/arch/arm/boot/dts/imx6q-tera-he.dtsi	2015-10-27 13:24:34.000000000 +0100
++++ git/arch/arm/boot/dts/imx6q-tera-he.dtsi	2015-11-02 13:06:21.706702100 +0100
 @@ -0,0 +1,675 @@
 +/*
 + * Copyright 2012 Freescale Semiconductor, Inc.
@@ -843,7 +843,7 @@ Index: git/arch/arm/boot/dts/imx6q-tera-he.dtsi
 +
 +	lvds-channel@0 {
 +		fsl,data-mapping = "spwg";
-+		fsl,data-width = <18>;
++		fsl,data-width = <24>;
 +		primary;
 +		status = "okay";
 +/*
@@ -868,7 +868,7 @@ Index: git/arch/arm/boot/dts/imx6q-tera-he.dtsi
 +			timing0: hsd100pxn1 {
 +				clock-frequency = <74250000>;
 +				hactive = <1280>;
-+				vactive = <720>;
++				vactive = <800>;
 +				hback-porch = <220>;
 +				hfront-porch = <110>;
 +				vback-porch = <5>;
@@ -906,8 +906,8 @@ Index: git/arch/arm/boot/dts/imx6q-tera-he.dtsi
 +};
 Index: git/arch/arm/boot/dts/Makefile
 ===================================================================
---- git.orig/arch/arm/boot/dts/Makefile	2015-10-26 13:22:08.561539258 +0100
-+++ git/arch/arm/boot/dts/Makefile	2015-10-26 13:22:13.621539220 +0100
+--- git.orig/arch/arm/boot/dts/Makefile	2015-10-30 13:52:37.338959300 +0100
++++ git/arch/arm/boot/dts/Makefile	2015-10-30 13:53:22.386959300 +0100
 @@ -179,6 +179,7 @@
  	imx6q-sabresd-uart.dtb \
  	imx6q-sabresd-hdcp.dtb \
@@ -919,7 +919,7 @@ Index: git/arch/arm/boot/dts/Makefile
 Index: git/arch/arm/boot/dts/imx6q-tera-he-iomux.dtsi
 ===================================================================
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ git/arch/arm/boot/dts/imx6q-tera-he-iomux.dtsi	2015-10-26 13:00:28.000000000 +0100
++++ git/arch/arm/boot/dts/imx6q-tera-he-iomux.dtsi	2015-10-30 13:53:22.386959300 +0100
 @@ -0,0 +1,501 @@
 +/*
 + * Copyright 2015

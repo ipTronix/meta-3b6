@@ -9,6 +9,7 @@ SRC_URI_append_tera-he = " \
    file://0001-ltc3676.patch \
    file://0002-lsm330.patch \
    file://0003-mxc_tvp5150.patch \
+   file://0004-advancedsilicon_multitouch.patch \
    file://defconfig \
 "
 

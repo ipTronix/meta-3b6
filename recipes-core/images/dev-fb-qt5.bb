@@ -64,6 +64,7 @@ boost cmake zlib glib-2.0 \
     mtd-utils imx-kobs mtd-utils-ubifs \
     e2fsprogs \
     cinematicexperience \
+    script-install \
     "
 
 DISTRO_FEATURES_remove = "x11 wayland"
