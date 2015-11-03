@@ -1,8 +1,8 @@
 Index: git/drivers/media/platform/mxc/capture/mxc_tvp5150.c
 ===================================================================
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ git/drivers/media/platform/mxc/capture/mxc_tvp5150.c	2015-11-02 11:55:47.245397359 +0100
-@@ -0,0 +1,1390 @@
++++ git/drivers/media/platform/mxc/capture/mxc_tvp5150.c	2015-11-02 17:57:35.845008599 +0100
+@@ -0,0 +1,1415 @@
 +/*
 + * tvp5150 - Texas Instruments TVP5150A/AM1 video decoder driver
 + *
@@ -22,6 +22,10 @@ Index: git/drivers/media/platform/mxc/capture/mxc_tvp5150.c
 +#include <media/v4l2-chip-ident.h>
 +#include <v4l2-int-device.h>
 +#include <media/tvp5150.h>
++#include <linux/mfd/core.h>
++#include <linux/mfd/syscon.h>
++#include <linux/mfd/syscon/imx6q-iomuxc-gpr.h>
++#include <linux/regmap.h>
 +
 +#include "mxc_v4l2_capture.h"
 +#include "tvp5150_reg.h"
@@ -54,6 +58,8 @@ Index: git/drivers/media/platform/mxc/capture/mxc_tvp5150.c
 +
 +MODULE_DEVICE_TABLE(i2c, tvp5150_id);
 +
++static int tvp5150_probe(struct i2c_client *c, const struct i2c_device_id *id);
++static int tvp5150_remove(struct i2c_client *c);
 +
 +static struct i2c_driver tvp5150_i2c_driver = {
 +	.driver = {
@@ -436,7 +442,7 @@ Index: git/drivers/media/platform/mxc/capture/mxc_tvp5150.c
 +	{ /* 0x0a */ TVP5150_SATURATION_CTL      , 0x80 },
 +	{ /* 0x0b */ TVP5150_HUE_CTL             , 0x00 },
 +	{ /* 0x0c */ TVP5150_CONTRAST_CTL        , 0x80 },
-+	{ /* 0x0d */ TVP5150_DATA_RATE_SEL       , 0x47 },
++	{ /* 0x0d */ TVP5150_DATA_RATE_SEL       , 0x07 },
 +	{ /* 0x0e */ TVP5150_LUMA_PROC_CTL_3     , 0x00 },
 +	{ /* 0x0f */ TVP5150_CONF_SHARED_PIN     , 0x08 },
 +	{ /* 0x11 */ TVP5150_ACT_VD_CROP_ST_MSB  , 0x00 },
@@ -476,9 +482,9 @@ Index: git/drivers/media/platform/mxc/capture/mxc_tvp5150.c
 +static const struct i2c_reg_value tvp5150_init_enable[] = {
 +	{ TVP5150_CONF_SHARED_PIN  , 0x02 },
 +	{ TVP5150_ANAL_CHL_CTL     , 0x15 },	/* Automatic offset and AGC enabled */
-+	{ TVP5150_MISC_CTL         , 0x6f },	/* Activate YCrCb output 0x9 or 0xd ? */
++	{ TVP5150_MISC_CTL         , 0x69 },	/* Activate YCrCb output 0x9 or 0xd ? */
 +	{ TVP5150_AUTOSW_MSK       , 0x00 },	/* Activates video std autodetection for all standards */
-+	{ TVP5150_DATA_RATE_SEL    , 0x47 },	/* Default format: 0x47. For 4:2:2: 0x40 */
++	{ TVP5150_DATA_RATE_SEL    , 0x07 },	/* Default format: 0x47. For 4:2:2: 0x40 */
 +	{ TVP5150_CHROMA_PROC_CTL_1, 0x0c },
 +	{ TVP5150_CHROMA_PROC_CTL_2, 0x54 },
 +	{ 0x27                     , 0x20 },	/* Non documented, but initialized on WinTV USB2 */
@@ -749,7 +755,7 @@ Index: git/drivers/media/platform/mxc/capture/mxc_tvp5150.c
 +		p->u.bt656.clock_curr = 27000000;
 +	}*/
 +	p->u.bt656.nobt_hs_inv     = 1;
-+	p->u.bt656.bt_sync_correct = 1;
++	p->u.bt656.bt_sync_correct = 0;
 +//	p->u.bt656.latch_clk_inv   = 0;
 +//	p->u.bt656.nobt_vs_inv     = 0;
 +
@@ -1203,6 +1209,8 @@ Index: git/drivers/media/platform/mxc/capture/mxc_tvp5150.c
 +	int                 res;
 +	int                 ret;
 +	struct device      *dev = &c->dev;
++	struct regmap      *gpr;
++
 +int video_idx;
 +	printk("TVP5150:probe:\n");
 +
@@ -1255,6 +1263,23 @@ Index: git/drivers/media/platform/mxc/capture/mxc_tvp5150.c
 +		printk("TVP5150:probe:csi_id is invalid\n");
 +		dev_err(dev, "csi_id invalid\n");
 +		return ret;
++	}
++
++	gpr = syscon_regmap_lookup_by_compatible("fsl,imx6q-iomuxc-gpr");
++	if (!IS_ERR(gpr)) {
++		if (of_machine_is_compatible("fsl,imx6q")) {
++			int mask = core->sen.csi ? (1 << 20) : (1 << 19);
++
++			regmap_update_bits(gpr, IOMUXC_GPR1, mask, mask);
++		} else if (of_machine_is_compatible("fsl,imx6dl")) {
++			int mask = core->sen.csi ? (7 << 3) : (7 << 0);
++			int val =  core->sen.csi ? (4 << 3) : (4 << 0);
++
++			regmap_update_bits(gpr, IOMUXC_GPR13, mask, val);
++		}
++	} else {
++		pr_err("%s: failed to find fsl,imx6q-iomux-gpr regmap\n",
++		       __func__);
 +	}
 +
 +	clk_prepare_enable(core->sen.sensor_clk);
@@ -1320,7 +1345,7 @@ Index: git/drivers/media/platform/mxc/capture/mxc_tvp5150.c
 +*/
 +	        core->int_dev.priv   = core;
 +	        core->int_dev.module = THIS_MODULE;
-+	sprintf(core->int_dev.name   , "tvp5150");
++	sprintf(core->int_dev.name   , "tvp5150-%d", core->sen.csi);
 +	        core->int_dev.type   = v4l2_int_type_slave;
 +	        core->int_dev.u	.slave = &tvp5150_slave;
 +	//sprintf(core->int_dev.u.slave->attach_to, "csi_v4l2_cap%d", core->sen.csi);
@@ -1395,8 +1420,8 @@ Index: git/drivers/media/platform/mxc/capture/mxc_tvp5150.c
 +MODULE_LICENSE("GPL");
 Index: git/drivers/media/platform/mxc/capture/Kconfig
 ===================================================================
---- git.orig/drivers/media/platform/mxc/capture/Kconfig	2015-10-30 12:58:38.494716332 +0100
-+++ git/drivers/media/platform/mxc/capture/Kconfig	2015-10-30 12:59:00.046716173 +0100
+--- git.orig/drivers/media/platform/mxc/capture/Kconfig	2015-11-02 17:32:02.381036061 +0100
++++ git/drivers/media/platform/mxc/capture/Kconfig	2015-11-02 17:32:05.801036000 +0100
 @@ -39,6 +39,12 @@
  	---help---
  	  If you plan to use the adv7180 video decoder with your MXC system, say Y here.
@@ -1412,8 +1437,8 @@ Index: git/drivers/media/platform/mxc/capture/Kconfig
  	default MXC_IPU_DEVICE_QUEUE_SDC
 Index: git/drivers/media/platform/mxc/capture/Makefile
 ===================================================================
---- git.orig/drivers/media/platform/mxc/capture/Makefile	2015-10-30 12:58:38.494716332 +0100
-+++ git/drivers/media/platform/mxc/capture/Makefile	2015-10-30 12:59:00.046716173 +0100
+--- git.orig/drivers/media/platform/mxc/capture/Makefile	2015-11-02 17:32:02.381036061 +0100
++++ git/drivers/media/platform/mxc/capture/Makefile	2015-11-02 17:32:05.801036000 +0100
 @@ -22,3 +22,6 @@
  
  tda1997x-video-objs := tda1997x.o
@@ -1424,7 +1449,7 @@ Index: git/drivers/media/platform/mxc/capture/Makefile
 Index: git/drivers/media/platform/mxc/capture/tvp5150_reg.h
 ===================================================================
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ git/drivers/media/platform/mxc/capture/tvp5150_reg.h	2015-10-30 12:59:00.046716173 +0100
++++ git/drivers/media/platform/mxc/capture/tvp5150_reg.h	2015-11-02 17:32:05.801036000 +0100
 @@ -0,0 +1,139 @@
 +/*
 + * tvp5150 - Texas Instruments TVP5150A/AM1 video decoder registers
