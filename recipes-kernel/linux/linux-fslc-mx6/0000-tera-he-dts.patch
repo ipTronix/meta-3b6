@@ -1,8 +1,8 @@
 Index: git/arch/arm/boot/dts/imx6q-tera-he.dts
 ===================================================================
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ git/arch/arm/boot/dts/imx6q-tera-he.dts	2015-11-02 14:05:23.234702100 +0100
-@@ -0,0 +1,221 @@
++++ git/arch/arm/boot/dts/imx6q-tera-he.dts	2015-11-03 16:30:01.550934600 +0100
+@@ -0,0 +1,225 @@
 +/*
 + * Copyright 2012 Freescale Semiconductor, Inc.
 + * Copyright 2011 Linaro Ltd.
@@ -137,6 +137,11 @@ Index: git/arch/arm/boot/dts/imx6q-tera-he.dts
 +		VDDIO-supply = <&reg_3p3v>;
 +	};
 +
++	isl29018: isl29018@44 {
++		compatible = "isil,isl29018";
++		reg = <0x44>;
++	};
++
 +};
 +
 +&i2c2 {
@@ -151,7 +156,7 @@ Index: git/arch/arm/boot/dts/imx6q-tera-he.dts
 +		mclk_source = <0>;
 +		csi_id = <0>;
 +	};
-+/*
++
 +	tvp5150_2: tvp5150_2@5c {
 +		compatible = "tvp5150";
 +		reg = <0x5c>;
@@ -163,7 +168,6 @@ Index: git/arch/arm/boot/dts/imx6q-tera-he.dts
 +		mclk_source = <0>;
 +		csi_id = <1>;
 +	};
-+*/
 +};
 +
 +&i2c3 {
@@ -227,8 +231,8 @@ Index: git/arch/arm/boot/dts/imx6q-tera-he.dts
 Index: git/arch/arm/boot/dts/imx6q-tera-he.dtsi
 ===================================================================
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ git/arch/arm/boot/dts/imx6q-tera-he.dtsi	2015-11-02 13:06:21.706702100 +0100
-@@ -0,0 +1,675 @@
++++ git/arch/arm/boot/dts/imx6q-tera-he.dtsi	2015-11-03 16:30:01.550934600 +0100
+@@ -0,0 +1,682 @@
 +/*
 + * Copyright 2012 Freescale Semiconductor, Inc.
 + * Copyright 2011 Linaro Ltd.
@@ -314,7 +318,7 @@ Index: git/arch/arm/boot/dts/imx6q-tera-he.dtsi
 +		can34_osc: can34_osc {
 +			compatible = "fixed-clock";
 +			#clock-cells = <0>;
-+			clock-frequency  = <16000000>;
++			clock-frequency  = <25000000>;
 +		};
 +	};
 +
@@ -478,16 +482,15 @@ Index: git/arch/arm/boot/dts/imx6q-tera-he.dtsi
 +			enable-active-high;
 +		};
 +
-+/*
 +		reg_usb_h1_vbus: usb_h1_vbus {
 +			compatible = "regulator-fixed";
 +			regulator-name = "usb_h1_vbus";
 +			regulator-min-microvolt = <5000000>;
 +			regulator-max-microvolt = <5000000>;
-+			gpio = <&max7310_b 7 GPIO_ACTIVE_HIGH>;
++			//gpio = <&max7310_b 7 GPIO_ACTIVE_HIGH>;
 +			enable-active-high;
 +		};
-+*/
++
 +		reg_sd1_vmmc: sd1_vmmc{
 +			compatible = "regulator-fixed";
 +			regulator-name = "P3V3_SDIO_SWITCHED";
@@ -535,6 +538,14 @@ Index: git/arch/arm/boot/dts/imx6q-tera-he.dtsi
 +		compatible = "fsl,imx6q-v4l2-capture";
 +		ipu_id = <0>;
 +		csi_id = <0>;
++		mclk_source = <0>;
++		status = "okay";
++	};
++
++	v4l2_cap_1 {
++		compatible = "fsl,imx6q-v4l2-capture";
++		ipu_id = <1>;
++		csi_id = <1>;
 +		mclk_source = <0>;
 +		status = "okay";
 +	};
@@ -722,12 +733,12 @@ Index: git/arch/arm/boot/dts/imx6q-tera-he.dtsi
 +	pinctrl-0 = <&pinctrl_usbotg>;
 +	status = "okay";
 +};
-+/*
++
 +&usbh1 {
 +	vbus-supply = <&reg_usb_h1_vbus>;
 +	status = "okay";
 +};
-+*/
++
 +&usdhc1 {
 +        pinctrl-names = "default";
 +        pinctrl-0 = <&pinctrl_usdhc1>;
@@ -906,8 +917,8 @@ Index: git/arch/arm/boot/dts/imx6q-tera-he.dtsi
 +};
 Index: git/arch/arm/boot/dts/Makefile
 ===================================================================
---- git.orig/arch/arm/boot/dts/Makefile	2015-10-30 13:52:37.338959300 +0100
-+++ git/arch/arm/boot/dts/Makefile	2015-10-30 13:53:22.386959300 +0100
+--- git.orig/arch/arm/boot/dts/Makefile	2015-11-03 16:29:06.534934600 +0100
++++ git/arch/arm/boot/dts/Makefile	2015-11-03 16:30:01.550934600 +0100
 @@ -179,6 +179,7 @@
  	imx6q-sabresd-uart.dtb \
  	imx6q-sabresd-hdcp.dtb \
@@ -919,7 +930,7 @@ Index: git/arch/arm/boot/dts/Makefile
 Index: git/arch/arm/boot/dts/imx6q-tera-he-iomux.dtsi
 ===================================================================
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ git/arch/arm/boot/dts/imx6q-tera-he-iomux.dtsi	2015-10-30 13:53:22.386959300 +0100
++++ git/arch/arm/boot/dts/imx6q-tera-he-iomux.dtsi	2015-11-04 17:50:19.895042400 +0100
 @@ -0,0 +1,501 @@
 +/*
 + * Copyright 2015
@@ -997,7 +1008,7 @@ Index: git/arch/arm/boot/dts/imx6q-tera-he-iomux.dtsi
 +
 +		pinctrl_ecspi2_cs: ecspi2_cs_grp {
 +			fsl,pins = <
-+				MX6QDL_PAD_EIM_RW__ECSPI2_SS0  0x100b1
++				MX6QDL_PAD_EIM_RW__GPIO2_IO26  0x100b1
 +			>;
 +		};
 +		pinctrl_ecspi2: ecspi2grp {
@@ -1010,7 +1021,7 @@ Index: git/arch/arm/boot/dts/imx6q-tera-he-iomux.dtsi
 +
 +		pinctrl_ecspi3_cs: ecspi3_cs_grp {
 +			fsl,pins = <
-+				MX6QDL_PAD_DISP0_DAT3__ECSPI3_SS0  0x100b1
++				MX6QDL_PAD_DISP0_DAT3__GPIO4_IO24  0x100b1
 +			>;
 +		};
 +		pinctrl_ecspi3: ecspi3grp {
@@ -1181,7 +1192,7 @@ Index: git/arch/arm/boot/dts/imx6q-tera-he-iomux.dtsi
 +				MX6QDL_PAD_CSI0_DAT18__IPU1_CSI0_DATA18    0x80000000
 +				MX6QDL_PAD_CSI0_DAT19__IPU1_CSI0_DATA19    0x80000000
 +				MX6QDL_PAD_CSI0_PIXCLK__IPU1_CSI0_PIXCLK   0x80000000
-+				MX6QDL_PAD_CSI0_DATA_EN__IPU1_CSI0_DATA_EN 0x80000000
++				//MX6QDL_PAD_CSI0_DATA_EN__IPU1_CSI0_DATA_EN 0x80000000
 +			>;
 +		};
 +
@@ -1196,7 +1207,7 @@ Index: git/arch/arm/boot/dts/imx6q-tera-he-iomux.dtsi
 +				MX6QDL_PAD_EIM_A23__IPU2_CSI1_DATA18   0x80000000
 +				MX6QDL_PAD_EIM_A24__IPU2_CSI1_DATA19   0x80000000
 +				MX6QDL_PAD_EIM_D17__IPU2_CSI1_PIXCLK   0x80000000
-+				MX6QDL_PAD_EIM_DA10__IPU2_CSI1_DATA_EN 0x80000000
++				//MX6QDL_PAD_EIM_DA10__IPU2_CSI1_DATA_EN 0x80000000
 +			>;
 +		};
 +

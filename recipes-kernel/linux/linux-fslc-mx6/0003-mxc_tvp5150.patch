@@ -1,8 +1,8 @@
 Index: git/drivers/media/platform/mxc/capture/mxc_tvp5150.c
 ===================================================================
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ git/drivers/media/platform/mxc/capture/mxc_tvp5150.c	2015-11-02 17:57:35.845008599 +0100
-@@ -0,0 +1,1415 @@
++++ git/drivers/media/platform/mxc/capture/mxc_tvp5150.c	2015-11-04 17:50:55.171042400 +0100
+@@ -0,0 +1,1411 @@
 +/*
 + * tvp5150 - Texas Instruments TVP5150A/AM1 video decoder driver
 + *
@@ -42,13 +42,14 @@ Index: git/drivers/media/platform/mxc/capture/mxc_tvp5150.c
 +MODULE_PARM_DESC(debug, "Debug level (0-2)");
 +
 +struct tvp5150 {
++	struct sensor_data       sen;     /* must be the first, used in mxc_v4l2_capture */
 +	struct v4l2_rect         rect;
 +	v4l2_std_id              norm;    /* Current set standard */
 +	u32                      input;
 +	u32                      output;
 +	int                      enable;
-+	struct sensor_data       sen;
 +	struct v4l2_int_device   int_dev;
++	struct v4l2_int_slave    slave;
 +};
 +
 +static const struct i2c_device_id tvp5150_id[] = {
@@ -159,20 +160,20 @@ Index: git/drivers/media/platform/mxc/capture/mxc_tvp5150.c
 +static struct v4l2_queryctrl tvp5150_qctrl[] = {
 +	{
 +		.id = V4L2_CID_BRIGHTNESS,
-+		.type = V4L2_CTRL_TYPE_INTEGER,
-+		.name = "Brightness",
-+		.minimum = 0,		/* check this value */
-+		.maximum = 255,		/* check this value */
-+		.step = 1,		/* check this value */
++		.type          = V4L2_CTRL_TYPE_INTEGER,
++		.name          = "Brightness",
++		.minimum       = 0,		/* check this value */
++		.maximum       = 255,		/* check this value */
++		.step          = 1,		/* check this value */
 +		.default_value = 127,	/* check this value */
 +		.flags = 0,
 +	}, {
 +		.id = V4L2_CID_SATURATION,
-+		.type = V4L2_CTRL_TYPE_INTEGER,
-+		.name = "Saturation",
-+		.minimum = 0,		/* check this value */
-+		.maximum = 255,		/* check this value */
-+		.step = 0x1,		/* check this value */
++		.type          = V4L2_CTRL_TYPE_INTEGER,
++		.name          = "Saturation",
++		.minimum       = 0,		/* check this value */
++		.maximum       = 255,		/* check this value */
++		.step          = 0x1,		/* check this value */
 +		.default_value = 127,	/* check this value */
 +		.flags = 0,
 +	}
@@ -749,11 +750,7 @@ Index: git/drivers/media/platform/mxc/capture/mxc_tvp5150.c
 +	memset(p, 0, sizeof(*p));
 +	p->if_type = V4L2_IF_TYPE_BT656; /* This is the only possibility. */
 +	p->u.bt656.mode = V4L2_IF_TYPE_BT656_MODE_NOBT_8BIT;
-+	/*if(1){//ccir656) {
-+		p->u.bt656.clock_curr = 0;
-+	} else {
-+		p->u.bt656.clock_curr = 27000000;
-+	}*/
++//	p->u.bt656.clock_curr = 27000000;
 +	p->u.bt656.nobt_hs_inv     = 1;
 +	p->u.bt656.bt_sync_correct = 0;
 +//	p->u.bt656.latch_clk_inv   = 0;
@@ -1180,12 +1177,13 @@ Index: git/drivers/media/platform/mxc/capture/mxc_tvp5150.c
 +	{vidioc_int_enum_framesizes_num, (v4l2_int_ioctl_func*)ioctl_enum_framesizes},
 +	{vidioc_int_g_chip_ident_num   , (v4l2_int_ioctl_func*)ioctl_g_chip_ident},
 +};
-+
++/*TODO
 +static struct v4l2_int_slave tvp5150_slave = {
 +	.ioctls     = tvp5150_ioctl_desc,
 +	.num_ioctls = ARRAY_SIZE(tvp5150_ioctl_desc),
 +};
-+/*
++*/
++/*TODO
 +static struct v4l2_int_device tvp5150_int_device = {
 +	.module = THIS_MODULE,
 +	.name   = "tvp5150",
@@ -1227,14 +1225,12 @@ Index: git/drivers/media/platform/mxc/capture/mxc_tvp5150.c
 +	video_idx = TVP5150_PAL; //TODO deve tornare l'attuale
 +
 +	core->sen.i2c_client = c;
-+	core->sen.streamcap.timeperframe.denominator = 25;
++	core->sen.streamcap.timeperframe.denominator = 25;//TODO
 +	core->sen.streamcap.timeperframe.numerator   = 1;
 +	core->norm = V4L2_STD_ALL;
-+	core->sen.pix.width       = video_fmts[video_idx].raw_width;// TODO 720;
-+	core->sen.pix.height      = video_fmts[video_idx].raw_height; // TODO 480;
++	core->sen.pix.width       = video_fmts[video_idx].raw_width;
++	core->sen.pix.height      = video_fmts[video_idx].raw_height;
 +	core->sen.pix.pixelformat = V4L2_PIX_FMT_UYVY;  /* YUV422 */
-+	//TODO core->sen.pix.pixelformat = V4L2_PIX_FMT_YUV422P;  /* YUV422 */
-+//TODO	core->sen.pix.pixelformat = IPU_PIX_FMT_RGB565;
 +	core->sen.pix.priv        = 1;  /* 1 is used to indicate TV in */
 +	core->sen.on = true;
 +
@@ -1319,9 +1315,6 @@ Index: git/drivers/media/platform/mxc/capture/mxc_tvp5150.c
 +	core->norm   = V4L2_STD_ALL;	/* Default is autodetect */
 +	core->input  = TVP5150_COMPOSITE1;
 +	core->enable = 1;
-+//TODO non so se ci va, in ADV non c'è
-+	//sd = &core->sd;
-+//	v4l2_i2c_subdev_init(sd, c, &tvp5150_ops);
 +
 +	/* Default is no cropping */
 +	core->rect.top = 0;
@@ -1334,22 +1327,25 @@ Index: git/drivers/media/platform/mxc/capture/mxc_tvp5150.c
 +#ifdef TVP5150_DBG
 +	tvp5150_log_status(c);
 +#endif
++
 +	/* This function attaches this structure to the /dev/videox device.
 +	 * The pointer in priv points to the tvp5150 structure here.*/
-+//	tvp5150_int_device.priv = core;
-+/*
-+	sprintf(tvp5150_int_device.name, "tvp5150-%d", core->sen.csi);
-+	printk("TVP5150:probe:call v4l2_int_device_register name %s\n",
-+	       tvp5150_int_device.name);
-+	sprintf(tvp5150_int_device.u.slave->attach_to, "mxc_v4l2_cap%d", core->sen.csi);
-+*/
 +	        core->int_dev.priv   = core;
 +	        core->int_dev.module = THIS_MODULE;
 +	sprintf(core->int_dev.name   , "tvp5150-%d", core->sen.csi);
 +	        core->int_dev.type   = v4l2_int_type_slave;
-+	        core->int_dev.u	.slave = &tvp5150_slave;
-+	//sprintf(core->int_dev.u.slave->attach_to, "csi_v4l2_cap%d", core->sen.csi);
-+	//sprintf(core->int_dev.u.slave->attach_to, "mxc_v4l2_cap%d", core->sen.csi);
++
++	        core->slave.ioctls     = tvp5150_ioctl_desc;
++	        core->slave.num_ioctls = ARRAY_SIZE(tvp5150_ioctl_desc);
++	sprintf(core->slave.attach_to  , "mxc_v4l2_cap%d", core->sen.csi);
++	        core->int_dev.u	.slave = &core->slave;
++
++	printk("TVP5150:probe:int_dev name '%s', attach_to '%s', master ptr [%p]\n",
++				 core->int_dev.name,
++				 core->int_dev.u.slave->attach_to,
++				 core->int_dev.u.slave->master);
++	printk("TVP5150:probe: i2c_client: [%p], i2c_device_id: [%p], core: [%p]\n",
++					c, id, core);
 +
 +	ret = v4l2_int_device_register(&core->int_dev);
 +
@@ -1420,8 +1416,8 @@ Index: git/drivers/media/platform/mxc/capture/mxc_tvp5150.c
 +MODULE_LICENSE("GPL");
 Index: git/drivers/media/platform/mxc/capture/Kconfig
 ===================================================================
---- git.orig/drivers/media/platform/mxc/capture/Kconfig	2015-11-02 17:32:02.381036061 +0100
-+++ git/drivers/media/platform/mxc/capture/Kconfig	2015-11-02 17:32:05.801036000 +0100
+--- git.orig/drivers/media/platform/mxc/capture/Kconfig	2015-11-03 16:29:08.518934600 +0100
++++ git/drivers/media/platform/mxc/capture/Kconfig	2015-11-03 16:30:01.702934600 +0100
 @@ -39,6 +39,12 @@
  	---help---
  	  If you plan to use the adv7180 video decoder with your MXC system, say Y here.
@@ -1437,8 +1433,8 @@ Index: git/drivers/media/platform/mxc/capture/Kconfig
  	default MXC_IPU_DEVICE_QUEUE_SDC
 Index: git/drivers/media/platform/mxc/capture/Makefile
 ===================================================================
---- git.orig/drivers/media/platform/mxc/capture/Makefile	2015-11-02 17:32:02.381036061 +0100
-+++ git/drivers/media/platform/mxc/capture/Makefile	2015-11-02 17:32:05.801036000 +0100
+--- git.orig/drivers/media/platform/mxc/capture/Makefile	2015-11-03 16:29:08.518934600 +0100
++++ git/drivers/media/platform/mxc/capture/Makefile	2015-11-03 16:30:01.706934600 +0100
 @@ -22,3 +22,6 @@
  
  tda1997x-video-objs := tda1997x.o
@@ -1449,7 +1445,7 @@ Index: git/drivers/media/platform/mxc/capture/Makefile
 Index: git/drivers/media/platform/mxc/capture/tvp5150_reg.h
 ===================================================================
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ git/drivers/media/platform/mxc/capture/tvp5150_reg.h	2015-11-02 17:32:05.801036000 +0100
++++ git/drivers/media/platform/mxc/capture/tvp5150_reg.h	2015-11-03 16:30:01.706934600 +0100
 @@ -0,0 +1,139 @@
 +/*
 + * tvp5150 - Texas Instruments TVP5150A/AM1 video decoder registers
