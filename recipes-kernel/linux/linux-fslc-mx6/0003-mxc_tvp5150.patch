@@ -10,8 +10,8 @@ Index: git/drivers/media/platform/mxc/capture/mxc_tvp5150.c
 + * This code is placed under the terms of the GNU General Public License v2
 + */
 +
-+#define TVP5150_DBG
-+#define DEBUG
++//#define TVP5150_DBG
++//#define DEBUG
 +
 +#include <linux/clk.h>
 +#include <linux/i2c.h>

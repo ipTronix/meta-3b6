@@ -21,6 +21,7 @@ IMAGE_INSTALL_append = " binutils libgcc libstdc++ \
 ccache chkconfig glib-networking glibmm \
 packagegroup-core-buildessential pkgconfig  \
 boost cmake zlib glib-2.0 \
+canutils libsocketcan \
     packagegroup-qt5-qtcreator-debug \    
     cpufrequtils \
     gdb \
@@ -65,6 +66,7 @@ boost cmake zlib glib-2.0 \
     e2fsprogs \
     cinematicexperience \
     script-install \
+    packagegroup-wilink-connectivity \
     "
 
 DISTRO_FEATURES_remove = "x11 wayland"

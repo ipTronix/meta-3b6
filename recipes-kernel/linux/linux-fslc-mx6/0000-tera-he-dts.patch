@@ -1,7 +1,7 @@
 Index: git/arch/arm/boot/dts/imx6q-tera-he.dts
 ===================================================================
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ git/arch/arm/boot/dts/imx6q-tera-he.dts	2015-11-03 16:30:01.550934600 +0100
++++ git/arch/arm/boot/dts/imx6q-tera-he.dts	2015-11-05 15:17:49.359614100 +0100
 @@ -0,0 +1,225 @@
 +/*
 + * Copyright 2012 Freescale Semiconductor, Inc.
@@ -231,8 +231,8 @@ Index: git/arch/arm/boot/dts/imx6q-tera-he.dts
 Index: git/arch/arm/boot/dts/imx6q-tera-he.dtsi
 ===================================================================
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ git/arch/arm/boot/dts/imx6q-tera-he.dtsi	2015-11-03 16:30:01.550934600 +0100
-@@ -0,0 +1,682 @@
++++ git/arch/arm/boot/dts/imx6q-tera-he.dtsi	2015-11-06 13:21:35.323784200 +0100
+@@ -0,0 +1,718 @@
 +/*
 + * Copyright 2012 Freescale Semiconductor, Inc.
 + * Copyright 2011 Linaro Ltd.
@@ -518,6 +518,20 @@ Index: git/arch/arm/boot/dts/imx6q-tera-he.dtsi
 +			regulator-always-on;
 +		};
 +
++		wlan_en_reg: fixedregulator@2 {
++			compatible = "regulator-fixed";
++			regulator-name = "wlan-en-regulator";
++			regulator-min-microvolt = <1800000>;
++			regulator-max-microvolt = <1800000>;
++
++			/* WLAN_EN GPIO for this board – Bank5, pin8 */
++			gpio = <&gpio5 8 0>;
++
++			/* WLAN card specific delay */
++			startup-delay-us = <70000>;
++			enable-active-high;
++		};
++
 +	};
 +
 +	//sound-fm {
@@ -553,6 +567,18 @@ Index: git/arch/arm/boot/dts/imx6q-tera-he.dtsi
 +	v4l2_out {
 +		compatible = "fsl,mxc_v4l2_output";
 +		status = "okay";
++	};
++
++	kim {
++		compatible = "kim";
++		nshutdown_gpio = <71>;  /* GPIO_2 */
++		dev_name = "/dev/ttymxc2";
++		flow_cntrl = <1>;
++		baud_rate = <3000000>;
++	};
++
++	btwilink {
++		compatible = "btwilink";
 +	};
 +};
 +
@@ -758,7 +784,17 @@ Index: git/arch/arm/boot/dts/imx6q-tera-he.dtsi
 +        non-removable;
 +        keep-power-in-suspend;
 +        enable-sdio-wakeup;
++	vmmc-supply = <&wlan_en_reg>;
++	cap-power-off-card;
 +        status = "okay";
++	#address-cells = <1>;
++	#size-cells = <0>;
++	wlcore: wlcore@0 {
++		compatible = "ti,wlcore";
++		reg = <2>;
++		interrupt-parent = <&gpio5>;
++		interrupts = <5 IRQ_TYPE_EDGE_RISING>;
++	};
 +};
 +
 +&usdhc3 {
@@ -917,8 +953,8 @@ Index: git/arch/arm/boot/dts/imx6q-tera-he.dtsi
 +};
 Index: git/arch/arm/boot/dts/Makefile
 ===================================================================
---- git.orig/arch/arm/boot/dts/Makefile	2015-11-03 16:29:06.534934600 +0100
-+++ git/arch/arm/boot/dts/Makefile	2015-11-03 16:30:01.550934600 +0100
+--- git.orig/arch/arm/boot/dts/Makefile	2015-11-05 15:16:57.039614100 +0100
++++ git/arch/arm/boot/dts/Makefile	2015-11-05 15:17:49.363614100 +0100
 @@ -179,6 +179,7 @@
  	imx6q-sabresd-uart.dtb \
  	imx6q-sabresd-hdcp.dtb \
@@ -930,7 +966,7 @@ Index: git/arch/arm/boot/dts/Makefile
 Index: git/arch/arm/boot/dts/imx6q-tera-he-iomux.dtsi
 ===================================================================
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ git/arch/arm/boot/dts/imx6q-tera-he-iomux.dtsi	2015-11-04 17:50:19.895042400 +0100
++++ git/arch/arm/boot/dts/imx6q-tera-he-iomux.dtsi	2015-11-06 13:26:15.063784200 +0100
 @@ -0,0 +1,501 @@
 +/*
 + * Copyright 2015
@@ -1305,12 +1341,12 @@ Index: git/arch/arm/boot/dts/imx6q-tera-he-iomux.dtsi
 +
 +		pinctrl_usdhc2: usdhc2grp {
 +			fsl,pins = <
-+				MX6QDL_PAD_SD2_CMD__SD2_CMD      0x17071
-+				MX6QDL_PAD_SD2_CLK__SD2_CLK      0x10071
-+				MX6QDL_PAD_SD2_DAT0__SD2_DATA0   0x17071
-+				MX6QDL_PAD_SD2_DAT1__SD2_DATA1   0x17071
-+				MX6QDL_PAD_SD2_DAT2__SD2_DATA2   0x17071
-+				MX6QDL_PAD_SD2_DAT3__SD2_DATA3   0x17071
++				MX6QDL_PAD_SD2_CMD__SD2_CMD      0x17069
++				MX6QDL_PAD_SD2_CLK__SD2_CLK      0x10069
++				MX6QDL_PAD_SD2_DAT0__SD2_DATA0   0x17069
++				MX6QDL_PAD_SD2_DAT1__SD2_DATA1   0x17069
++				MX6QDL_PAD_SD2_DAT2__SD2_DATA2   0x17069
++				MX6QDL_PAD_SD2_DAT3__SD2_DATA3   0x17069
 +			>;
 +		};
 +
