@@ -17,6 +17,7 @@ SRC_URI_append_tera-he = " \
    file://0009-btwilink-add-minimal-device-tree-support.patch \
    file://0010-ti-st-add-device-tree-support.patch \
    file://0011-Add-SDIO-function-devicetree-subnode-parsing.patch \
+   file://0012-altera-cvifw.patch \
    file://defconfig \
 "
 

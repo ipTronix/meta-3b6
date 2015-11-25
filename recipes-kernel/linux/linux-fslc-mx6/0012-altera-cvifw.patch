@@ -1,0 +1,2280 @@
+Index: git/drivers/media/platform/mxc/capture/Kconfig
+===================================================================
+--- git.orig/drivers/media/platform/mxc/capture/Kconfig	2015-11-12 12:32:01.598654202 +0100
++++ git/drivers/media/platform/mxc/capture/Kconfig	2015-11-12 12:32:02.498654195 +0100
+@@ -9,6 +9,13 @@
+ 	depends on VIDEO_MXC_CAPTURE && MXC_IPU
+ 	default y
+ 
++config ALTERA_CVIFW
++	tristate "Altera Clocked Video Input Frame Writer support"
++	depends on I2C
++	default m
++	---help---
++	  If you plan to use the Altera Clocked Video Input Frame Writer with your MXC system, say Y here.
++
+ config MXC_TVIN_TDA1997X
+ 	tristate "NXP TDA1997x HDMI Receiver Input support"
+ 	depends on I2C
+Index: git/drivers/media/platform/mxc/capture/Makefile
+===================================================================
+--- git.orig/drivers/media/platform/mxc/capture/Makefile	2015-11-12 12:32:01.598654202 +0100
++++ git/drivers/media/platform/mxc/capture/Makefile	2015-11-13 15:49:37.315683045 +0100
+@@ -25,3 +25,6 @@
+ 
+ tvp5150_tvin-objs := mxc_tvp5150.o
+ obj-$(CONFIG_MXC_TVIN_TVP5150) += mxc_tvp5150.o
++
++altera_cvifw-objs := altera-cvifw.o altera-cvifw-hw.o
++obj-$(CONFIG_ALTERA_CVIFW) += altera_cvifw.o
+Index: git/drivers/media/platform/mxc/capture/altera-cvifw.c
+===================================================================
+--- /dev/null	1970-01-01 00:00:00.000000000 +0000
++++ git/drivers/media/platform/mxc/capture/altera-cvifw.c	2015-11-17 09:11:49.793435403 +0100
+@@ -0,0 +1,2057 @@
++/** **************************************************************************
++ * Altera Clocked Video Input and Frame Writer PCIe driver
++ ****************************************************************************/
++
++#include <linux/module.h>
++#include <linux/pci.h>
++#include <linux/interrupt.h>
++#include <linux/vmalloc.h>
++#include <linux/dma-mapping.h>
++
++#include <linux/slab.h>
++
++#include <asm/uaccess.h>
++#include <asm/io.h>
++
++#include <linux/videodev2.h>
++#include <media/v4l2-common.h>
++#include <media/v4l2-device.h>
++#include <media/v4l2-ioctl.h>
++#include <media/v4l2-fh.h>
++#include <media/v4l2-event.h>
++#include <media/v4l2-ctrls.h>
++#include <media/v4l2-chip-ident.h>
++
++#include "v4l2-int-device.h"
++#include "mxc_v4l2_capture.h"
++
++#include <linux/ioctl.h>
++#include <linux/fs.h>
++#include <linux/list.h>
++
++#define DEBUG
++#define DBG_PRINT(fmt, ...)   printk("%s:%s:"fmt, DRIVER_NAME, __func__, ##__VA_ARGS__);
++#define DBG_ERROR(fmt, ...)   printk("%s:%s:ERROR:"fmt, DRIVER_NAME, __func__, ##__VA_ARGS__);
++
++#define DMA_BUF_MODE  0 // 0 dma_map - 1 kmalloc
++
++#define DRIVER_NAME     "cvifw"
++#define DRIVER_VERSION  "1.0"
++#define CARD_NAME       "cvifw"
++
++#define CVIFW0_MINOR    4
++#define CVIFW0_CSI      2
++#define CVIFW1_MINOR    5
++#define CVIFW1_CSI      3
++
++#define PCI_VENDOR_ID_ALTERA          0x1172
++#define PCI_DEVICE_ID_ALTERA_CVIFW    0x0004
++
++#define BAR0_CVI0_OFS   0x4080
++#define BAR0_CVI1_OFS   0x4000
++#define BAR0_FW0_OFS    0x4100
++#define BAR0_FW1_OFS    0x4200
++#define BAR0_CTRL_OFS   0x4800 ///< SYS_ID [0x0000] = 0x1B8F0001
++
++#define FLG_DEVICE_IN_USE    0x00000001
++#define FLG_STREAM_ON        0x00000002
++#define FLG_STREAM_STOP      0x00000004
++
++#define FLAG_DEVICE_IN_USE      0x01
++#define FLAG_BUFFERS_AVAILABLE  0x02
++#define FLAG_BUFFER_IN_SYNC     0x04
++#define FLAG_DO_UPDATE          0x10
++#define FLAG_DEINTERLACE        0x20
++#define FLAG_STREAM_ON          0x40
++#define FLAG_FIRST_FRAME        0x80
++
++#define FLAG_SET(f)     (dev->flags |= (f))
++#define FLAG_CLR(f)     (dev->flags &=~(f))
++#define FLAG_ISSET(f)   (dev->flags & (f))
++#define FLAG_ISCLR(f)   (~(dev->flags & (f)))
++
++#define MAX_DMA_FRAMEBUFFERS 4
++
++/*! List of TV input video formats supported. The video formats is corresponding
++ * to the v4l2_id in video_fmt_t.
++ * Currently, only PAL and NTSC is supported. Needs to be expanded in the
++ * future.
++ */
++typedef enum {
++  TV_NTSC = 0,    /*!< Locked on (M) NTSC video signal. */
++  TV_PAL,     /*!< (B, G, H, I, N)PAL video signal. */
++  TV_NOT_LOCKED,    /*!< Not locked on a signal. */
++} video_fmt_idx;
++
++/*! Number of video standards supported (including 'not locked' signal). */
++#define TV_STD_MAX    (TV_NOT_LOCKED + 1)
++
++/*! Video format structure. */
++typedef struct {
++  int v4l2_id;        /*!< Video for linux ID. */
++  char name[16];      /*!< Name (e.g., "NTSC", "PAL", etc.) */
++  u16 raw_width;      /*!< Raw width. */
++  u16 raw_height;     /*!< Raw height. */
++  u16 active_width;   /*!< Active width. */
++  u16 active_height;  /*!< Active height. */
++  u16 active_top;     /*!< Active top. */
++  u16 active_left;    /*!< Active left. */
++} video_fmt_t;
++
++/*!
++ * Description of video formats supported.
++ *
++ *  PAL: raw=720x625, active=720x576.
++ *  NTSC: raw=720x525, active=720x480.
++ */
++static video_fmt_t video_fmts[] = {
++  {     /*! NTSC */
++   .v4l2_id       = V4L2_STD_NTSC,
++   .name          = "NTSC",
++   .raw_width     = 720,    /* SENS_FRM_WIDTH */
++   .raw_height    = 525,   /* SENS_FRM_HEIGHT */
++   .active_width  = 720,   /* ACT_FRM_WIDTH */
++   .active_height = 480,    /* ACT_FRM_HEIGHT */
++   .active_top    = 13,
++   .active_left   = 0,
++   },
++  {     /*! (B, G, H, I, N) PAL */
++   .v4l2_id = V4L2_STD_PAL,
++   .name          = "PAL",
++   .raw_width     = 720,
++   .raw_height    = 625,
++   .active_width  = 720,
++   .active_height = 576,
++   .active_top    = 0,
++   .active_left   = 0,
++   },
++  {     /*! Unlocked standard */
++   .v4l2_id       = V4L2_STD_ALL,
++   .name          = "Autodetect",
++   .raw_width     = 720,
++   .raw_height    = 625,
++   .active_width  = 720,
++   .active_height = 576,
++   .active_top    = 0,
++   .active_left   = 0,
++   },
++};
++
++/**
++ */
++typedef struct {
++  phys_addr_t               phys;
++  size_t                    size;
++  void __iomem             *virt;
++//  int                       irq;
++  char                     *des;
++  enum dma_data_direction   dir;
++  dma_addr_t                dma;
++}sIoRes, *psIoRes;
++
++/**
++ */
++enum altera_frame_state {
++  F_UNUSED = 0,
++  F_QUEUED,
++  F_GRABBING,
++  F_DONE,
++  F_ERROR
++};
++
++/**
++ */
++struct altera_frame {
++  struct v4l2_buffer        buf;
++  struct list_head          frame;
++  enum altera_frame_state   state;
++  unsigned long             vma_use_count;
++
++  dma_addr_t                buf_phys;
++  void                     *buf_virt;
++};
++
++/**
++ *
++ */
++struct cvifw_vdev {
++  struct v4l2_int_device   *self;
++  struct v4l2_int_device   *sensor ;
++
++  struct pci_dev           *pci_dev;
++  struct device            *dev;
++  struct v4l2_device        v4l2_dev;   /* Main v4l2_device struct */
++  struct v4l2_ctrl_handler  hdl;        /* v4l2 controls */
++  struct video_device       video_dev;  /* video device parameters */
++  int                       video_nr;   /* Video device number */
++  int                       csi_id;
++
++  sIoRes                    cvi_res;
++  sIoRes                    fw_res;
++  int                       irq;// TODO forse alla fine ce ne sarà solo uno per entrambe le periferiche
++  struct mutex              fops_lock;
++  spinlock_t                queue_lock;
++  wait_queue_head_t         wait;
++  unsigned char             flags;
++
++  video_fmt_idx             video_idx; /// Standard index of TV.
++
++  struct v4l2_standard      standard;
++  struct v4l2_mxc_offset    offset;
++  struct v4l2_framebuffer   v4l2_fb;
++  struct v4l2_format        v2f;
++  struct v4l2_window        win;  /* overlay */
++  bool                      std_auto;
++  bool                      overlay_on;
++  int                       overlay_pid;
++  bool                      capture_on;
++  int                       capture_pid;
++
++
++  struct altera_frame      *frame;
++  unsigned int              frame_buf_size;
++  unsigned int              frames_num;
++  struct list_head          inqueue;
++  struct list_head          dmaqueue;
++  struct list_head          outqueue;
++};
++
++/**
++ *
++ */
++struct cvifw_dev {
++  struct pci_dev           *pci_dev;
++  struct cvifw_vdev         vdev[2];
++  sIoRes                    ctrl_res;
++};
++
++/** **************************************************************************
++ * altera cvifw function prototypes
++ ****************************************************************************/
++void altera_fw_hw_init(void *regb,
++                       int dbuf,
++                       int sync_type,
++                       unsigned long wlen,
++                       unsigned long stride,
++                       int output_format);
++void altera_fw_hw_stop(void *regb);
++void altera_fw_hw_start(void *regb);
++unsigned long altera_fw_hw_clearint(void *regb);
++void altera_fw_hw_addr0(void *regb,
++                        unsigned long base,
++                        unsigned long size);
++void altera_fw_hw_addr1(void *regb,
++                        unsigned long base,
++                        unsigned long size);
++
++
++/**
++ *
++ */
++static struct cvifw_dev *cvifwDevice;
++
++/** **************************************************************************
++ *
++ ****************************************************************************/
++
++/**
++ *
++ */
++int remap(psIoRes pIor)
++{
++  struct resource *res;
++  res = request_mem_region(pIor->phys, pIor->size, pIor->des);
++  if (!res) {
++    DBG_PRINT("%s:Couldn't request memory region at 0x%08lX\n",
++              pIor->des, pIor->phys);
++    return -1;
++  }
++  pIor->virt= ioremap(pIor->phys, pIor->size);
++  if (!pIor->virt) {
++    DBG_PRINT("%s:Couldn't remap memory region at 0x%08lX\n",
++              pIor->des, pIor->phys);
++    return -1;
++  }
++
++  if(pIor->dir!=DMA_NONE){
++    pIor->dma = dma_map_single(NULL, // TODO va bene senza rif a dev ???? pDrv->dev,
++                                pIor->virt,
++                                pIor->size,
++                                pIor->dir);
++    if (!pIor->dma) {
++      DBG_PRINT("%s:Couldn't dma_map_single at %p\n",
++                pIor->des, (long unsigned int)pIor->virt);
++      return -ENODEV;
++    }
++    DBG_PRINT("%s:Memory region at %08lX size %08lX remapped to %08lX dma %p\n",
++              pIor->des, pIor->phys, pIor->size, pIor->virt, pIor->dma);
++  }else{
++    DBG_PRINT("%s:Memory region at %08lX size %08lX remapped to %08lX\n",
++              pIor->des, pIor->phys, pIor->size, pIor->virt);
++  }
++  return 0;
++}
++
++/**
++ *
++ */
++int unmap(psIoRes pIor)
++{
++  if(pIor->dir!=DMA_NONE){
++    dma_unmap_page(NULL,
++    pIor->phys,
++    pIor->size,
++    pIor->dir);
++  }
++  iounmap(pIor->virt);
++  release_mem_region(pIor->phys, pIor->size);
++  return 0;
++}
++
++/** **************************************************************************
++ *
++ ****************************************************************************/
++
++/**
++ * Get resources from PCI
++ */
++static int cvifw_getresources(struct pci_dev *pdev)
++{
++  struct cvifw_dev       *dev = cvifwDevice;
++  int                     ret;
++  unsigned long           pci_bar_adr;
++  unsigned long           pci_bar_len;
++  void __iomem           *pci_mm_regs;
++
++  pci_bar_adr = pci_resource_start(dev->pci_dev, 0);
++  pci_bar_len = pci_resource_len(dev->pci_dev, 0);
++  DBG_PRINT("PCI BASE %08X %08X\n", pci_bar_adr, pci_bar_len);
++  if (!pci_bar_adr) {
++    DBG_PRINT("ERROR:NO PCIe bar found\n");
++    return -EINVAL;
++  }
++
++  dev->vdev[0].cvi_res.phys = pci_bar_adr + BAR0_CVI0_OFS;
++  dev->vdev[0].cvi_res.size = 0x80;
++  dev->vdev[0].cvi_res.des  = "cvifw_cvi0";
++  dev->vdev[0].cvi_res.dir  = DMA_NONE;
++//  dev->vdev[0].cvi_res.irq  = -1; //TODO anche quelli sotto
++
++  dev->vdev[0].fw_res.phys = pci_bar_adr + BAR0_FW0_OFS;
++  dev->vdev[0].fw_res.size = 0x100;
++  dev->vdev[0].fw_res.des  = "cvifw_fw0";
++  dev->vdev[0].fw_res.dir  = DMA_NONE;
++//  dev->vdev[0].fw_res.irq  = -1;
++
++  dev->vdev[0].irq = pdev->irq;//TODO ????????????????
++
++  dev->vdev[1].cvi_res.phys = pci_bar_adr + BAR0_CVI1_OFS;
++  dev->vdev[1].cvi_res.size = 0x80;
++  dev->vdev[1].cvi_res.des  = "cvifw_cvi1";
++  dev->vdev[1].cvi_res.dir  = DMA_NONE;
++//  dev->vdev[1].cvi_res.irq  = -1;
++
++  dev->vdev[1].fw_res.phys = pci_bar_adr + BAR0_FW1_OFS;
++  dev->vdev[1].fw_res.size = 0x100;
++  dev->vdev[1].fw_res.des  = "cvifw_fw1";
++  dev->vdev[1].fw_res.dir  = DMA_NONE;
++//  dev->vdev[1].fw_res.irq  = -1;
++
++  dev->vdev[1].irq = pdev->irq;//TODO ????????????????
++
++	dev->ctrl_res.phys = pci_bar_adr + BAR0_CTRL_OFS;
++  dev->ctrl_res.size = 0x100;
++  dev->ctrl_res.des  = "cvifw_ctrl";
++  dev->ctrl_res.dir  = DMA_NONE;
++//  dev->ctrl.irq  = -1;
++
++  DBG_PRINT("PCIe get resources:\n"
++            "   vdev 0 cvi: %p, fw: %p, irq %d\n"
++            "   vdev 1 cvi: %p, fw: %p, irq %d\n"
++            "   ctrl: %p\n",
++            dev->vdev[0].cvi_res.phys, dev->vdev[0].fw_res.phys, dev->vdev[0].irq,
++            dev->vdev[1].cvi_res.phys, dev->vdev[1].fw_res.phys, dev->vdev[1].irq,
++            dev->ctrl_res.phys);
++
++  return 0;
++}
++
++/** **************************************************************************
++ *                             buffer handling
++ ****************************************************************************/
++
++/**
++ * Empty framequeues
++ */
++static void empty_framequeues(struct cvifw_vdev *dev)
++{
++  int i;
++
++  spin_lock_bh(&dev->queue_lock);
++
++  INIT_LIST_HEAD(&dev->inqueue);
++  INIT_LIST_HEAD(&dev->dmaqueue);
++  INIT_LIST_HEAD(&dev->outqueue);
++
++  for (i=0; i<dev->frames_num; i++) {
++    dev->frame[i].state = F_UNUSED;
++    dev->frame[i].buf.bytesused = 0;
++  }
++
++  spin_unlock_bh(&dev->queue_lock);
++}
++
++/**
++ * Reinit framequeues
++ */
++static void reinit_framequeues(struct cvifw_vdev *dev)
++{
++  int i;
++
++  INIT_LIST_HEAD(&dev->inqueue);
++  INIT_LIST_HEAD(&dev->dmaqueue);
++  INIT_LIST_HEAD(&dev->outqueue);
++
++  for (i=0; i<dev->frames_num; i++) {
++    list_add_tail(&dev->frame[i].frame, &dev->inqueue);
++    dev->frame[i].state = F_UNUSED;
++    dev->frame[i].buf.bytesused = 0;
++  }
++}
++
++/**
++ * Request_buffers
++ */
++static unsigned long request_buffers(struct cvifw_vdev *dev,
++                                     unsigned long count,
++                                     int mem_type)
++{
++  int i;
++DBG_PRINT("request %d buffer\n", count);
++
++  if (count > MAX_DMA_FRAMEBUFFERS) {
++    DBG_ERROR("Buffer count too big, set it to %d\n", MAX_DMA_FRAMEBUFFERS);
++    count = MAX_DMA_FRAMEBUFFERS;
++  }
++  dev->frame = kzalloc((sizeof(struct altera_frame) * count), GFP_KERNEL);
++  if (dev->frame == NULL) {
++    DBG_ERROR("Memory error on frame struct allocate\n");
++    return 0;
++  }
++  dev->frames_num = 0;
++
++DBG_PRINT("v2f.fmt.pix sizeimage %d, width %d, height %d\n",
++          dev->v2f.fmt.pix.sizeimage,
++          dev->v2f.fmt.pix.width,
++          dev->v2f.fmt.pix.height);
++  if (!dev->v2f.fmt.pix.sizeimage) {
++    if (dev->v2f.fmt.pix.width && dev->v2f.fmt.pix.height) {
++      dev->v2f.fmt.pix.sizeimage = dev->v2f.fmt.pix.width *
++                                   dev->v2f.fmt.pix.height * 4;
++    } else {
++      DBG_ERROR("Image size is 0\n");
++      kfree(dev->frame);
++      return 0;
++    }
++  }
++/*
++
++  dev->frame[i].buf.length    = dev->pix_format.width * dev->pix_format.height * 4;
++    dev->frame[i].buf.length    = dev->v2f.fmt.pix.sizeimage;
++ */
++
++  /* try to create "count" buffers, or try to create at least one buffer */
++  dev->frame_buf_size = (dev->v2f.fmt.pix.sizeimage+PAGE_SIZE-1) & PAGE_MASK;
++  for (i = 0; i < count; i++) {
++    dev->frame[i].buf_virt = kmalloc(dev->frame_buf_size, GFP_DMA);
++    if (dev->frame[i].buf_virt == NULL) {
++      DBG_PRINT("fail to allocate %d B of DMA memory\n", dev->frame_buf_size);
++      break;
++    }
++    dev->frame[i].buf_phys = (void*)virt_to_phys(dev->frame[i].buf_virt);
++
++    DBG_PRINT("PA %p : VA %p Size %X\n",
++              dev->frame[i].buf_phys,
++              dev->frame[i].buf_virt,
++              dev->frame_buf_size);
++
++    dma_map_single(NULL,
++                  dev->frame[i].buf_virt,
++                  dev->frame_buf_size,
++                  DMA_BIDIRECTIONAL);
++    dev->frames_num++;
++  }
++  DBG_PRINT("DMA frame buffers created %d\n", dev->frames_num);
++  if (dev->frames_num == 0) {
++    DBG_ERROR("Failed to create any buffer! free and go out\n");
++    kfree(dev->frame);
++    return 0;
++  }
++
++  /* fill frame buffer handles and parameters */
++  /* initialize all frame buffers */
++  for (i = 0; i < dev->frames_num; i++) {
++    dev->frame[i].state         = F_UNUSED;
++    dev->frame[i].buf.index     = i;
++    dev->frame[i].buf.m.offset  = dev->frame[i].buf_phys;
++    dev->frame[i].buf.length    = dev->v2f.fmt.pix.sizeimage;
++    dev->frame[i].buf.bytesused = 0;
++    dev->frame[i].buf.type      = V4L2_BUF_TYPE_VIDEO_CAPTURE;
++    dev->frame[i].buf.sequence  = 0;
++    dev->frame[i].buf.field     = V4L2_FIELD_NONE;
++    dev->frame[i].buf.memory    = V4L2_MEMORY_MMAP;
++    dev->frame[i].buf.flags     = 0;
++  }
++
++  dev->flags |= FLAG_BUFFERS_AVAILABLE;
++  DBG_PRINT("return %d\n", dev->frames_num);
++  return dev->frames_num;
++
++error_frame:
++
++  for (i = dev->frames_num-1; i >= 0; i--) {
++    dma_unmap_page(NULL,
++                   dev->frame[i].buf_phys,
++                   dev->frame_buf_size,
++                   DMA_BIDIRECTIONAL);
++    kfree(dev->frame[i].buf_virt);
++  }
++  kfree(dev->frame);
++  DBG_PRINT("return %d\n", -ENOMEM);
++  return -ENOMEM;
++}
++
++/**
++ * Release buffers
++ */
++static void release_buffers(struct cvifw_vdev *dev)
++{
++  int i;
++
++  for (i = dev->frames_num-1; i >= 0; i--){
++    dma_unmap_page(NULL,
++                   dev->frame[i].buf_phys,
++                   dev->frame_buf_size,
++                   DMA_BIDIRECTIONAL);
++    kfree(dev->frame[i].buf_virt);
++  }
++  kfree(dev->frame);
++  dev->frames_num = 0;
++  dev->flags &= ~FLAG_BUFFERS_AVAILABLE;
++}
++
++/** **************************************************************************
++ *                             Video IOCTLs
++ ************************************************************************** */
++
++static int g_chip_ident(struct file *file, void *priv,
++                        struct v4l2_dbg_chip_ident *chip)
++{
++  struct cvifw_vdev *dev = video_drvdata(file);
++
++  chip->ident = V4L2_IDENT_NONE;
++  chip->revision = 0;
++  if (!dev->sensor) {
++    DBG_ERROR("Slave not found!\n");
++    return -ENODEV;
++  }
++  return vidioc_int_g_chip_ident(dev->sensor, (int*)chip);
++}
++
++static int querycap(struct file *file, void  *priv,
++                    struct v4l2_capability *cap)
++{
++  DBG_PRINT("\n");
++  memset(cap, 0, sizeof(*cap));
++  strncpy((char*)cap->card  , CARD_NAME  , sizeof(cap->card  )-1);
++  strncpy((char*)cap->driver, DRIVER_NAME, sizeof(cap->driver)-1);
++  cap->version = DRIVER_VERSION;
++  cap->capabilities = V4L2_CAP_VIDEO_CAPTURE |
++                      V4L2_CAP_STREAMING     |
++                      V4L2_CAP_VIDEO_OVERLAY ;
++
++  return 0;
++}
++
++/**
++ * Enumerate formats, that the device can accept from the user
++ */
++static int enum_fmt(struct file *file, void  *priv,
++                    struct v4l2_fmtdesc *fmt)
++{
++  struct cvifw_vdev *dev = video_drvdata(file);
++  DBG_PRINT("\n");
++  if (!dev->sensor){
++    DBG_ERROR("Slave not found!\n");
++    return -ENODEV;
++  }
++  return vidioc_int_enum_fmt_cap(dev->sensor, fmt);
++}
++
++static int g_fmt(struct file *file, void *fh, struct v4l2_format *f)
++{
++  struct cvifw_vdev *dev = video_drvdata(file);
++
++  switch (f->type) {
++  case V4L2_BUF_TYPE_VIDEO_CAPTURE:
++    DBG_PRINT("type is V4L2_BUF_TYPE_VIDEO_CAPTURE\n");
++    f->fmt.pix = dev->v2f.fmt.pix;
++    break;
++  case V4L2_BUF_TYPE_VIDEO_OVERLAY:
++    DBG_PRINT("type is V4L2_BUF_TYPE_VIDEO_OVERLAY\n");
++    f->fmt.win = dev->win;
++    break;
++  default:
++    DBG_PRINT("type is invalid\n");
++    return -EINVAL;
++  }
++  return 0;
++}
++
++static inline int valid_mode(u32 palette)
++{
++  return ((palette == V4L2_PIX_FMT_RGB565 ) ||
++          (palette == V4L2_PIX_FMT_BGR24  ) ||
++          (palette == V4L2_PIX_FMT_RGB24  ) ||
++          (palette == V4L2_PIX_FMT_BGR32  ) ||
++          (palette == V4L2_PIX_FMT_RGB32  ) ||
++          (palette == V4L2_PIX_FMT_YUV422P) ||
++          (palette == V4L2_PIX_FMT_UYVY   ) ||
++          (palette == V4L2_PIX_FMT_YUYV   ) ||
++          (palette == V4L2_PIX_FMT_YUV420 ) ||
++          (palette == V4L2_PIX_FMT_YVU420 ) ||
++          (palette == V4L2_PIX_FMT_NV12   ) );
++}
++
++static int s_fmt(struct file *file, void  *priv, struct v4l2_format *f)
++{
++  struct cvifw_vdev      *dev = video_drvdata(file);
++  int                     size = 0;
++  int                     bpl  = 0; /// bytes per line
++
++  switch(f->type) {
++  case V4L2_BUF_TYPE_VIDEO_CAPTURE:
++    DBG_PRINT("type is V4L2_BUF_TYPE_VIDEO_CAPTURE pixelformat %X\n",
++              f->fmt.pix.pixelformat);
++    if (!valid_mode(f->fmt.pix.pixelformat)) {
++      DBG_ERROR("Format not supported\n");
++      return -EINVAL;
++    }
++
++    f->fmt.pix.width  = dev->v2f.fmt.pix.width;
++    f->fmt.pix.height = dev->v2f.fmt.pix.height;
++
++    switch (f->fmt.pix.pixelformat) {
++    case V4L2_PIX_FMT_RGB565:
++      size = f->fmt.pix.width * f->fmt.pix.height * 2;
++      bpl = f->fmt.pix.width * 2;
++      break;
++    case V4L2_PIX_FMT_BGR24:
++      size = f->fmt.pix.width * f->fmt.pix.height * 3;
++      bpl = f->fmt.pix.width * 3;
++      break;
++    case V4L2_PIX_FMT_RGB24:
++      size = f->fmt.pix.width * f->fmt.pix.height * 3;
++      bpl = f->fmt.pix.width * 3;
++      break;
++    case V4L2_PIX_FMT_BGR32:
++      size = f->fmt.pix.width * f->fmt.pix.height * 4;
++      bpl = f->fmt.pix.width * 4;
++      break;
++    case V4L2_PIX_FMT_RGB32:
++      size = f->fmt.pix.width * f->fmt.pix.height * 4;
++      bpl = f->fmt.pix.width * 4;
++      break;
++    case V4L2_PIX_FMT_YUV422P:
++      size = f->fmt.pix.width * f->fmt.pix.height * 2;
++      bpl = f->fmt.pix.width;
++      break;
++    case V4L2_PIX_FMT_UYVY:
++    case V4L2_PIX_FMT_YUYV:
++      size = f->fmt.pix.width * f->fmt.pix.height * 2;
++      bpl = f->fmt.pix.width * 2;
++      break;
++    case V4L2_PIX_FMT_YUV420:
++    case V4L2_PIX_FMT_YVU420:
++      size = f->fmt.pix.width * f->fmt.pix.height * 3 / 2;
++      bpl = f->fmt.pix.width;
++      break;
++    case V4L2_PIX_FMT_NV12:
++      size = f->fmt.pix.width * f->fmt.pix.height * 3 / 2;
++      bpl = f->fmt.pix.width;
++      break;
++    default:
++      break;
++    }
++
++    if (f->fmt.pix.bytesperline < bpl)
++      f->fmt.pix.bytesperline = bpl;
++
++    if (f->fmt.pix.sizeimage < size)
++      f->fmt.pix.sizeimage = size;
++
++    dev->v2f.fmt.pix = f->fmt.pix;
++    if (dev->v2f.fmt.pix.priv != 0) {
++      if (copy_from_user(&dev->offset,
++              (void *)dev->v2f.fmt.pix.priv,
++              sizeof(dev->offset))) {
++        return -EFAULT;
++      }
++    }
++DBG_PRINT("f->fmt..pix sizeimage %d, width %d, height %d\n",
++          f->fmt.pix.sizeimage,
++          f->fmt.pix.width,
++          f->fmt.pix.height);
++DBG_PRINT("v2f.fmt.pix sizeimage %d, width %d, height %d\n",
++          dev->v2f.fmt.pix.sizeimage,
++          dev->v2f.fmt.pix.width,
++          dev->v2f.fmt.pix.height);
++    break;
++
++  case V4L2_BUF_TYPE_VIDEO_OVERLAY:
++    DBG_PRINT("type is V4L2_BUF_TYPE_VIDEO_OVERLAY\n");
++    pr_debug("   type=V4L2_BUF_TYPE_VIDEO_OVERLAY\n");
++    //TODO serve???   retval = verify_preview(cam, &f->fmt.win);
++    dev->win = f->fmt.win;
++    break;
++
++  default:
++    DBG_PRINT("type is invalid\n");
++    return -EINVAL;
++  }
++  return 0;
++}
++
++static int enum_input(struct file *file, void  *priv,
++                     struct v4l2_input *inp)
++{
++  if (inp->index != 0)
++    return -EINVAL;
++
++  memset(inp, 0, sizeof(*inp));
++  inp->index = 0;
++  strncpy((char*)inp->name, "Altera cvifw Input", sizeof(inp->name) - 1);
++  inp->type = V4L2_INPUT_TYPE_CAMERA;
++  inp->std  = V4L2_STD_ALL;
++
++  return 0;
++}
++
++static int g_input(struct file *file, void  *priv, int *input)
++{
++  DBG_PRINT("\n");
++  *input = 0;
++  return 0;
++}
++
++static int s_input(struct file *file, void  *priv, int input)
++{
++  DBG_PRINT("input  = %d\n", input);
++  //TODO if (input != 0)
++  //  return -EINVAL;
++
++  return 0;
++}
++
++static int enum_framesizes(struct file *file, void  *priv,
++                           struct v4l2_frmsizeenum *fsize)
++{
++  struct cvifw_vdev    *dev = video_drvdata(file);
++DBG_PRINT("\n");
++  if (!dev->sensor){
++    DBG_ERROR("Slave not found!\n");
++    return -ENODEV;
++  }
++  return vidioc_int_enum_framesizes(dev->sensor, fsize);
++}
++
++static int reqbufs(struct file *file, void  *priv,
++                   struct v4l2_requestbuffers *req)
++{
++  struct cvifw_vdev    *dev = video_drvdata(file);
++
++  DBG_PRINT("Count %d\n", req->count);
++
++  if (req->type != V4L2_BUF_TYPE_VIDEO_CAPTURE) {
++    return -EINVAL;
++  }
++  if (req->memory != V4L2_MEMORY_MMAP) {
++    return -EINVAL;
++  }
++  empty_framequeues(dev);
++  if (req->count && !(dev->flags & FLAG_BUFFERS_AVAILABLE)) {
++    req->count = request_buffers(dev, req->count, req->memory);
++  }
++  if (req->count == 0) {
++    return -ENOMEM;
++  }
++  return 0;
++}
++
++static int querybuf(struct file *file, void  *priv, struct v4l2_buffer *b)
++{
++  struct cvifw_vdev    *dev = video_drvdata(file);
++DBG_PRINT("Index %d\n", b->index);
++
++  if (!(dev->flags & FLAG_BUFFERS_AVAILABLE)) {
++    DBG_ERROR("No available buffers!\n");
++    return -ENOMEM;
++  }
++  if (b->type != V4L2_BUF_TYPE_VIDEO_CAPTURE || b->index >= dev->frames_num) {
++    DBG_ERROR("Type is not V4L2_BUF_TYPE_VIDEO_CAPTURE  or index is greater than maximum!\n");
++    return -EINVAL;
++  }
++  memcpy(b, &dev->frame[b->index].buf, sizeof(*b));
++  if (dev->frame[b->index].vma_use_count) {
++    b->flags |= V4L2_BUF_FLAG_MAPPED;
++  }
++  if (dev->frame[b->index].state == F_DONE) {
++    b->flags |= V4L2_BUF_FLAG_DONE;
++  } else if (dev->frame[b->index].state != F_UNUSED) {
++    b->flags |= V4L2_BUF_FLAG_QUEUED;
++  }
++  return 0;
++}
++
++static int qbuf(struct file *file, void  *priv, struct v4l2_buffer *b)
++{
++  struct cvifw_vdev    *dev = video_drvdata(file);
++DBG_PRINT("index %d\n", b->index);
++
++  if (!(dev->flags & FLAG_BUFFERS_AVAILABLE))
++    return -ENOMEM;
++
++  if (b->type != V4L2_BUF_TYPE_VIDEO_CAPTURE || b->index >= dev->frames_num)
++    return -EINVAL;
++
++  if (dev->frame[b->index].state != F_UNUSED)
++    return -EAGAIN;
++
++  if (b->memory != V4L2_MEMORY_MMAP)
++    return -EINVAL;
++
++  dma_sync_single_for_device(dev->dev,
++                             dev->frame[b->index].buf_phys,
++                             dev->frame[b->index].buf.length,
++                             DMA_TO_DEVICE);
++
++  dev->frame[b->index].state = F_QUEUED;
++
++  spin_lock_bh(&dev->queue_lock);
++  list_add_tail(&dev->frame[b->index].frame, &dev->inqueue);
++  spin_unlock_bh(&dev->queue_lock);
++
++//printk(KERN_INFO "%s:%s:done\n", DRIVER_NAME, __func__);
++  return 0;
++}
++
++static int dqbuf(struct file *file, void  *priv, struct v4l2_buffer *b)
++{
++  struct cvifw_vdev    *dev = video_drvdata(file);
++  struct altera_frame  *frame;
++  int                   ret = 0;
++
++DBG_PRINT("index %d\n", b->index);
++
++  if (!(dev->flags & FLAG_BUFFERS_AVAILABLE)) {
++    return -ENOMEM;
++  }
++  if (!FLAG_ISSET(FLAG_STREAM_ON) ||
++      b->type != V4L2_BUF_TYPE_VIDEO_CAPTURE ||
++      b->index >= dev->frames_num) {
++    return -EINVAL;
++  }
++  if (list_empty(&dev->outqueue)) {
++    if (dev->flags & FLAG_BUFFER_IN_SYNC) {
++      if (file->f_flags & O_NONBLOCK) {
++        return -EAGAIN;
++      }
++      ret = wait_event_timeout(dev->wait, !list_empty(&dev->outqueue), HZ/5);
++    } else {
++      if (FLAG_ISSET(FLAG_STREAM_ON)) {
++        ret = wait_event_timeout(dev->wait,
++                                 (dev->flags & FLAG_BUFFER_IN_SYNC), HZ);
++      }
++    }
++    if (ret == 0) {
++      DBG_ERROR("Timeout expired\n");
++      ret = -ETIMEDOUT;
++    }
++    if (!FLAG_ISSET(FLAG_STREAM_ON)) {
++      ret = -EPERM;
++    }
++    if (ret < 0) {
++      return ret;
++    }
++  }
++
++  spin_lock_bh(&dev->queue_lock);
++  frame = list_entry(dev->outqueue.next, struct altera_frame, frame);
++  list_del(dev->outqueue.next);
++  spin_unlock_bh(&dev->queue_lock);
++
++  dma_sync_single_for_cpu(dev->dev,
++                          frame->buf_phys,
++                          frame->buf.length,
++                          DMA_FROM_DEVICE);
++
++  frame->state = F_UNUSED;
++  memcpy(b, &frame->buf, sizeof(*b));
++DBG_PRINT("index %d pa %p\n", b->index, frame->buf_phys);
++
++  if (frame->vma_use_count)
++    b->flags |= V4L2_BUF_FLAG_MAPPED;
++
++  return 0;
++}
++
++static int streamon(struct file *file, void  *priv, enum v4l2_buf_type type)
++{
++  struct cvifw_vdev    *dev = video_drvdata(file);
++  struct altera_frame  *frame;
++DBG_PRINT("entry\n");
++
++  dev_dbg(dev->v4l2_dev.dev, "%s()\n", __func__);
++
++  if (type != V4L2_BUF_TYPE_VIDEO_CAPTURE)
++    return -EINVAL;
++
++  if (!(dev->flags & FLAG_BUFFERS_AVAILABLE))
++    return -ENOMEM;
++
++  if ( FLAG_ISSET(FLAG_STREAM_ON) ) {
++    return 0;
++  }
++  if (!list_empty(&dev->outqueue)){
++    INIT_LIST_HEAD(&dev->outqueue);
++  }
++  if (!list_empty(&dev->dmaqueue)){
++    INIT_LIST_HEAD(&dev->dmaqueue);
++  }
++
++  altera_fw_hw_init(dev->fw_res.virt,
++                    0,                                // double buffer
++                    0,                                // sync type
++                    dev->v2f.fmt.pix.width / 4,       // wlen
++                    dev->v2f.fmt.pix.bytesperline,    // stride
++                    dev->v2f.fmt.pix.pixelformat);    // oputput format
++  
++  reinit_framequeues(dev);
++
++  /* write video buffer address where frame writer will stream data */
++DBG_PRINT("call list_entry\n");
++  frame = list_entry(dev->inqueue.next, struct altera_frame, frame);
++  /* remove the entry from the inqueue and put it in the dma queue */
++  list_move_tail(&frame->frame, &dev->dmaqueue);
++DBG_PRINT("write base0 %p\n", frame->buf_phys);
++  altera_fw_hw_addr0(dev->fw_res.virt, frame->buf_phys, dev->frame_buf_size);
++
++  dev->capture_pid = current->pid;
++  dev->capture_on = true;
++
++  /* start acquisition */
++  FLAG_SET(FLAG_STREAM_ON);
++  FLAG_SET(FLAG_BUFFER_IN_SYNC);
++  FLAG_SET(FLAG_FIRST_FRAME);
++  altera_fw_hw_start(dev->fw_res.virt);
++
++  return 0;
++}
++
++static int streamoff(struct file *file, void  *priv, enum v4l2_buf_type type)
++{
++  struct cvifw_vdev    *dev = video_drvdata(file);
++
++  dev_dbg(dev->v4l2_dev.dev, "%s()\n", __func__);
++
++  if (type != V4L2_BUF_TYPE_VIDEO_CAPTURE)
++    return -EINVAL;
++
++  if (FLAG_ISSET(FLAG_STREAM_ON)) {
++    /* stop acquisition */
++    altera_fw_hw_stop(dev->fw_res.virt);
++    FLAG_CLR(FLAG_STREAM_ON);
++    FLAG_CLR(FLAG_BUFFER_IN_SYNC);
++    wake_up(&dev->wait);
++  }
++
++  return 0;
++}
++
++// TODO crop
++
++static int overlay(struct file *file, void *fh, unsigned int on)
++{
++  struct cvifw_vdev    *dev = video_drvdata(file);
++  int                   ret;
++  if (on) {
++    dev->overlay_on = true;
++    dev->overlay_pid = current->pid;
++    ret = 0;// TODO start_preview(dev); // non dovrebbe servire, al massimo avvio il dma
++  } else {
++    ret = 0;// TODO stop_preview(dev);
++    dev->overlay_on = false;
++  }
++  return ret;
++}
++
++static int g_fbuf(struct file *file, void *fh, struct v4l2_framebuffer *fb)
++{
++  struct cvifw_vdev  *dev = video_drvdata(file);
++  DBG_PRINT("\n");
++  *fb = dev->v4l2_fb;
++  fb->capability = V4L2_FBUF_CAP_EXTERNOVERLAY;
++  return 0;
++}
++
++static int s_fbuf(struct file *file, void *fh, const struct v4l2_framebuffer *fb)
++{
++  struct cvifw_vdev  *dev = video_drvdata(file);
++  DBG_PRINT("\n");
++  dev->v4l2_fb = *fb;
++  return 0;
++}
++
++static int s_std(struct file *file, void *fh, v4l2_std_id std_id)
++{
++  struct cvifw_vdev  *dev = video_drvdata(file);
++  if (!dev->sensor){
++    DBG_ERROR("slave not found!\n");
++    return -ENODEV;
++  }
++  if (std_id == V4L2_STD_PAL) {
++    DBG_PRINT("Setting standard to PAL %Lx\n", V4L2_STD_PAL);
++    dev->standard.id = V4L2_STD_PAL;
++    dev->video_idx = TV_PAL;
++  } else if (std_id == V4L2_STD_NTSC) {
++    DBG_PRINT("Setting standard to NTSC %Lx\n",V4L2_STD_NTSC);
++    /* Get rid of the white dot line in NTSC signal input */
++    dev->standard.id = V4L2_STD_NTSC;
++    dev->video_idx = TV_NTSC;
++  } else {
++    dev->standard.id = V4L2_STD_ALL;
++    dev->video_idx = TV_NOT_LOCKED;
++    DBG_ERROR("Unrecognized std! %Lx (PAL=%Lx, NTSC=%Lx)\n",
++              std_id, V4L2_STD_PAL, V4L2_STD_NTSC);
++  }
++  dev->standard.index = dev->video_idx;
++  strcpy(dev->standard.name, video_fmts[dev->video_idx].name);
++/* TODO
++  dev->crop_bounds.width   = video_fmts[dev->video_idx].raw_width;
++  dev->crop_bounds.height  = video_fmts[vdev->ideo_idx].raw_height;
++  dev->crop_current.width  = video_fmts[dev->video_idx].active_width;
++  dev->crop_current.height = video_fmts[dev->video_idx].active_height;
++  dev->crop_current.top    = video_fmts[dev->video_idx].active_top;
++  dev->crop_current.left   = video_fmts[dev->video_idx].active_left;
++*/
++  DBG_PRINT("Setting standard to %s %d\n",
++            dev->standard.name, dev->standard.index);
++  return 0;
++}
++
++static int g_std(struct file *file, void *fh, v4l2_std_id *std_id)
++{
++  struct cvifw_vdev  *dev = video_drvdata(file);
++  struct v4l2_format  tv_fmt;
++
++DBG_PRINT("\n");
++  if (!dev->sensor){
++    DBG_ERROR("Slave not found!\n");
++    return -ENODEV;
++  }
++  tv_fmt.type = V4L2_BUF_TYPE_PRIVATE;
++  vidioc_int_g_fmt_cap(dev->sensor, &tv_fmt);
++  if (dev->std_auto) {
++    if (dev->standard.id != tv_fmt.fmt.pix.pixelformat) {
++      DBG_PRINT("Changing standard to %Lx\n", tv_fmt.fmt.pix.pixelformat);
++      s_std(file, NULL, tv_fmt.fmt.pix.pixelformat);
++    }
++  }
++  *std_id = tv_fmt.fmt.pix.pixelformat;
++  return 0;
++}
++
++static int g_parm(struct file *file, void *fh, struct v4l2_streamparm *sp)
++{
++  struct cvifw_vdev    *dev = video_drvdata(file);
++  DBG_PRINT("\n");
++/*
++  if (sp->type != V4L2_BUF_TYPE_VIDEO_CAPTURE)
++    return -EINVAL;
++
++  sp->parm.capture.extendedmode = 0;
++  sp->parm.capture.readbuffers = dev->frames_num;
++  */
++  if (!dev->sensor){
++    DBG_ERROR("Slave not found!\n");
++    return -ENODEV;
++  }
++  return vidioc_int_g_parm(dev->sensor, sp);
++}
++
++static int s_parm(struct file *file, void *fh, struct v4l2_streamparm *parm)
++{
++  struct cvifw_vdev      *dev = video_drvdata(file);
++  struct v4l2_streamparm  currentparm;
++  //struct v4l2_ifparm      ifparm;
++  struct v4l2_format      slv_fmt;
++  int                     err = 0;
++
++  DBG_PRINT("\n");
++
++  if (!dev->sensor){
++    DBG_ERROR("Slave not found!\n");
++    return -ENODEV;
++  }
++  if (parm->type != V4L2_BUF_TYPE_VIDEO_CAPTURE) {
++    DBG_ERROR("Invalid type\n");
++    return -EINVAL;
++  }
++
++  /* Stop the viewfinder */
++//TODO  if (dev->overlay_on == true)
++//TODO    stop_preview(dev);
++
++  //* First check that this device can support the changes requested.
++  currentparm.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
++  err = vidioc_int_g_parm(dev->sensor, &currentparm);
++  if (err) {
++    DBG_ERROR("vidioc_int_g_parm returned an error %d\n", err);
++    goto exit;
++  }
++
++#ifdef DEBUG
++  {
++    u32 current_fps;
++    u32 parm_fps;
++
++    current_fps = currentparm.parm.capture.timeperframe.denominator /
++                  currentparm.parm.capture.timeperframe.numerator;
++    parm_fps = parm->parm.capture.timeperframe.denominator /
++               parm->parm.capture.timeperframe.numerator;
++
++    DBG_PRINT("   Current capabilities are %x\n"
++              "   Current capturemode is %d  change to %d\n"
++              "   Current framerate is %d  change to %d\n",
++              currentparm.parm.capture.capability,
++              currentparm.parm.capture.capturemode,
++              parm->parm.capture.capturemode,
++              current_fps, parm_fps);
++  }
++#endif
++
++  /* This will change any camera settings needed. */
++  err = vidioc_int_s_parm(dev->sensor, parm);
++  if (err) {
++    DBG_ERROR("vidioc_int_s_parm returned an error %d\n", err);
++    goto exit;
++  }
++
++  /* If resolution changed, need to re-program the CSI */
++  /* Get new values. */
++  //vidioc_int_g_ifparm(dev->sensor, &ifparm);
++
++  /* if the capturemode changed, the size bounds will have changed. */
++  slv_fmt.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
++  vidioc_int_g_fmt_cap(dev->sensor, &slv_fmt);
++  DBG_PRINT("g_fmt_cap returns width x height of input as %d x %d\n",
++            slv_fmt.fmt.pix.width, slv_fmt.fmt.pix.height);
++
++  dev->v2f.fmt.pix.width  = slv_fmt.fmt.pix.width;
++  dev->v2f.fmt.pix.height = slv_fmt.fmt.pix.height;
++
++  exit:
++//  if (dev->overlay_on == true)
++//    start_preview(dev);
++
++  return err;
++}
++
++static int g_ctrl(struct file *file, void  *fh, struct v4l2_control *ctrl)
++{
++  struct cvifw_vdev    *dev = video_drvdata(file);
++  DBG_PRINT("ctrl id %d\n", ctrl->id);
++
++  switch (ctrl->id) {
++    /*TODO
++  case ALTERAFW_CONTROL_SYNC_TYPE:
++    ctrl->value = dev->sync_type;
++    break;
++  case ALTERAFW_CONTROL_DOUBLE_BUF:
++    ctrl->value = dev->double_buf;
++    break;
++    */
++  }
++  return 0;
++}
++
++#define CALL_SENSOR_ERR_MSG "ERROR: v4l2 capture: slave not found!\n"
++#define CALL_SENSOR_CTRL()  if(dev->sensor){ \
++                              ret = vidioc_int_s_ctrl(dev->sensor, ctrl); \
++                            }else{ \
++                              pr_err(CALL_SENSOR_ERR_MSG); \
++                              ret = -ENODEV; \
++                            }
++
++static int s_ctrl(struct file *file, void  *fh, struct v4l2_control *ctrl)
++{
++  struct cvifw_vdev  *dev = video_drvdata(file);
++  int                 ret = 0;
++DBG_PRINT("ctrl id %d value %d\n", ctrl->id, ctrl->value);
++
++  switch (ctrl->id) {
++  case V4L2_CID_BRIGHTNESS: CALL_SENSOR_CTRL(); break;
++  case V4L2_CID_HUE       : CALL_SENSOR_CTRL(); break;
++  case V4L2_CID_CONTRAST  : CALL_SENSOR_CTRL(); break;
++  case V4L2_CID_SATURATION: CALL_SENSOR_CTRL(); break;
++  case V4L2_CID_SHARPNESS : CALL_SENSOR_CTRL(); break;
++
++    /*TODO
++  case ALTERAFW_CONTROL_SYNC_TYPE:
++    dev->sync_type = ctrl->value;
++    regs_update(dev);
++    break;
++  case ALTERAFW_CONTROL_DOUBLE_BUF:
++    dev->double_buf = ctrl->value;
++    regs_update(dev);
++    break;
++    */
++  }
++  return ret;
++}
++
++static const struct v4l2_ioctl_ops cvifw_ioctl_ops = {
++
++  .vidioc_g_chip_ident      = g_chip_ident,
++  
++  .vidioc_querycap          = querycap,
++
++  .vidioc_enum_fmt_vid_cap  = enum_fmt,
++  .vidioc_g_fmt_vid_cap     = g_fmt,
++  .vidioc_s_fmt_vid_cap     = s_fmt,
++  .vidioc_try_fmt_vid_cap   = s_fmt,
++/* TODO verificare se servono
++  int (*vidioc_enum_fmt_vid_overlay) (struct file *file, void *fh, struct v4l2_fmtdesc *f);
++  int (*vidioc_g_fmt_vid_overlay)(struct file *file, void *fh, struct v4l2_format *f);
++  int (*vidioc_s_fmt_vid_overlay)(struct file *file, void *fh, struct v4l2_format *f);
++  int (*vidioc_try_fmt_vid_overlay)(struct file *file, void *fh, struct v4l2_format *f);
++ */
++  .vidioc_enum_input        = enum_input,
++  .vidioc_g_input           = g_input,
++  .vidioc_s_input           = s_input,
++
++  .vidioc_enum_framesizes   = enum_framesizes,
++
++  .vidioc_reqbufs           = reqbufs,
++  .vidioc_querybuf          = querybuf,
++  .vidioc_qbuf              = qbuf,
++  .vidioc_dqbuf             = dqbuf,
++
++  .vidioc_streamon          = streamon,
++  .vidioc_streamoff         = streamoff,
++
++/*TODO crop
++  int (*vidioc_cropcap)          (struct file *file, void *fh, struct v4l2_cropcap *a);
++  int (*vidioc_g_crop)           (struct file *file, void *fh, struct v4l2_crop *a);
++  int (*vidioc_s_crop)           (struct file *file, void *fh, const struct v4l2_crop *a);
++*/
++  .vidioc_overlay           = overlay,
++
++  .vidioc_g_fbuf            = g_fbuf,
++  .vidioc_s_fbuf            = s_fbuf,
++
++  .vidioc_g_std             = g_std,
++  .vidioc_s_std             = s_std,
++
++  .vidioc_g_parm            = g_parm,
++  .vidioc_s_parm            = s_parm,
++
++  .vidioc_g_ctrl            = g_ctrl,
++  .vidioc_s_ctrl            = s_ctrl,
++
++/* For other private ioctls
++  long (*vidioc_default)         (struct file *file, void *fh,
++          bool valid_prio, unsigned int cmd, void *arg);
++*/
++};
++
++/** **************************************************************************
++ * v4l2 functions
++ ****************************************************************************/
++/*
++static int s_ctrl(struct v4l2_ctrl *ctrl)
++{
++  struct cvifw_vdev *dev = container_of(ctrl->handler, struct cvifw_vdev, hdl);
++  DBG_PRINT("ctrl->priv [%p] dev [%p]\n", ctrl->priv, dev);
++  mutex_lock(&dev->fops_lock);
++  switch (ctrl->id) {
++  case V4L2_CID_BRIGHTNESS:
++    break;
++  case V4L2_CID_HUE:
++    break;
++  case V4L2_CID_CONTRAST:
++    break;
++  case V4L2_CID_SATURATION:
++    break;
++  case V4L2_CID_SHARPNESS:
++    break;
++  default:
++    mutex_unlock(&dev->fops_lock);
++    return -EINVAL;
++  }
++  mutex_unlock(&dev->fops_lock);
++  return 0;
++}
++static const struct v4l2_ctrl_ops ctrl_ops = {
++  .s_ctrl = s_ctrl,
++};
++*/
++
++
++/** **************************************************************************
++ *                         Interrupt handling
++ ************************************************************************** */
++#define FW_STS_INT_E          0x00000010
++#define FW_STS_INT_S          0x00000020
++
++static irqreturn_t cvifw_isr(int irq, void *pdev)
++{
++  struct cvifw_vdev    *dev = (struct cvifw_vdev *)pdev;
++  unsigned long         reg;
++  struct altera_frame  *frame;
++DBG_PRINT("dev [%p]\n", dev);
++  reg = altera_fw_hw_clearint(dev->fw_res.virt);
++  // start frame
++  if (reg & FW_STS_INT_S) {
++    FLAG_CLR(FLAG_FIRST_FRAME);
++    if (FLAG_ISSET(FLAG_BUFFER_IN_SYNC) && !list_empty(&dev->inqueue)) {
++      frame = list_entry(dev->inqueue.next, struct altera_frame, frame);
++      list_move_tail(&frame->frame, &dev->dmaqueue);
++      altera_fw_hw_addr0(dev->fw_res.virt, frame->buf_phys, dev->frame_buf_size);
++    } else if (FLAG_ISCLR(FLAG_BUFFER_IN_SYNC) && list_empty(&dev->outqueue)) {
++      reinit_framequeues(dev);
++      FLAG_SET(FLAG_BUFFER_IN_SYNC);
++    } else if (FLAG_ISSET(FLAG_BUFFER_IN_SYNC)) {
++      FLAG_CLR(FLAG_BUFFER_IN_SYNC);
++    }
++  }
++  // end frame
++  if ( (reg & FW_STS_INT_E) && FLAG_ISCLR(FLAG_FIRST_FRAME) ) {
++    if (!list_empty(&dev->dmaqueue)) {
++      frame = list_entry(dev->dmaqueue.next, struct altera_frame, frame);
++      do_gettimeofday(&frame->buf.timestamp);
++      frame->buf.sequence++;
++      frame->state = F_DONE;
++      frame->buf.bytesused = frame->buf.length;
++      // remove the entry from the dmaqueue and put it in the outqueue
++      list_move_tail(&frame->frame, &dev->outqueue);
++      wake_up(&dev->wait);
++DBG_PRINT("wake_up dev->wait\n");
++    }
++  }
++  return IRQ_HANDLED;
++}
++
++/** **************************************************************************
++ *                      video4linux integration
++ ************************************************************************** */
++
++static int cvifw_open(struct file *file)
++{
++  struct cvifw_vdev    *dev = video_drvdata(file);
++  struct v4l2_format    slv_fmt;
++  int                   ret;
++
++  DBG_PRINT("vdev [%p] minor %d csi_id %d\n",
++            dev, iminor(file->f_path.dentry->d_inode), dev->csi_id);
++  if (dev->flags & FLAG_DEVICE_IN_USE)
++    return -EBUSY;
++
++  mutex_lock(&dev->fops_lock);
++
++  dev->flags &= ~FLAG_DEINTERLACE;
++
++//  dev->output_format = V4L2_PIX_FMT_RGB32;
++//  dev->output_bpp = 32;
++
++//  dev->frame_buf_size = dev->video_norm.width  * dev->video_norm.height * dev->output_bpp / 8;
++/*TODO
++  // possible cropping area
++  dev->cropcap.bounds.left   = 0;
++  dev->cropcap.bounds.top    = 0;
++  dev->cropcap.bounds.width  = dev->video_norm.width;
++  dev->cropcap.bounds.height = dev->video_norm.height;
++
++  // default cropping rectangle
++  dev->cropcap.defrect.left   = 0;
++  dev->cropcap.defrect.top    = 0;
++  dev->cropcap.defrect.width  = dev->video_norm.width;
++  dev->cropcap.defrect.height = dev->video_norm.height;
++
++  // initial cropping rectangle
++  dev->crop_rect.left   = 0;
++  dev->crop_rect.top    = 0;
++  dev->crop_rect.width  = dev->video_norm.width;
++  dev->crop_rect.height = dev->video_norm.height;
++*/
++
++  if (!dev->sensor) {
++    DBG_ERROR("Slave not found!\n");
++    mutex_unlock(&dev->fops_lock);
++    return -EBADF;
++  }
++  // initial pix format data
++  /*
++  dev->pix_format.width        = dev->video_norm.width;
++  dev->pix_format.height       = dev->video_norm.height;
++  dev->pix_format.pixelformat  = dev->output_format;
++  dev->pix_format.field        = V4L2_FIELD_NONE;
++  dev->pix_format.bytesperline = dev->pix_format.width * (dev->output_bpp / 8);
++  dev->pix_format.sizeimage    = dev->frame_buf_size;
++  dev->pix_format.colorspace   = V4L2_COLORSPACE_SRGB;
++  dev->pix_format.priv         = 0;
++*/
++  DBG_PRINT("call vidioc_int_g_fmt_cap\n");
++
++  slv_fmt.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
++  ret = vidioc_int_g_fmt_cap(dev->sensor, &slv_fmt);
++  DBG_PRINT("vidioc_int_g_fmt_cap return %d W: %d, H: %d\n",
++            ret,
++            slv_fmt.fmt.pix.width,
++            slv_fmt.fmt.pix.height);
++
++  dev->v2f.fmt.pix.width        = slv_fmt.fmt.pix.width;
++  dev->v2f.fmt.pix.height       = slv_fmt.fmt.pix.height;
++  dev->v2f.fmt.pix.pixelformat  = V4L2_PIX_FMT_RGB32;
++  dev->v2f.fmt.pix.field        = V4L2_FIELD_NONE;
++  dev->v2f.fmt.pix.bytesperline = slv_fmt.fmt.pix.width * 4;
++  dev->v2f.fmt.pix.sizeimage    = slv_fmt.fmt.pix.width * 4 * slv_fmt.fmt.pix.height;
++  dev->v2f.fmt.pix.colorspace   = V4L2_COLORSPACE_SRGB;
++  dev->v2f.fmt.pix.priv         = 0;
++
++DBG_PRINT("v2f.fmt.pix sizeimage %d, width %d, height %d\n",
++          dev->v2f.fmt.pix.sizeimage,
++          dev->v2f.fmt.pix.width,
++          dev->v2f.fmt.pix.height);
++
++  DBG_PRINT("call vidioc_int_s_power, vidioc_int_init, vidioc_int_dev_init\n");
++  vidioc_int_s_power(dev->sensor, 1);
++  vidioc_int_init(dev->sensor);
++  vidioc_int_dev_init(dev->sensor);
++
++  file->private_data = dev;
++
++  dev->flags &= ~FLAG_DO_UPDATE;
++  FLAG_CLR(FLAG_STREAM_ON);
++  dev->flags |= FLAG_DEVICE_IN_USE;
++
++  //TODO regs_update(dev);
++
++  mutex_unlock(&dev->fops_lock);
++
++  return v4l2_fh_open(file);
++}
++
++static int cvifw_release(struct file *file)
++{
++  struct cvifw_vdev   *dev = video_drvdata(file);
++  mutex_lock(&dev->fops_lock);
++
++  altera_fw_hw_stop(dev->fw_res.virt);
++
++  dev->flags &= ~FLAG_DEVICE_IN_USE;
++  if (dev->flags & FLAG_BUFFERS_AVAILABLE)
++    release_buffers(dev);
++
++  mutex_unlock(&dev->fops_lock);
++
++  return v4l2_fh_release(file);
++}
++
++static ssize_t cvifw_read(struct file *file, char *buf, size_t count, loff_t *ppos)
++{
++  struct cvifw_vdev  *vdev = video_drvdata(file);
++  int                 len;
++
++  len = sprintf(buf, "read minor %d, vdev [%p], csi %d video_drvdata [%p];\n",
++                iminor(file->f_path.dentry->d_inode),
++                vdev,
++                vdev->csi_id,
++                video_drvdata(file) );
++  return len;
++}
++
++static void vm_open(struct vm_area_struct *vma)
++{
++  struct altera_frame *frame = vma->vm_private_data;
++  frame->vma_use_count++;
++}
++
++static void vm_close(struct vm_area_struct *vma)
++{
++  struct altera_frame *frame = vma->vm_private_data;
++  frame->vma_use_count--;
++}
++
++static const struct vm_operations_struct vm_ops = {
++  .open  = vm_open,
++  .close = vm_close,
++};
++
++static int cvifw_mmap(struct file *file, struct vm_area_struct *vma)
++{
++  struct cvifw_vdev  *dev = video_drvdata(file);
++  unsigned long       size;
++  int                 i;
++  int                 ret = -EINVAL;
++
++  DBG_PRINT("Map address %p\n", vma->vm_pgoff << PAGE_SHIFT);
++
++  if (!(dev->flags & FLAG_BUFFERS_AVAILABLE)) {
++    return -ENOMEM;
++  }
++  if (mutex_lock_interruptible(&dev->fops_lock)) {
++    return -ERESTARTSYS;
++  }
++  size = vma->vm_end - vma->vm_start;
++  if (size != PAGE_ALIGN(dev->frame[0].buf.length)) {
++    DBG_ERROR("size page align error\n");
++    goto error_unlock;
++  }
++
++  for (i=0; i<dev->frames_num; i++) {
++    if ((dev->frame[i].buf.m.offset >> PAGE_SHIFT) == vma->vm_pgoff) {
++      break;
++    }
++  }
++  if (i == dev->frames_num) {
++    DBG_ERROR("Mapping address out of range\n");
++    goto error_unlock;
++  }
++  if ((vma->vm_flags & (VM_WRITE | VM_SHARED)) != (VM_WRITE | VM_SHARED)) {
++    DBG_ERROR("Mapping protection error\n");
++    goto error_unlock;
++  }
++  ret = remap_pfn_range(vma, vma->vm_start,
++                        (dev->frame[i].buf_phys >> PAGE_SHIFT), size,
++                        vma->vm_page_prot);
++  if (ret) {
++    DBG_ERROR("Mapping address failed\n");
++    goto error_unlock;
++  }
++  vma->vm_ops = &vm_ops;
++  vma->vm_private_data = &dev->frame[i];
++  vm_open(vma);
++
++error_unlock:
++  mutex_unlock(&dev->fops_lock);
++  return ret;
++}
++
++static unsigned int cvifw_poll(struct file *file, poll_table *wait)
++{
++  unsigned int res = v4l2_ctrl_poll(file, wait);
++/*
++  mutex_lock(&meye.lock);
++  poll_wait(file, &meye.proc_list, wait);
++  if (kfifo_len(&meye.doneq))
++    res |= POLLIN | POLLRDNORM;
++  mutex_unlock(&meye.lock);
++  */
++  return res;
++}
++
++static const struct v4l2_file_operations cvifw_fops = {
++  .owner          = THIS_MODULE,
++  .open           = cvifw_open,
++  .release        = cvifw_release,
++  .read           = cvifw_read,
++  .mmap           = cvifw_mmap,
++  .unlocked_ioctl = video_ioctl2,
++  .poll           = cvifw_poll,
++};
++
++
++
++/** **************************************************************************
++ ************************************************************************** */
++static int v4l2_master_attach(struct v4l2_int_device *slave)
++{
++  struct cvifw_vdev  *vdev  = slave->u.slave->master->priv;
++  struct sensor_data *sdata = slave->priv;
++  struct v4l2_format slv_fmt;
++
++
++  DBG_PRINT("Enter:slave.name = %s, master.name = %s\n",
++            slave->name, slave->u.slave->master->name);
++  DBG_PRINT("%s: sdata->csi: %d, cam->csi: %d\n",
++            slave->name, sdata->csi, vdev->csi_id);
++
++  vdev->sensor = slave;
++//TODO impostazioni varie, non credo sevano tutte quelle in mxc_v4l2_capture
++
++  vidioc_int_dev_exit(slave);
++  vidioc_int_s_power(slave, 0);
++
++  slv_fmt.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
++  vidioc_int_g_fmt_cap(slave, &slv_fmt);
++
++  //TODO crop
++
++  vdev->v2f.fmt.pix.width        = slv_fmt.fmt.pix.width;
++  vdev->v2f.fmt.pix.height       = slv_fmt.fmt.pix.height;
++  vdev->v2f.fmt.pix.pixelformat  = V4L2_PIX_FMT_RGB32;
++  vdev->v2f.fmt.pix.field        = V4L2_FIELD_NONE;
++  vdev->v2f.fmt.pix.bytesperline = slv_fmt.fmt.pix.width * 4;
++  vdev->v2f.fmt.pix.sizeimage    = slv_fmt.fmt.pix.width * 4 * slv_fmt.fmt.pix.height;
++  vdev->v2f.fmt.pix.colorspace   = V4L2_COLORSPACE_SRGB;
++  vdev->v2f.fmt.pix.priv         = slv_fmt.fmt.pix.priv;
++DBG_PRINT("v2f.fmt.pix sizeimage %d, width %d, height %d\n",
++          vdev->v2f.fmt.pix.sizeimage,
++          vdev->v2f.fmt.pix.width,
++          vdev->v2f.fmt.pix.height);
++
++  return 0;
++}
++
++static void v4l2_master_detach(struct v4l2_int_device *slave)
++{
++  DBG_PRINT("Enter\n");
++}
++
++/*! Information about this driver. */
++static struct v4l2_int_master v4l2_master = {
++  .attach = v4l2_master_attach,
++  .detach = v4l2_master_detach,
++};
++
++/**
++ * register v4l2 device
++ */
++static int v4l2_dev_reg(struct cvifw_vdev *dev)
++{
++  int                       ret;
++  struct v4l2_ctrl_handler *hdl      = &dev->hdl;
++  struct v4l2_device       *v4l2_dev = &dev->v4l2_dev;
++  struct video_device      *vdev;
++
++DBG_PRINT("entry dev [%p]\n", dev);
++
++  DBG_PRINT("mutex spin_lock & waitqueue init\n");
++  mutex_init(&dev->fops_lock);
++  spin_lock_init(&dev->queue_lock);
++  init_waitqueue_head(&dev->wait);
++
++  DBG_PRINT("remap PCIe iomem\n");
++  ret = remap(&dev->cvi_res);
++  if(ret){
++    //pci_disable_device(pdmgDevice->pci_dev);
++    DBG_PRINT("cvi remap failed\n" );
++    //return -ENODEV;
++  }
++  ret = remap(&dev->fw_res);
++  if(ret){
++    //pci_disable_device(pdmgDevice->pci_dev);
++    DBG_PRINT("fw remap failed\n" );
++    //return -ENODEV;
++  }
++
++  ret = v4l2_device_register(&dev->pci_dev->dev, v4l2_dev);
++  if (ret < 0) {
++    v4l2_err(v4l2_dev, "Could not register v4l2_device\n");
++    return ret;
++  }
++
++/* TODO vedere controlli TVP5150, per ora possono bastare:
++ * V4L2_CID_BRIGHTNESS e V4L2_CID_CONTRAST
++
++  v4l2_ctrl_handler_init(hdl, 0);
++  v4l2_ctrl_new_std(hdl, &ctrl_ops, V4L2_CID_BRIGHTNESS, 0, 255, 1, 128);
++  v4l2_ctrl_new_std(hdl, &ctrl_ops, V4L2_CID_HUE       , 0, 255, 1, 128);
++  v4l2_ctrl_new_std(hdl, &ctrl_ops, V4L2_CID_CONTRAST  , 0, 255, 1, 128);
++  v4l2_ctrl_new_std(hdl, &ctrl_ops, V4L2_CID_SATURATION, 0, 255, 1, 128);
++  v4l2_ctrl_new_std(hdl, &ctrl_ops, V4L2_CID_SHARPNESS , 0, 255, 1, 128);
++  if (hdl->error) {
++    v4l2_err(v4l2_dev, "couldn't register controls\n");
++    //goto outvideoreg;
++    v4l2_ctrl_handler_free(hdl);
++  }
++  v4l2_ctrl_handler_setup(hdl);
++  vdev->ctrl_handler = hdl;
++*/
++//  set_bit(V4L2_FL_USE_FH_PRIO, &meye.vdev->flags); ????? cosa fa?????
++
++
++  vdev = &dev->video_dev;
++DBG_PRINT("vdev allocated\n");
++  //memcpy(vdev, &cvifw_template, sizeof(cvifw_template));
++  strlcpy(vdev->name, DRIVER_NAME, sizeof(vdev->name));
++  vdev->fops      = &cvifw_fops,
++  vdev->ioctl_ops = &cvifw_ioctl_ops,
++  vdev->release   = video_device_release,
++  vdev->v4l2_dev  = v4l2_dev;
++  //vdev->ctrl_handler = hdl;
++  vdev->tvnorms = V4L2_STD_ALL;
++  video_set_drvdata(vdev, dev);
++
++
++DBG_PRINT("video_register_device vdev:%p, video_nr: %d\n", vdev, dev->video_nr);
++  ret = video_register_device(vdev, VFL_TYPE_GRABBER, dev->video_nr);
++DBG_PRINT("video_register_device return %d\n", ret);
++  if (ret < 0) {
++    v4l2_err(v4l2_dev, "video_register_device failed\n");
++    //goto outvideoreg;
++    //TODO rimettere v4l2_ctrl_handler_free(hdl);
++    return -1;
++  }
++
++  /* Set up the v4l2 device and register it*/
++  dev->self = kmalloc(sizeof(struct v4l2_int_device), GFP_KERNEL);
++  if(!dev->self){
++    video_device_release(vdev);// TODO &dev->video_dev);
++    v4l2_err(v4l2_dev, "dev self kmalloc failed!\n");
++    return -1;
++  }
++DBG_PRINT("dev->self [%p]\n", dev->self);
++  dev->self->module = THIS_MODULE;
++  sprintf(dev->self->name, "mxc_v4l2_cap%d", dev->csi_id);
++  dev->self->type = v4l2_int_type_master;
++  dev->self->priv = dev;
++  dev->self->u.master = &v4l2_master;
++DBG_PRINT("Call v4l2_int_device_register\n");
++  v4l2_int_device_register(dev->self);
++
++
++  // TODO vanno gestiti ?????
++
++
++  /* setup cropping */
++/*
++  dev->crop_bounds.left   = 0;
++  dev->crop_bounds.width  = 640;
++  dev->crop_bounds.top    = 0;
++  dev->crop_bounds.height = 480;
++  dev->crop_current = dev->crop_defrect = dev->crop_bounds;
++*/
++
++/*TODO non serve
++  dev->standard.index      = 0;
++  dev->standard.id         = V4L2_STD_UNKNOWN;
++  dev->standard.framelines = 480;
++  dev->standard.frameperiod.denominator = 30;
++  dev->standard.frameperiod.numerator   = 1;
++*/
++/*TODO non serve
++  dev->streamparm.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
++  dev->streamparm.parm.capture.timeperframe = dev->standard.frameperiod;
++  dev->streamparm.parm.capture.capability   = V4L2_CAP_TIMEPERFRAME;
++  dev->streamparm.parm.capture.capturemode  = 0;
++*/
++  dev->std_auto   = true;  // standard autodetect
++  dev->overlay_on = false;
++  dev->capture_on = false;
++//TODO mettere valori standard
++  dev->v4l2_fb.flags = V4L2_FBUF_FLAG_OVERLAY;
++//TODO mettere valori default
++  dev->v2f.fmt.pix.sizeimage    = 352 * 288 * 3 / 2;
++  dev->v2f.fmt.pix.bytesperline = 288 * 3 / 2;
++  dev->v2f.fmt.pix.width        = 288;
++  dev->v2f.fmt.pix.height       = 352;
++  dev->v2f.fmt.pix.pixelformat  = V4L2_PIX_FMT_YUV420;
++
++DBG_PRINT("v2f.fmt.pix sizeimage %d, width %d, height %d\n",
++          dev->v2f.fmt.pix.sizeimage,
++          dev->v2f.fmt.pix.width,
++          dev->v2f.fmt.pix.height);
++
++  //TODO mettere valori da define
++  dev->win.w.width  = 160;
++  dev->win.w.height = 160;
++  dev->win.w.left   = 0;
++  dev->win.w.top    = 0;
++
++/**/
++
++  v4l2_info(v4l2_dev, "Altera ClockedVideoInput-FrameWriter Driver v%s dev %s.\n",
++            DRIVER_VERSION, video_device_node_name(vdev));
++
++  return 0;
++}
++
++/**
++ */
++static int v4l2_dev_unreg(struct cvifw_vdev *dev)
++{
++    mutex_destroy(&dev->fops_lock);
++
++  // TODO
++  //  video_unregister_device(dev->video_dev);
++
++// NO video_device_release(dev->video_dev);
++
++  return 0;
++}
++
++
++/**
++ */
++static int v4l2_int_reg(struct cvifw_vdev *dev)
++{
++  int err;
++#if 0
++  DBG_PRINT("pci_set_master\n");
++  pci_set_master(dev->pci_dev);
++
++  // Set up a single MSI interrupt
++  DBG_PRINT("Set up a single MSI interrupt pci_enable_msi pci_dev[%p]\n",
++            dev->pci_dev);
++  err = pci_enable_msi(dev->pci_dev);
++  if (err) {
++    DBG_ERROR("Failed to enable MSI.\n");
++    //pci_disable_device(dev->pci_dev);
++    return -ENODEV;
++  }
++  dev->irq = dev->pci_dev->irq;
++  DBG_PRINT("MSI Interrupt is %d.\n", dev->irq);
++#endif
++
++  err = request_irq(dev->irq, cvifw_isr, 0, "cvifw", dev);
++  if (err) {
++    DBG_ERROR("Failed request IRQ #%d\n", dev->irq);
++    pci_disable_msi(dev->pci_dev);
++    pci_clear_master(dev->pci_dev);
++    //pci_disable_device(dev->pci_dev);
++    return -ENODEV;
++  }
++  DBG_PRINT("IRQ request irq %d OK\n", dev->irq);
++  return 0;
++}
++
++/**
++ */
++static int v4l2_int_unreg(struct cvifw_vdev *dev)
++{
++  free_irq(dev->irq, dev);
++  pci_disable_msi(dev->pci_dev);
++  pci_clear_master(dev->pci_dev);
++  return 0;
++}
++
++/** **************************************************************************
++ *
++ ****************************************************************************/
++
++/**
++ * probe
++ */
++static int cvifw_probe(struct pci_dev *pdev, const struct pci_device_id *ent)
++{
++  int err;
++
++  DBG_PRINT("devm_kzalloc pci_dev [%p]\n", pdev);
++
++  DBG_PRINT("devm_kzalloc\n");
++  cvifwDevice = devm_kzalloc(&pdev->dev, sizeof(*cvifwDevice), GFP_KERNEL);
++  if (!cvifwDevice) {
++    DBG_ERROR("not enough memory\n");
++    return -ENOMEM;
++  }
++  DBG_PRINT("cvifwDevice: [%p], vdev[0]: [%p], vdev[1]: [%p]\n",
++            cvifwDevice, &cvifwDevice->vdev[0], &cvifwDevice->vdev[1]);
++
++  DBG_PRINT("pci_enable_device\n");
++  err = pci_enable_device(pdev);
++  if (err) {
++    printk(KERN_ERR "PCIe:PDMg: pci_enable_device failed\n");
++    return -EINVAL;
++  }
++
++  cvifwDevice->pci_dev = pdev;
++//  cvifwDevice->dev_info = &directly_mappable_cdev_bdi;
++
++  DBG_PRINT("pdmg_getresources\n");
++  err = cvifw_getresources(pdev);
++  if(err){
++    //TODO
++  }
++
++  DBG_PRINT("remap PCIe CTRL iomem\n");
++  err = remap(&cvifwDevice->ctrl_res);
++  if (err) {
++    DBG_PRINT("ctrl remap failed\n" );
++    // TODO return -ENODEV;
++  }
++
++  /**/
++//TODO, mettere l'int request in dev reg APPENA FUNZIONA
++  DBG_PRINT("pci_dev bus %p, bus->msi %p, dev->msi_cap %p current_state %08X\n",
++            pdev->bus, pdev->bus->msi, pdev->msi_cap,
++            pdev->current_state);
++  pci_set_master(pdev);
++  err = pci_enable_msi_range(pdev, 0, 2);
++  DBG_PRINT("pci_enable_msi_range(%p, 0, 2) return %d\n", pdev, err);
++  if (err<0) {
++    DBG_ERROR("pci_enable_msi_range(%p, 0, 2) return %d\n", pdev, err);
++    //TODO
++  }
++  cvifwDevice->vdev[0].irq = pdev->irq;
++  cvifwDevice->vdev[1].irq = pdev->irq + 1;
++  DBG_PRINT("MSI Interrupt is %d %d.\n",
++            cvifwDevice->vdev[0].irq,
++            cvifwDevice->vdev[1].irq);
++/**/
++
++  cvifwDevice->vdev[0].video_nr  = CVIFW0_MINOR;
++  cvifwDevice->vdev[0].csi_id    = CVIFW0_CSI;
++  cvifwDevice->vdev[0].pci_dev   = pdev;
++  cvifwDevice->vdev[0].dev       = &pdev->dev;
++  cvifwDevice->vdev[0].video_idx = TV_NOT_LOCKED;
++  cvifwDevice->vdev[0].irq       = pdev->irq;// TODO
++  DBG_PRINT("Call v4l2_dev_reg(%p)\n", &cvifwDevice->vdev[0]);
++  err = v4l2_dev_reg(&cvifwDevice->vdev[0]);
++  if(err){
++    DBG_ERROR("Error on v4l2_dev_reg vdev 0 ret %d\n", err);
++    //TODO
++  }
++/**/
++  DBG_PRINT("Call v4l2_int_reg(%p)\n", &cvifwDevice->vdev[0]);
++  err = v4l2_int_reg(&cvifwDevice->vdev[0]);
++  if(err){
++    DBG_ERROR("Error on v4l2_int_reg vdev 0 ret %d\n", err);
++    //TODO
++  }
++/**/
++  cvifwDevice->vdev[1].video_nr  = CVIFW1_MINOR;
++  cvifwDevice->vdev[1].csi_id    = CVIFW1_CSI;
++  cvifwDevice->vdev[1].pci_dev   = pdev;
++  cvifwDevice->vdev[1].dev       = &pdev->dev;
++  cvifwDevice->vdev[1].video_idx = TV_NOT_LOCKED;
++  cvifwDevice->vdev[1].irq       = pdev->irq;//TODO
++  DBG_PRINT("Call v4l2_dev_reg(%p)\n", &cvifwDevice->vdev[1]);
++  err = v4l2_dev_reg(&cvifwDevice->vdev[1]);
++  if(err){
++    DBG_ERROR("v4l2_dev_reg vdev 1 ret %d\n", err);
++    //TODO
++  }
++/*
++  DBG_PRINT("Call v4l2_int_reg(%p)\n", &cvifwDevice->vdev[1]);
++  err = v4l2_int_reg(&cvifwDevice->vdev[1]);
++  if(err){
++    DBG_ERROR("v4l2_int_reg vdev 1 ret %d\n", err);
++    //TODO
++  }
++*/
++
++
++//TODO richiesta interrupt
++/*
++  err = request_irq(dev->irq, cvifw_isr, 0, "cvifw", dev);
++  if (err) {
++    DBG_ERROR("Failed request IRQ #%d\n", dev->irq);
++    pci_disable_msi(dev->pci_dev);
++    pci_clear_master(dev->pci_dev);
++    //pci_disable_device(dev->pci_dev);
++    return -ENODEV;
++  }
++  DBG_PRINT("IRQ request irq %d OK\n", dev->irq);
++*/
++  DBG_PRINT("done\n");
++  return 0;
++}
++
++static void cvifw_remove(struct pci_dev *pdev)
++{
++  DBG_PRINT("removed\n");
++}
++
++static struct pci_device_id cvifw_pci_tbl[] = {
++  { PCI_VDEVICE(ALTERA, PCI_DEVICE_ID_ALTERA_CVIFW), 0 },
++  { }
++};
++
++MODULE_DEVICE_TABLE(pci, cvifw_pci_tbl);
++
++static struct pci_driver cvifw_driver = {
++  .name     = DRIVER_NAME,
++  .id_table = cvifw_pci_tbl,
++  .probe    = cvifw_probe,
++  .remove   = cvifw_remove,
++};
++
++/**
++ * Module Init
++ */
++static int __init cvifw_init(void)
++{
++  int err;
++
++  DBG_PRINT("Registering %s driver\n", DRIVER_NAME);
++
++  err = pci_register_driver(&cvifw_driver);
++  if (err) {
++    printk(KERN_ERR "Error registering %s driver\n", DRIVER_NAME);
++    return err;
++  }
++
++/*
++  err = cvifw_dev_init(cvifwDevice, DRIVER_NAME);
++  if( err < 0) {
++    pci_disable_device(cvifwDevice->pci_dev);
++    DBG_PRINT("Device Registration failed\n" );
++    return -1;
++  }
++  */
++
++/*TODO
++  err = remap(&cvifwDevice->cvifw_res);
++  if(err){
++    pci_disable_device(cvifwDevice->pci_dev);
++    DBG_PRINT("PDMg remap failed\n" );
++    return -ENODEV;
++  }
++
++  err = remap(&pdmgDevice->s2mm_res);
++  if(err){
++    pci_disable_device(pdmgDevice->pci_dev);
++    DBG_PRINT("S2MM DMA remap failed\n" );
++    return -ENODEV;
++  }
++*/
++
++  return 0;
++}
++
++/**
++ * Module Exit
++ */
++static void __exit cvifw_exit(void)
++{
++  v4l2_int_unreg(&cvifwDevice->vdev[0]);
++  v4l2_int_unreg(&cvifwDevice->vdev[1]);
++
++  //unmap(&pdmgDevice->s2mm_res); TODO
++  //unmap(&pdmgDevice->pdmg_res);
++
++  DBG_PRINT("pci_disable_device\n");
++  pci_disable_device(cvifwDevice->pci_dev);
++
++  DBG_PRINT("PCIe:PDMg: pci_unregister_driver\n");
++  pci_unregister_driver(&cvifw_driver);
++
++
++  v4l2_dev_unreg(&cvifwDevice->vdev[0]);
++  v4l2_dev_unreg(&cvifwDevice->vdev[1]);
++
++  //TODO
++
++  DBG_PRINT("Driver unregistered\n");
++}
++
++module_init(cvifw_init);
++module_exit(cvifw_exit);
++
++MODULE_DESCRIPTION(DRIVER_NAME);
++MODULE_AUTHOR("IpTronix S.r.l. <info@iptronix.com>");
++MODULE_LICENSE("GPL");
++MODULE_VERSION("0.1.0");
++
+Index: git/drivers/media/platform/mxc/capture/altera-cvifw-hw.c
+===================================================================
+--- /dev/null	1970-01-01 00:00:00.000000000 +0000
++++ git/drivers/media/platform/mxc/capture/altera-cvifw-hw.c	2015-11-17 09:21:21.000000000 +0100
+@@ -0,0 +1,184 @@
++/**
++ * Altera CVI FW hardware specific functions
++ */
++
++#include <linux/io.h>
++#include <linux/mm.h>
++#include <linux/videodev2.h>
++
++/* FPGA Frame Writer registers definition */
++#define FW_CTRL_OFS         0x0000
++#define FW_CTRL_GO            0x00000001
++#define FW_CTRL_UPDATE        0x00000002
++#define FW_CTRL_DBUFFER       0x00000004
++#define FW_CTRL_SYNC_MASTER   0x00000000
++#define FW_CTRL_SYNC_SLAVE    0x00000008
++#define FW_CTRL_SYNC_MANUAL   0x00000010
++#define FW_CTRL_BUFFER        0x00000020
++#define FW_CTRL_INTENA_E      0x00000040
++#define FW_CTRL_INTENA_S      0x00000080
++
++#define FW_STS_OFS          0x0004
++#define FW_STS_UPDATE         0x00000001
++#define FW_STS_BUSY           0x00000002
++#define FW_STS_BUFFER         0x00000004
++#define FW_STS_LOST_FRAME     0x00000008
++#define FW_STS_INT_E          0x00000010
++#define FW_STS_INT_S          0x00000020
++
++#define FW_WORD_LEN_OFS     0x0008
++
++#define FW_PACKER_OFS       0x000C
++#define FW_PACKER_RGBA8888    0
++#define FW_PACKER_RGBX888     1
++#define FW_PACKER_RGB565      2
++
++#define FW_STRIDE_OFS       0x0010
++
++#define FW_BURST_SIZE_OFS   0x0014  //RW  NA     Memory burst size. Size of this register depends on max burst size parameter value
++#define FW_BASE_0_OFS       0x0018  //RW  31:0   memory buffer 0 base address
++#define FW_BASE_1_OFS       0x001C  //RW  31:0   memory buffer 1 base address
++#define FW_MAX_0_OFS        0x0020  //RW  31:0   memory buffer 0 max address. If an attempt to write past this address is done (for example due to bigger image than expected from VIP) transfer is aborted
++#define FW_MAX_1_OFS        0x0024  //RW  31:0   memory buffer 1 max address. If an attempt to write past this address is done (for example due to bigger image than expected from VIP) transfer is aborted
++
++#define FW_IMG_SIZE_OFS     0x0028
++#define FW_IMG_SIZE_HRES(r)   ((r)&0x0000FFFF)
++#define FW_IMG_SIZE_VRES(r)   (((r)>>16)&0x0000FFFF)
++
++#define FW_TEST_EN_OFS      0x002C
++#define FW_TEST_EN_SET        0x00000001
++
++/**
++ */
++u32 altera_uservirt_to_phys(u32 virtp)
++{
++  unsigned long           physp = 0;
++  struct vm_area_struct  *vma;
++  struct mm_struct       *mm = current->mm;
++
++  /* For kernel direct-mapped memory, take the easy way */
++  if (virtp >= PAGE_OFFSET) {
++    return virt_to_phys((void *) virtp);
++  }
++  down_read(&current->mm->mmap_sem);
++  vma = find_vma(mm, virtp);
++  if (vma && (vma->vm_flags & VM_IO) && vma->vm_pgoff) {
++    /* this will catch, kernel-allocated, mmaped-to-usermode
++       addresses */
++    physp = (vma->vm_pgoff << PAGE_SHIFT) + (virtp - vma->vm_start);
++    up_read(&current->mm->mmap_sem);
++  } else {
++    /* otherwise, use get_user_pages() for general userland pages */
++    int res, nr_pages = 1;
++    struct page *pages;
++
++    res = get_user_pages(current, current->mm, virtp, nr_pages, 1,
++                         0, &pages, NULL);
++    up_read(&current->mm->mmap_sem);
++
++    if (res == nr_pages) {
++      physp =  __pa(page_address(&pages[0]) + (virtp & ~PAGE_MASK));
++    } else {
++      printk("%s get_user_pages failed\n", __func__);
++      return 0;
++    }
++  }
++  return physp;
++}
++
++/**
++ */
++void altera_fw_hw_init(void *regb,
++                       int dbuf,
++                       int sync_type,
++                       unsigned long wlen,
++                       unsigned long stride,
++                       int output_format)
++{
++  unsigned long ctrl;
++  //unsigned long wlen;
++  unsigned long pack;
++  //unsigned long stride;
++  ctrl = 0;
++  if (dbuf) {
++    ctrl |= FW_CTRL_DBUFFER;
++  }
++  switch (sync_type) {
++  case 0: ctrl |= FW_CTRL_SYNC_MASTER; break;
++  case 1: ctrl |= FW_CTRL_SYNC_SLAVE ; break;
++  case 2: ctrl |= FW_CTRL_SYNC_MANUAL; break;
++  }
++  //wlen = dev->pix_format.width / 4;
++  switch (output_format) {
++  default:
++  case V4L2_PIX_FMT_RGB32  : pack = FW_PACKER_RGBA8888; break;
++  case V4L2_PIX_FMT_RGB24  : pack = FW_PACKER_RGBX888 ; break;
++  case V4L2_PIX_FMT_RGB565X: pack = FW_PACKER_RGB565  ; break;
++  }
++//  stride = dev->pix_format.bytesperline;
++
++  __raw_writel(ctrl  , regb + FW_CTRL_OFS    );
++  __raw_writel(wlen  , regb + FW_WORD_LEN_OFS);
++  __raw_writel(pack  , regb + FW_PACKER_OFS  );
++  __raw_writel(stride, regb + FW_STRIDE_OFS  );
++}
++
++/**
++ */
++void altera_fw_hw_stop(void *regb)
++{
++  unsigned long reg;
++
++  reg = __raw_readl(regb + FW_CTRL_OFS);
++  reg &= ~( FW_CTRL_GO | FW_CTRL_INTENA_E | FW_CTRL_INTENA_S );
++  __raw_writel(reg, regb + FW_CTRL_OFS);
++}
++
++/**
++ */
++void altera_fw_hw_start(void *regb)
++{
++  unsigned long reg;
++
++  reg = __raw_readl(regb + FW_CTRL_OFS);
++  reg |= FW_CTRL_GO | FW_CTRL_INTENA_E | FW_CTRL_INTENA_S;
++  __raw_writel(reg, regb + FW_CTRL_OFS);
++}
++
++/**
++ */
++unsigned long altera_fw_hw_clearint(void *regb)
++{
++  return __raw_readl(regb + FW_STS_OFS);
++}
++
++/**
++ */
++void altera_fw_hw_addr0(void *regb,
++                        unsigned long base,
++                        unsigned long size)
++{
++  unsigned long reg;
++
++  __raw_writel(base, regb + FW_BASE_0_OFS);
++  __raw_writel(base+size, regb + FW_MAX_0_OFS );
++
++  reg = __raw_readl(regb + FW_CTRL_OFS);
++  reg |= FW_CTRL_UPDATE;
++  __raw_writel(reg, regb + FW_CTRL_OFS);
++}
++
++/**
++ */
++void altera_fw_hw_addr1(void *regb,
++                        unsigned long base,
++                        unsigned long size)
++{
++  unsigned long reg;
++  __raw_writel(base, regb + FW_BASE_1_OFS);
++  __raw_writel(base+size, regb + FW_MAX_1_OFS );
++
++  reg = __raw_readl(regb + FW_CTRL_OFS);
++  reg |= FW_CTRL_UPDATE;
++  __raw_writel(reg, regb + FW_CTRL_OFS);
++}

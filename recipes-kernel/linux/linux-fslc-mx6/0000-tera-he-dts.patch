@@ -571,7 +571,7 @@ Index: git/arch/arm/boot/dts/imx6q-tera-he.dtsi
 +
 +	kim {
 +		compatible = "kim";
-+		nshutdown_gpio = <71>;  /* GPIO_2 */
++		nshutdown_gpio = <135>;  /* GPIO_2 */
 +		dev_name = "/dev/ttymxc2";
 +		flow_cntrl = <1>;
 +		baud_rate = <3000000>;

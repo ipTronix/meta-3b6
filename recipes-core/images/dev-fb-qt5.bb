@@ -15,13 +15,13 @@ IMAGE_OVERHEAD_FACTOR = "2.0"
 
 export IMAGE_BASENAME = "dev-fb-qt5"
 
-EXTRA_IMAGE_FEATURES = "debug-tweaks ssh-server-openssh "
+EXTRA_IMAGE_FEATURES = "debug-tweaks ssh-server-openssh tools-testapps "
 
 IMAGE_INSTALL_append = " binutils libgcc libstdc++ \
-ccache chkconfig glib-networking glibmm \
-packagegroup-core-buildessential pkgconfig  \
-boost cmake zlib glib-2.0 \
-canutils libsocketcan \
+    ccache chkconfig glib-networking glibmm \
+    packagegroup-core-buildessential pkgconfig  \
+    boost cmake zlib glib-2.0 \
+    canutils libsocketcan \
     packagegroup-qt5-qtcreator-debug \    
     cpufrequtils \
     gdb \
@@ -67,6 +67,11 @@ canutils libsocketcan \
     cinematicexperience \
     script-install \
     packagegroup-wilink-connectivity \
+    packagegroup-fsl-tools-gpu \
+    packagegroup-fsl-tools-gpu-external \
+    packagegroup-fsl-tools-testapps \
+    packagegroup-fsl-tools-benchmark \
+    ti-compat-wireless-wl18xx \
     "
 
 DISTRO_FEATURES_remove = "x11 wayland"

@@ -1,5 +1,6 @@
 # 3B6 Tera-HE
 
+DEPENDS = "ncurses"
 DESCRIPTION = "bootloader for 3b6 imx6q tera-he"
 
 FILESEXTRAPATHS_prepend := "${THISDIR}/${PN}:"

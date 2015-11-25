@@ -1,0 +1,156 @@
+diff --git a/kernel-module-imx-gpu-viv-src/hal/kernel/arch/gc_hal_kernel_hardware.c b/kernel-module-imx-gpu-viv-src/hal/kernel/arch/gc_hal_kernel_hardware.c
+index d672d85..1321a70 100644
+--- a/kernel-module-imx-gpu-viv-src/hal/kernel/arch/gc_hal_kernel_hardware.c
++++ b/kernel-module-imx-gpu-viv-src/hal/kernel/arch/gc_hal_kernel_hardware.c
+@@ -1222,7 +1222,7 @@ gckHARDWARE_Construct(
+     hardware->lastEnd         = ~0U;
+     hardware->globalSemaphore = gcvNULL;
+ #if gcdENABLE_FSCALE_VAL_ADJUST
+-    hardware->powerOnFscaleVal = 64;
++    hardware->powerOnFscaleVal = 1;
+ #endif
+ 
+     gcmkONERROR(gckOS_CreateMutex(Os, &hardware->powerMutex));
+@@ -5821,7 +5821,7 @@ gckHARDWARE_GetFscaleValue(
+ {
+     *FscaleValue = Hardware->powerOnFscaleVal;
+     *MinFscaleValue = Hardware->minFscaleValue;
+-    *MaxFscaleValue = 64;
++    *MaxFscaleValue = 1;
+ 
+     return gcvSTATUS_OK;
+ }
+@@ -5839,6 +5839,20 @@ gckHARDWARE_SetMinFscaleValue(
+ 
+     return gcvSTATUS_OK;
+ }
++
++gceSTATUS
++gckHARDWARE_SetMaxFscaleValue(
++    IN gckHARDWARE Hardware,
++    IN gctUINT MaxFscaleValue
++    )
++{
++    if (MaxFscaleValue >= Hardware->minFscaleValue && MaxFscaleValue <= 64)
++    {
++        Hardware->maxFscaleValue = MaxFscaleValue;
++    }
++
++    return gcvSTATUS_OK;
++}
+ #endif
+ 
+ #if gcdPOWEROFF_TIMEOUT
+diff --git a/kernel-module-imx-gpu-viv-src/hal/kernel/arch/gc_hal_kernel_hardware.h b/kernel-module-imx-gpu-viv-src/hal/kernel/arch/gc_hal_kernel_hardware.h
+index 3a51870..42b7639 100644
+--- a/kernel-module-imx-gpu-viv-src/hal/kernel/arch/gc_hal_kernel_hardware.h
++++ b/kernel-module-imx-gpu-viv-src/hal/kernel/arch/gc_hal_kernel_hardware.h
+@@ -171,6 +171,7 @@ struct _gckHARDWARE
+     gctBOOL                     endAfterFlushMmuCache;
+ 
+     gctUINT32                   minFscaleValue;
++    gctUINT32                   maxFscaleValue;
+ 
+     gctPOINTER                  pendingEvent;
+ 
+diff --git a/kernel-module-imx-gpu-viv-src/hal/kernel/inc/gc_hal.h b/kernel-module-imx-gpu-viv-src/hal/kernel/inc/gc_hal.h
+index 5fcc4ae..5fc0601 100644
+--- a/kernel-module-imx-gpu-viv-src/hal/kernel/inc/gc_hal.h
++++ b/kernel-module-imx-gpu-viv-src/hal/kernel/inc/gc_hal.h
+@@ -2335,6 +2335,12 @@ gckHARDWARE_SetMinFscaleValue(
+     IN gckHARDWARE Hardware,
+     IN gctUINT MinFscaleValue
+     );
++
++gceSTATUS
++gckHARDWARE_SetMaxFscaleValue(
++    IN gckHARDWARE Hardware,
++    IN gctUINT MaxFscaleValue
++    );
+ #endif
+ 
+ #if gcdPOWEROFF_TIMEOUT
+diff --git a/kernel-module-imx-gpu-viv-src/hal/os/linux/kernel/platform/freescale/gc_hal_kernel_platform_imx6q14.c b/kernel-module-imx-gpu-viv-src/hal/os/linux/kernel/platform/freescale/gc_hal_kernel_platform_imx6q14.c
+index a12579d..ff9d952 100644
+--- a/kernel-module-imx-gpu-viv-src/hal/os/linux/kernel/platform/freescale/gc_hal_kernel_platform_imx6q14.c
++++ b/kernel-module-imx-gpu-viv-src/hal/os/linux/kernel/platform/freescale/gc_hal_kernel_platform_imx6q14.c
+@@ -254,11 +254,12 @@ _ShrinkMemory(
+ #endif
+ 
+ #if gcdENABLE_FSCALE_VAL_ADJUST
++static gctBOOL bAlreadyTooHot = gcvFALSE;
++
+ static int thermal_hot_pm_notify(struct notifier_block *nb, unsigned long event,
+        void *dummy)
+ {
+     static gctUINT orgFscale, minFscale, maxFscale;
+-    static gctBOOL bAlreadyTooHot = gcvFALSE;
+     gckHARDWARE hardware;
+     gckGALDEVICE galDevice;
+ 
+@@ -334,6 +335,47 @@ static ssize_t update_gpu3DMinClock(struct device_driver *dev, const char *buf,
+ }
+ 
+ static DRIVER_ATTR(gpu3DMinClock, S_IRUGO | S_IWUSR, show_gpu3DMinClock, update_gpu3DMinClock);
++
++static ssize_t show_gpu3DMaxClock(struct device_driver *dev, char *buf)
++{
++    gctUINT currentf,minf,maxf;
++    gckGALDEVICE galDevice;
++
++    galDevice = platform_get_drvdata(pdevice);
++    if(galDevice->kernels[gcvCORE_MAJOR])
++    {
++         gckHARDWARE_GetFscaleValue(galDevice->kernels[gcvCORE_MAJOR]->hardware,
++            &currentf, &minf, &maxf);
++    }
++    snprintf(buf, PAGE_SIZE, "%d\n", maxf);
++    return strlen(buf);
++}
++
++static ssize_t update_gpu3DMaxClock(struct device_driver *dev, const char *buf, size_t count)
++{
++
++    gctINT fields;
++    gctUINT MaxFscaleValue;
++    gckGALDEVICE galDevice;
++
++    galDevice = platform_get_drvdata(pdevice);
++    if(galDevice->kernels[gcvCORE_MAJOR])
++    {
++         fields = sscanf(buf, "%d", &MaxFscaleValue);
++         if (fields < 1)
++             return -EINVAL;
++
++         gckHARDWARE_SetMaxFscaleValue(galDevice->kernels[gcvCORE_MAJOR]->hardware,MaxFscaleValue);
++         if (!bAlreadyTooHot)
++         {
++             gckHARDWARE_SetFscaleValue(galDevice->kernels[gcvCORE_MAJOR]->hardware, MaxFscaleValue);
++         }
++    }
++
++    return count;
++}
++
++static DRIVER_ATTR(gpu3DMaxClock, S_IRUGO | S_IWUSR, show_gpu3DMaxClock, update_gpu3DMaxClock);
+ #endif
+ 
+ 
+@@ -615,6 +657,9 @@ _GetPower(
+         ret = driver_create_file(pdevice->dev.driver, &driver_attr_gpu3DMinClock);
+         if(ret)
+             dev_err(&pdevice->dev, "create gpu3DMinClock attr failed (%d)\n", ret);
++        ret = driver_create_file(pdevice->dev.driver, &driver_attr_gpu3DMaxClock);
++        if(ret)
++            dev_err(&pdevice->dev, "create gpu3DMaxClock attr failed (%d)\n", ret);
+     }
+ #endif
+ 
+@@ -675,6 +720,7 @@ _PutPower(
+     UNREG_THERMAL_NOTIFIER(&thermal_hot_pm_notifier);
+ 
+     driver_remove_file(pdevice->dev.driver, &driver_attr_gpu3DMinClock);
++    driver_remove_file(pdevice->dev.driver, &driver_attr_gpu3DMaxClock);
+ #endif
+ 
+     return gcvSTATUS_OK;

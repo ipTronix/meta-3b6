@@ -9,22 +9,22 @@ PR = "r7"
 # Tag: R8.6
 SRCREV = "693f71c709abcaa9047835cf3903aea26a63fa94"
 BRANCH = "sitara-scripts"
-SRC_URI = "git://git.ti.com/wilink8-wlan/wl18xx-target-scripts.git;protocol=git;branch=${BRANCH}"
+SRC_URI = "git://git.ti.com/wilink8-wlan/wl18xx-target-scripts.git;protocol=git;branch=${BRANCH}\
+           file://0001-fix-system-bin.patch"
 
 S = "${WORKDIR}/git"
 
 FILES_${PN} += "${datadir}/wl18xx/"
+RDEPENDS_${PN} += " bash "
 
 do_install() {
 	install -d ${D}${datadir}/wl18xx/
+	cd ${S}
+        find ./ -type f -name '*.*' ! -name "print_stat.sh" | while read f
 
-#	scripts=`find ./ -type f -name "*.*"`
-	find ./ -type f -name "*.*" | while read s
+#	scripts="`find ./ -type f -name "*.*"`"
+#	for f in $scripts
 	do
-		install -m 0755 $s ${D}${datadir}/wl18xx/
-	done 
-#	for f in *
-#	do
-#		install -m 0755 $s ${D}${datadir}/wl18xx/
-#	done
+		install -m 0755 $f ${D}${datadir}/wl18xx/
+	done
 }
