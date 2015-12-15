@@ -36,11 +36,11 @@ FIRMWARE_AND_DRIVERS = "\
 "
 
 BLUETOOTH_STACK = "\
-    bluez5 \
-    bluez-hcidump \
     uim \
 "
 #    bluez4-agent 
+#    bluez5 
+#    bluez-hcidump 
 
 CONNECTIVITY_RDEPENDS = "\
     ${WLAN_COMMON} \
