@@ -1,8 +1,8 @@
 Index: git/arch/arm/boot/dts/imx6q-tera-he.dts
 ===================================================================
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ git/arch/arm/boot/dts/imx6q-tera-he.dts	2015-11-05 15:17:49.359614100 +0100
-@@ -0,0 +1,225 @@
++++ git/arch/arm/boot/dts/imx6q-tera-he.dts	2015-11-26 13:26:12.352236032 +0100
+@@ -0,0 +1,237 @@
 +/*
 + * Copyright 2012 Freescale Semiconductor, Inc.
 + * Copyright 2011 Linaro Ltd.
@@ -142,6 +142,14 @@ Index: git/arch/arm/boot/dts/imx6q-tera-he.dts
 +		reg = <0x44>;
 +	};
 +
++	pn547: pn547@29 {
++		compatible = "nxp,pn547";
++		reg = <0x24>;
++		clock-frequency = <400000>;
++		interrupt-gpios = <&gpio4 28 0>;
++		enable-gpios = <&gpio5 14 0>;
++	};
++
 +};
 +
 +&i2c2 {
@@ -171,26 +179,25 @@ Index: git/arch/arm/boot/dts/imx6q-tera-he.dts
 +};
 +
 +&i2c3 {
-+/*
-+	tvp5150_3: tvp5150_3@5c {
-+		compatible = "tvp5150";
-+		reg = <0x5c>;
-+		clocks = <&clks 201>;
-+		clock-names = "csi_mclk";
-+		mclk = <27000000>;
-+		mclk_source = <0>;
-+		csi_id = <2>;
-+	};
-+	tvp5150_4: tvp5150_4@5d {
++	tvp5150_3: tvp5150_3@5d {
 +		compatible = "tvp5150";
 +		reg = <0x5d>;
 +		clocks = <&clks 201>;
 +		clock-names = "csi_mclk";
 +		mclk = <27000000>;
 +		mclk_source = <0>;
++		csi_id = <2>;
++	};
++
++	tvp5150_4: tvp5150_4@5c {
++		compatible = "tvp5150";
++		reg = <0x5c>;
++		clocks = <&clks 201>;
++		clock-names = "csi_mclk";
++		mclk = <27000000>;
++		mclk_source = <0>;
 +		csi_id = <3>;
 +	};
-+*/
 +};
 +
 +&ecspi2 {
@@ -228,10 +235,15 @@ Index: git/arch/arm/boot/dts/imx6q-tera-he.dts
 +&mxcfb2 {
 +	status = "okay";
 +};
++
++ &ssi1 {
++	fsl,mode = "i2s-slave";
++	status = "okay";
++};
 Index: git/arch/arm/boot/dts/imx6q-tera-he.dtsi
 ===================================================================
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ git/arch/arm/boot/dts/imx6q-tera-he.dtsi	2015-11-06 13:21:35.323784200 +0100
++++ git/arch/arm/boot/dts/imx6q-tera-he.dtsi	2015-11-26 13:26:12.352236032 +0100
 @@ -0,0 +1,718 @@
 +/*
 + * Copyright 2012 Freescale Semiconductor, Inc.
@@ -789,8 +801,8 @@ Index: git/arch/arm/boot/dts/imx6q-tera-he.dtsi
 +        status = "okay";
 +	#address-cells = <1>;
 +	#size-cells = <0>;
-+	wlcore: wlcore@0 {
-+		compatible = "ti,wlcore";
++	wl1837: wl1837@0 {
++		compatible = "ti,wl1837";
 +		reg = <2>;
 +		interrupt-parent = <&gpio5>;
 +		interrupts = <5 IRQ_TYPE_EDGE_RISING>;
@@ -953,8 +965,8 @@ Index: git/arch/arm/boot/dts/imx6q-tera-he.dtsi
 +};
 Index: git/arch/arm/boot/dts/Makefile
 ===================================================================
---- git.orig/arch/arm/boot/dts/Makefile	2015-11-05 15:16:57.039614100 +0100
-+++ git/arch/arm/boot/dts/Makefile	2015-11-05 15:17:49.363614100 +0100
+--- git.orig/arch/arm/boot/dts/Makefile	2015-11-26 13:26:07.308236123 +0100
++++ git/arch/arm/boot/dts/Makefile	2015-11-26 13:26:12.352236032 +0100
 @@ -179,6 +179,7 @@
  	imx6q-sabresd-uart.dtb \
  	imx6q-sabresd-hdcp.dtb \
@@ -966,8 +978,8 @@ Index: git/arch/arm/boot/dts/Makefile
 Index: git/arch/arm/boot/dts/imx6q-tera-he-iomux.dtsi
 ===================================================================
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ git/arch/arm/boot/dts/imx6q-tera-he-iomux.dtsi	2015-11-06 13:26:15.063784200 +0100
-@@ -0,0 +1,501 @@
++++ git/arch/arm/boot/dts/imx6q-tera-he-iomux.dtsi	2015-11-27 15:25:28.961095150 +0100
+@@ -0,0 +1,398 @@
 +/*
 + * Copyright 2015
 + *
@@ -997,7 +1009,7 @@ Index: git/arch/arm/boot/dts/imx6q-tera-he-iomux.dtsi
 +				MX6QDL_PAD_GPIO_4__GPIO1_IO04        0x80000000		/* L-OUT0_ACTIVE_L      */
 +				MX6QDL_PAD_DISP0_DAT10__GPIO4_IO31   0x80000000		/* L-OUT1_ACTIVE_H      */
 +				MX6QDL_PAD_GPIO_6__GPIO1_IO06        0x80000000		/* L-OUT1_ACTIVE_L      */
-+				MX6QDL_PAD_DISP0_DAT7__GPIO4_IO28    0x80000000		/* NFC_I2C_IRQ          */
++//				MX6QDL_PAD_DISP0_DAT7__GPIO4_IO28    0x80000000		/* NFC_I2C_IRQ          */
 +				MX6QDL_PAD_DISP0_DAT9__GPIO4_IO30    0x80000000		/* WDOG_B               */
 +				MX6QDL_PAD_DISP0_DAT11__GPIO5_IO05   0x80000000		/* WL_IRQ               */
 +				MX6QDL_PAD_DISP0_DAT12__GPIO5_IO06   0x80000000		/* GPS_PW R_EN          */
@@ -1005,7 +1017,7 @@ Index: git/arch/arm/boot/dts/imx6q-tera-he-iomux.dtsi
 +				MX6QDL_PAD_DISP0_DAT14__GPIO5_IO08   0x80000000		/* WL_EN                */
 +				MX6QDL_PAD_DISP0_DAT16__GPIO5_IO10   0x80000000		/* ACCL_INT_IN          */
 +				MX6QDL_PAD_DISP0_DAT17__GPIO5_IO11   0x80000000		/* Gyroscope_Error_FIFO */
-+				MX6QDL_PAD_DISP0_DAT20__GPIO5_IO14   0x80000000		/* NFC_RST              */
++//				MX6QDL_PAD_DISP0_DAT20__GPIO5_IO14   0x80000000		/* NFC_RST              */
 +				MX6QDL_PAD_DISP0_DAT22__GPIO5_IO16   0x80000000		/* PMIC_IRQ             */
 +				MX6QDL_PAD_GPIO_2__GPIO1_IO02        0x80000000		/* SENSOR_LIGHT_INT     */
 +				MX6QDL_PAD_NANDF_RB0__GPIO6_IO10     0x80000000		/* BUZZER_EXT           */
@@ -1085,7 +1097,7 @@ Index: git/arch/arm/boot/dts/imx6q-tera-he-iomux.dtsi
 +			fsl,pins = <
 +				MX6QDL_PAD_DISP0_DAT21__AUD4_TXD  0x130b0
 +				MX6QDL_PAD_DISP0_DAT19__AUD4_RXC  0x130b0
-+				MX6QDL_PAD_DISP0_DAT23__AUD4_RXD  0x130b0
++				MX6QDL_PAD_DISP0_DAT23__AUD4_RXD  0x100b0
 +				MX6QDL_PAD_DISP0_DAT18__AUD4_RXFS 0x110b0
 +			>;
 +		};
@@ -1175,29 +1187,6 @@ Index: git/arch/arm/boot/dts/imx6q-tera-he-iomux.dtsi
 +			>;
 +		};
 +
-+/*
-+		pinctrl_gpmi_nand: gpminandgrp {
-+			fsl,pins = <
-+				MX6QDL_PAD_NANDF_CLE__NAND_CLE		0xb0b1
-+				MX6QDL_PAD_NANDF_ALE__NAND_ALE		0xb0b1
-+				MX6QDL_PAD_NANDF_WP_B__NAND_WP_B	0xb0b1
-+				MX6QDL_PAD_NANDF_RB0__NAND_READY_B	0xb000
-+				MX6QDL_PAD_NANDF_CS0__NAND_CE0_B	0xb0b1
-+				MX6QDL_PAD_NANDF_CS1__NAND_CE1_B	0xb0b1
-+				MX6QDL_PAD_SD4_CMD__NAND_RE_B		0xb0b1
-+				MX6QDL_PAD_SD4_CLK__NAND_WE_B		0xb0b1
-+				MX6QDL_PAD_NANDF_D0__NAND_DATA00	0xb0b1
-+				MX6QDL_PAD_NANDF_D1__NAND_DATA01	0xb0b1
-+				MX6QDL_PAD_NANDF_D2__NAND_DATA02	0xb0b1
-+				MX6QDL_PAD_NANDF_D3__NAND_DATA03	0xb0b1
-+				MX6QDL_PAD_NANDF_D4__NAND_DATA04	0xb0b1
-+				MX6QDL_PAD_NANDF_D5__NAND_DATA05	0xb0b1
-+				MX6QDL_PAD_NANDF_D6__NAND_DATA06	0xb0b1
-+				MX6QDL_PAD_NANDF_D7__NAND_DATA07	0xb0b1
-+				MX6QDL_PAD_SD4_DAT0__NAND_DQS		0x00b1
-+			>;
-+		};
-+*/
 +		pinctrl_i2c1: i2c1grp {
 +			fsl,pins = <
 +				MX6QDL_PAD_CSI0_DAT8__I2C1_SDA 0x4001b8b1
@@ -1217,45 +1206,35 @@ Index: git/arch/arm/boot/dts/imx6q-tera-he-iomux.dtsi
 +			>;
 +		};
 +
-+		pinctrl_ipu1: ipu1grp { /* parallel port 16-bit */
++		pinctrl_ipu1: ipu1grp {
 +			fsl,pins = <
-+				MX6QDL_PAD_CSI0_DAT12__IPU1_CSI0_DATA12    0x80000000
-+				MX6QDL_PAD_CSI0_DAT13__IPU1_CSI0_DATA13    0x80000000
-+				MX6QDL_PAD_CSI0_DAT14__IPU1_CSI0_DATA14    0x80000000
-+				MX6QDL_PAD_CSI0_DAT15__IPU1_CSI0_DATA15    0x80000000
-+				MX6QDL_PAD_CSI0_DAT16__IPU1_CSI0_DATA16    0x80000000
-+				MX6QDL_PAD_CSI0_DAT17__IPU1_CSI0_DATA17    0x80000000
-+				MX6QDL_PAD_CSI0_DAT18__IPU1_CSI0_DATA18    0x80000000
-+				MX6QDL_PAD_CSI0_DAT19__IPU1_CSI0_DATA19    0x80000000
-+				MX6QDL_PAD_CSI0_PIXCLK__IPU1_CSI0_PIXCLK   0x80000000
-+				//MX6QDL_PAD_CSI0_DATA_EN__IPU1_CSI0_DATA_EN 0x80000000
++				MX6QDL_PAD_CSI0_DAT12__IPU1_CSI0_DATA12    0x40000000
++				MX6QDL_PAD_CSI0_DAT13__IPU1_CSI0_DATA13    0x40000000
++				MX6QDL_PAD_CSI0_DAT14__IPU1_CSI0_DATA14    0x40000000
++				MX6QDL_PAD_CSI0_DAT15__IPU1_CSI0_DATA15    0x40000000
++				MX6QDL_PAD_CSI0_DAT16__IPU1_CSI0_DATA16    0x40000000
++				MX6QDL_PAD_CSI0_DAT17__IPU1_CSI0_DATA17    0x40000000
++				MX6QDL_PAD_CSI0_DAT18__IPU1_CSI0_DATA18    0x40000000
++				MX6QDL_PAD_CSI0_DAT19__IPU1_CSI0_DATA19    0x40000000
++				MX6QDL_PAD_CSI0_PIXCLK__IPU1_CSI0_PIXCLK   0x40000000
++				//MX6QDL_PAD_CSI0_DATA_EN__IPU1_CSI0_DATA_EN 0x40000000
 +			>;
 +		};
 +
 +		pinctrl_ipu2: ipu2grp {
 +			fsl,pins = <
-+				MX6QDL_PAD_EIM_A17__IPU2_CSI1_DATA12   0x80000000
-+				MX6QDL_PAD_EIM_A18__IPU2_CSI1_DATA13   0x80000000
-+				MX6QDL_PAD_EIM_A19__IPU2_CSI1_DATA14   0x80000000
-+				MX6QDL_PAD_EIM_A20__IPU2_CSI1_DATA15   0x80000000
-+				MX6QDL_PAD_EIM_A21__IPU2_CSI1_DATA16   0x80000000
-+				MX6QDL_PAD_EIM_A22__IPU2_CSI1_DATA17   0x80000000
-+				MX6QDL_PAD_EIM_A23__IPU2_CSI1_DATA18   0x80000000
-+				MX6QDL_PAD_EIM_A24__IPU2_CSI1_DATA19   0x80000000
-+				MX6QDL_PAD_EIM_D17__IPU2_CSI1_PIXCLK   0x80000000
-+				//MX6QDL_PAD_EIM_DA10__IPU2_CSI1_DATA_EN 0x80000000
++				MX6QDL_PAD_EIM_A17__IPU2_CSI1_DATA12   0x40000000
++				MX6QDL_PAD_EIM_A18__IPU2_CSI1_DATA13   0x40000000
++				MX6QDL_PAD_EIM_A19__IPU2_CSI1_DATA14   0x40000000
++				MX6QDL_PAD_EIM_A20__IPU2_CSI1_DATA15   0x40000000
++				MX6QDL_PAD_EIM_A21__IPU2_CSI1_DATA16   0x40000000
++				MX6QDL_PAD_EIM_A22__IPU2_CSI1_DATA17   0x40000000
++				MX6QDL_PAD_EIM_A23__IPU2_CSI1_DATA18   0x40000000
++				MX6QDL_PAD_EIM_A24__IPU2_CSI1_DATA19   0x40000000
++				MX6QDL_PAD_EIM_D17__IPU2_CSI1_PIXCLK   0x40000000
++				//MX6QDL_PAD_EIM_DA10__IPU2_CSI1_DATA_EN 0x40000000
 +			>;
 +		};
-+
-+/*
-+		pinctrl_mlb: mlb {
-+			fsl,pins = <
-+				MX6QDL_PAD_ENET_TXD1__MLB_CLK 0x80000000
-+				MX6QDL_PAD_GPIO_6__MLB_SIG    0x80000000
-+				MX6QDL_PAD_GPIO_2__MLB_DATA   0x80000000
-+			>;
-+		};
-+*/
 +
 +		pinctrl_pwm3: pwm3grp {
 +			fsl,pins = <
@@ -1299,10 +1278,10 @@ Index: git/arch/arm/boot/dts/imx6q-tera-he-iomux.dtsi
 +
 +		pinctrl_uart3: uart3grp {
 +			fsl,pins = <
-+				MX6QDL_PAD_SD4_CLK__UART3_RX_DATA   0x1b0b1
-+				MX6QDL_PAD_SD4_CMD__UART3_TX_DATA   0x1b0b1
-+				MX6QDL_PAD_EIM_D30__UART3_CTS_B     0x1b0b1
-+				MX6QDL_PAD_EIM_D31__UART3_RTS_B     0x1b0b1
++				MX6QDL_PAD_SD4_CLK__UART3_RX_DATA   0x100b1
++				MX6QDL_PAD_SD4_CMD__UART3_TX_DATA   0x000b1
++				MX6QDL_PAD_EIM_D30__UART3_CTS_B     0x100b1
++				MX6QDL_PAD_EIM_D31__UART3_RTS_B     0x000b1
 +			>;
 +		};
 +
@@ -1397,75 +1376,5 @@ Index: git/arch/arm/boot/dts/imx6q-tera-he-iomux.dtsi
 +				MX6QDL_PAD_SD3_RST__SD3_RESET    0x170f9
 +			>;
 +		};
-+/*
-+		pinctrl_weim_cs0: weimcs0grp {
-+			fsl,pins = <
-+				MX6QDL_PAD_EIM_CS0__EIM_CS0_B		0xb0b1
-+			>;
-+		};
-+*/
-+/*
-+		pinctrl_weim_nor: weimnorgrp {
-+			fsl,pins = <
-+				MX6QDL_PAD_EIM_OE__EIM_OE_B		0xb0b1
-+				MX6QDL_PAD_EIM_RW__EIM_RW		0xb0b1
-+				MX6QDL_PAD_EIM_WAIT__EIM_WAIT_B		0xb060
-+				MX6QDL_PAD_EIM_D16__EIM_DATA16		0x1b0b0
-+				MX6QDL_PAD_EIM_D17__EIM_DATA17		0x1b0b0
-+				MX6QDL_PAD_EIM_D18__EIM_DATA18		0x1b0b0
-+				MX6QDL_PAD_EIM_D19__EIM_DATA19		0x1b0b0
-+				MX6QDL_PAD_EIM_D20__EIM_DATA20		0x1b0b0
-+				MX6QDL_PAD_EIM_D21__EIM_DATA21		0x1b0b0
-+				MX6QDL_PAD_EIM_D22__EIM_DATA22		0x1b0b0
-+				MX6QDL_PAD_EIM_D23__EIM_DATA23		0x1b0b0
-+				MX6QDL_PAD_EIM_D24__EIM_DATA24		0x1b0b0
-+				MX6QDL_PAD_EIM_D25__EIM_DATA25		0x1b0b0
-+				MX6QDL_PAD_EIM_D26__EIM_DATA26		0x1b0b0
-+				MX6QDL_PAD_EIM_D27__EIM_DATA27		0x1b0b0
-+				MX6QDL_PAD_EIM_D28__EIM_DATA28		0x1b0b0
-+				MX6QDL_PAD_EIM_D29__EIM_DATA29		0x1b0b0
-+				MX6QDL_PAD_EIM_D30__EIM_DATA30		0x1b0b0
-+				MX6QDL_PAD_EIM_D31__EIM_DATA31		0x1b0b0
-+				MX6QDL_PAD_EIM_A23__EIM_ADDR23		0xb0b1
-+				MX6QDL_PAD_EIM_A22__EIM_ADDR22		0xb0b1
-+				MX6QDL_PAD_EIM_A21__EIM_ADDR21		0xb0b1
-+				MX6QDL_PAD_EIM_A20__EIM_ADDR20		0xb0b1
-+				MX6QDL_PAD_EIM_A19__EIM_ADDR19		0xb0b1
-+				MX6QDL_PAD_EIM_A18__EIM_ADDR18		0xb0b1
-+				MX6QDL_PAD_EIM_A17__EIM_ADDR17		0xb0b1
-+				MX6QDL_PAD_EIM_A16__EIM_ADDR16		0xb0b1
-+				MX6QDL_PAD_EIM_DA15__EIM_AD15		0xb0b1
-+				MX6QDL_PAD_EIM_DA14__EIM_AD14		0xb0b1
-+				MX6QDL_PAD_EIM_DA13__EIM_AD13		0xb0b1
-+				MX6QDL_PAD_EIM_DA12__EIM_AD12		0xb0b1
-+				MX6QDL_PAD_EIM_DA11__EIM_AD11		0xb0b1
-+				MX6QDL_PAD_EIM_DA10__EIM_AD10		0xb0b1
-+				MX6QDL_PAD_EIM_DA9__EIM_AD09		0xb0b1
-+				MX6QDL_PAD_EIM_DA8__EIM_AD08		0xb0b1
-+				MX6QDL_PAD_EIM_DA7__EIM_AD07		0xb0b1
-+				MX6QDL_PAD_EIM_DA6__EIM_AD06		0xb0b1
-+				MX6QDL_PAD_EIM_DA5__EIM_AD05		0xb0b1
-+				MX6QDL_PAD_EIM_DA4__EIM_AD04		0xb0b1
-+				MX6QDL_PAD_EIM_DA3__EIM_AD03		0xb0b1
-+				MX6QDL_PAD_EIM_DA2__EIM_AD02		0xb0b1
-+				MX6QDL_PAD_EIM_DA1__EIM_AD01		0xb0b1
-+				MX6QDL_PAD_EIM_DA0__EIM_AD00		0xb0b1
-+			>;
-+		};
-+*/
-+/*
-+		pinctrl_hdmi_cec: hdmicecgrp {
-+			fsl,pins = <
-+				MX6QDL_PAD_EIM_A25__HDMI_TX_CEC_LINE 0x1f8b0
-+			>;
-+		};
-+*/
-+/*
-+		pinctrl_pwm3_1: pwm3grp-1 {
-+			fsl,pins = <
-+				MX6QDL_PAD_SD4_DAT1__PWM3_OUT 0x1b0b1
-+			>;
-+		};
-+*/
 +	};
 +};

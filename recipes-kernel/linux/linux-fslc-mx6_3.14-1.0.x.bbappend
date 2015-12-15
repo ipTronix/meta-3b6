@@ -18,9 +18,10 @@ SRC_URI_append_tera-he = " \
    file://0010-ti-st-add-device-tree-support.patch \
    file://0011-Add-SDIO-function-devicetree-subnode-parsing.patch \
    file://0012-altera-cvifw.patch \
+   file://0013-mxc_tvp5150-std_autodet.patch \
+   file://0014-nxp_pn5xx.patch \
    file://defconfig \
 "
-
 
 KERNEL_IMAGE_BASE_NAME ?= "${KERNEL_IMAGETYPE}-${PKGE}-${PKGV}-${PKGR}"
 

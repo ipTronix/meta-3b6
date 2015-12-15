@@ -1,7 +1,7 @@
 Index: git/drivers/media/platform/mxc/capture/Kconfig
 ===================================================================
---- git.orig/drivers/media/platform/mxc/capture/Kconfig	2015-11-12 12:32:01.598654202 +0100
-+++ git/drivers/media/platform/mxc/capture/Kconfig	2015-11-12 12:32:02.498654195 +0100
+--- git.orig/drivers/media/platform/mxc/capture/Kconfig	2015-12-07 12:38:22.848077458 +0100
++++ git/drivers/media/platform/mxc/capture/Kconfig	2015-12-07 12:38:23.772077422 +0100
 @@ -9,6 +9,13 @@
  	depends on VIDEO_MXC_CAPTURE && MXC_IPU
  	default y
@@ -18,8 +18,8 @@ Index: git/drivers/media/platform/mxc/capture/Kconfig
  	depends on I2C
 Index: git/drivers/media/platform/mxc/capture/Makefile
 ===================================================================
---- git.orig/drivers/media/platform/mxc/capture/Makefile	2015-11-12 12:32:01.598654202 +0100
-+++ git/drivers/media/platform/mxc/capture/Makefile	2015-11-13 15:49:37.315683045 +0100
+--- git.orig/drivers/media/platform/mxc/capture/Makefile	2015-12-07 12:38:22.848077458 +0100
++++ git/drivers/media/platform/mxc/capture/Makefile	2015-12-07 12:38:23.772077422 +0100
 @@ -25,3 +25,6 @@
  
  tvp5150_tvin-objs := mxc_tvp5150.o
@@ -30,23 +30,23 @@ Index: git/drivers/media/platform/mxc/capture/Makefile
 Index: git/drivers/media/platform/mxc/capture/altera-cvifw.c
 ===================================================================
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ git/drivers/media/platform/mxc/capture/altera-cvifw.c	2015-11-17 09:11:49.793435403 +0100
-@@ -0,0 +1,2057 @@
++++ git/drivers/media/platform/mxc/capture/altera-cvifw.c	2015-12-07 16:53:28.627480988 +0100
+@@ -0,0 +1,2010 @@
 +/** **************************************************************************
 + * Altera Clocked Video Input and Frame Writer PCIe driver
 + ****************************************************************************/
 +
 +#include <linux/module.h>
++#include <linux/ioctl.h>
++#include <linux/fs.h>
++#include <linux/list.h>
 +#include <linux/pci.h>
 +#include <linux/interrupt.h>
 +#include <linux/vmalloc.h>
 +#include <linux/dma-mapping.h>
-+
 +#include <linux/slab.h>
-+
 +#include <asm/uaccess.h>
 +#include <asm/io.h>
-+
 +#include <linux/videodev2.h>
 +#include <media/v4l2-common.h>
 +#include <media/v4l2-device.h>
@@ -59,45 +59,63 @@ Index: git/drivers/media/platform/mxc/capture/altera-cvifw.c
 +#include "v4l2-int-device.h"
 +#include "mxc_v4l2_capture.h"
 +
-+#include <linux/ioctl.h>
-+#include <linux/fs.h>
-+#include <linux/list.h>
-+
-+#define DEBUG
-+#define DBG_PRINT(fmt, ...)   printk("%s:%s:"fmt, DRIVER_NAME, __func__, ##__VA_ARGS__);
-+#define DBG_ERROR(fmt, ...)   printk("%s:%s:ERROR:"fmt, DRIVER_NAME, __func__, ##__VA_ARGS__);
-+
-+#define DMA_BUF_MODE  0 // 0 dma_map - 1 kmalloc
++#if 0
++  #define DEBUG
++  //#define DEBUG_TIMESTAMP
++  #ifndef DEBUG_TIMESTAMP
++    #define DBG_PRINT(fmt, ...)   printk("%s:%s:"fmt, \
++                                        DRIVER_NAME, __func__, \
++                                        ##__VA_ARGS__);
++  #else
++    #include <linux/time.h>
++    #define DBG_PRINT(fmt, ...)   { \
++                                    struct timespec ts; \
++                                    getnstimeofday(&ts); \
++                                    printk("%s:%s:%d.%d:"fmt, \
++                                          DRIVER_NAME, __func__, \
++                                          ts.tv_sec, ts.tv_nsec, \
++                                          ##__VA_ARGS__); \
++                                  }
++  #endif
++  #define DBG_ERROR(fmt, ...)   printk("%s:%s:ERROR:"fmt, DRIVER_NAME, __func__, ##__VA_ARGS__);
++  //#define DBG_IRQ_PRINT(x...) DBG_PRINT(x)
++  #define DBG_IRQ_PRINT(x...)
++#else
++  #define DBG_PRINT(fmt, ...)
++  #define DBG_ERROR(fmt, ...)
++  #define DBG_IRQ_PRINT(x...)
++#endif
 +
 +#define DRIVER_NAME     "cvifw"
 +#define DRIVER_VERSION  "1.0"
 +#define CARD_NAME       "cvifw"
 +
-+#define CVIFW0_MINOR    4
-+#define CVIFW0_CSI      2
-+#define CVIFW1_MINOR    5
-+#define CVIFW1_CSI      3
-+
 +#define PCI_VENDOR_ID_ALTERA          0x1172
 +#define PCI_DEVICE_ID_ALTERA_CVIFW    0x0004
 +
-+#define BAR0_CVI0_OFS   0x4080
-+#define BAR0_CVI1_OFS   0x4000
++#define CVIFW0_MINOR    2
++#define CVIFW0_CSI      2
++#define CVIFW1_MINOR    3
++#define CVIFW1_CSI      3
++
++//#define BAR0_CVI0_OFS   0x4080
++//#define BAR0_CVI1_OFS   0x4000
 +#define BAR0_FW0_OFS    0x4100
 +#define BAR0_FW1_OFS    0x4200
 +#define BAR0_CTRL_OFS   0x4800 ///< SYS_ID [0x0000] = 0x1B8F0001
 +
-+#define FLG_DEVICE_IN_USE    0x00000001
-+#define FLG_STREAM_ON        0x00000002
-+#define FLG_STREAM_STOP      0x00000004
++//#define FLG_DEVICE_IN_USE    0x00000001
++//#define FLG_STREAM_ON        0x00000002
++//#define FLG_STREAM_STOP      0x00000004
 +
-+#define FLAG_DEVICE_IN_USE      0x01
-+#define FLAG_BUFFERS_AVAILABLE  0x02
-+#define FLAG_BUFFER_IN_SYNC     0x04
-+#define FLAG_DO_UPDATE          0x10
-+#define FLAG_DEINTERLACE        0x20
-+#define FLAG_STREAM_ON          0x40
-+#define FLAG_FIRST_FRAME        0x80
++#define FLAG_DEVICE_IN_USE      0x00000001
++#define FLAG_BUFFERS_AVAILABLE  0x00000002
++#define FLAG_BUFFER_IN_SYNC     0x00000004
++//#define FLAG_BUFFER_SYNC_CHG    0x00000008
++#define FLAG_DO_UPDATE          0x00000010
++//#define FLAG_DEINTERLACE        0x00000020
++#define FLAG_STREAM_ON          0x00000040
++#define FLAG_FIRST_FRAME        0x00000080
 +
 +#define FLAG_SET(f)     (dev->flags |= (f))
 +#define FLAG_CLR(f)     (dev->flags &=~(f))
@@ -106,6 +124,13 @@ Index: git/drivers/media/platform/mxc/capture/altera-cvifw.c
 +
 +#define MAX_DMA_FRAMEBUFFERS 4
 +
++
++#define FW_STS_BUSY           0x00000002
++#define FW_STS_BUFFER         0x00000004
++#define FW_STS_INT_E          0x00000010
++#define FW_STS_INT_S          0x00000020
++
++
 +/*! List of TV input video formats supported. The video formats is corresponding
 + * to the v4l2_id in video_fmt_t.
 + * Currently, only PAL and NTSC is supported. Needs to be expanded in the
@@ -113,8 +138,8 @@ Index: git/drivers/media/platform/mxc/capture/altera-cvifw.c
 + */
 +typedef enum {
 +  TV_NTSC = 0,    /*!< Locked on (M) NTSC video signal. */
-+  TV_PAL,     /*!< (B, G, H, I, N)PAL video signal. */
-+  TV_NOT_LOCKED,    /*!< Not locked on a signal. */
++  TV_PAL,         /*!< (B, G, H, I, N)PAL video signal. */
++  TV_NOT_LOCKED,  /*!< Not locked on a signal. */
 +} video_fmt_idx;
 +
 +/*! Number of video standards supported (including 'not locked' signal). */
@@ -122,14 +147,14 @@ Index: git/drivers/media/platform/mxc/capture/altera-cvifw.c
 +
 +/*! Video format structure. */
 +typedef struct {
-+  int v4l2_id;        /*!< Video for linux ID. */
-+  char name[16];      /*!< Name (e.g., "NTSC", "PAL", etc.) */
-+  u16 raw_width;      /*!< Raw width. */
-+  u16 raw_height;     /*!< Raw height. */
-+  u16 active_width;   /*!< Active width. */
-+  u16 active_height;  /*!< Active height. */
-+  u16 active_top;     /*!< Active top. */
-+  u16 active_left;    /*!< Active left. */
++  int   v4l2_id;        /*!< Video for linux ID. */
++  char  name[16];       /*!< Name (e.g., "NTSC", "PAL", etc.) */
++  u16   raw_width;      /*!< Raw width. */
++  u16   raw_height;     /*!< Raw height. */
++  u16   active_width;   /*!< Active width. */
++  u16   active_height;  /*!< Active height. */
++  u16   active_top;     /*!< Active top. */
++  u16   active_left;    /*!< Active left. */
 +} video_fmt_t;
 +
 +/*!
@@ -140,35 +165,35 @@ Index: git/drivers/media/platform/mxc/capture/altera-cvifw.c
 + */
 +static video_fmt_t video_fmts[] = {
 +  {     /*! NTSC */
-+   .v4l2_id       = V4L2_STD_NTSC,
-+   .name          = "NTSC",
-+   .raw_width     = 720,    /* SENS_FRM_WIDTH */
-+   .raw_height    = 525,   /* SENS_FRM_HEIGHT */
-+   .active_width  = 720,   /* ACT_FRM_WIDTH */
-+   .active_height = 480,    /* ACT_FRM_HEIGHT */
-+   .active_top    = 13,
-+   .active_left   = 0,
-+   },
++    .v4l2_id       = V4L2_STD_NTSC,
++    .name          = "NTSC",
++    .raw_width     = 720,     /* SENS_FRM_WIDTH */
++    .raw_height    = 525,     /* SENS_FRM_HEIGHT */
++    .active_width  = 720,     /* ACT_FRM_WIDTH */
++    .active_height = 480,     /* ACT_FRM_HEIGHT */
++    .active_top    = 13,
++    .active_left   = 0,
++  },
 +  {     /*! (B, G, H, I, N) PAL */
-+   .v4l2_id = V4L2_STD_PAL,
-+   .name          = "PAL",
-+   .raw_width     = 720,
-+   .raw_height    = 625,
-+   .active_width  = 720,
-+   .active_height = 576,
-+   .active_top    = 0,
-+   .active_left   = 0,
-+   },
++    .v4l2_id = V4L2_STD_PAL,
++    .name          = "PAL",
++    .raw_width     = 720,
++    .raw_height    = 625,
++    .active_width  = 720,
++    .active_height = 576,
++    .active_top    = 0,
++    .active_left   = 0,
++  },
 +  {     /*! Unlocked standard */
-+   .v4l2_id       = V4L2_STD_ALL,
-+   .name          = "Autodetect",
-+   .raw_width     = 720,
-+   .raw_height    = 625,
-+   .active_width  = 720,
-+   .active_height = 576,
-+   .active_top    = 0,
-+   .active_left   = 0,
-+   },
++    .v4l2_id       = V4L2_STD_ALL,
++    .name          = "Autodetect",
++    .raw_width     = 720,
++    .raw_height    = 625,
++    .active_width  = 720,
++    .active_height = 576,
++    .active_top    = 0,
++    .active_left   = 0,
++  },
 +};
 +
 +/**
@@ -177,7 +202,6 @@ Index: git/drivers/media/platform/mxc/capture/altera-cvifw.c
 +  phys_addr_t               phys;
 +  size_t                    size;
 +  void __iomem             *virt;
-+//  int                       irq;
 +  char                     *des;
 +  enum dma_data_direction   dir;
 +  dma_addr_t                dma;
@@ -200,7 +224,6 @@ Index: git/drivers/media/platform/mxc/capture/altera-cvifw.c
 +  struct list_head          frame;
 +  enum altera_frame_state   state;
 +  unsigned long             vma_use_count;
-+
 +  dma_addr_t                buf_phys;
 +  void                     *buf_virt;
 +};
@@ -220,13 +243,12 @@ Index: git/drivers/media/platform/mxc/capture/altera-cvifw.c
 +  int                       video_nr;   /* Video device number */
 +  int                       csi_id;
 +
-+  sIoRes                    cvi_res;
 +  sIoRes                    fw_res;
-+  int                       irq;// TODO forse alla fine ce ne sarà solo uno per entrambe le periferiche
++  int                       irq;
 +  struct mutex              fops_lock;
 +  spinlock_t                queue_lock;
 +  wait_queue_head_t         wait;
-+  unsigned char             flags;
++  unsigned long             flags;
 +
 +  video_fmt_idx             video_idx; /// Standard index of TV.
 +
@@ -240,7 +262,6 @@ Index: git/drivers/media/platform/mxc/capture/altera-cvifw.c
 +  int                       overlay_pid;
 +  bool                      capture_on;
 +  int                       capture_pid;
-+
 +
 +  struct altera_frame      *frame;
 +  unsigned int              frame_buf_size;
@@ -265,9 +286,9 @@ Index: git/drivers/media/platform/mxc/capture/altera-cvifw.c
 +void altera_fw_hw_init(void *regb,
 +                       int dbuf,
 +                       int sync_type,
-+                       unsigned long wlen,
-+                       unsigned long stride,
-+                       int output_format);
++                       unsigned short hres,
++                       unsigned short vres,
++                       int format);
 +void altera_fw_hw_stop(void *regb);
 +void altera_fw_hw_start(void *regb);
 +unsigned long altera_fw_hw_clearint(void *regb);
@@ -296,24 +317,24 @@ Index: git/drivers/media/platform/mxc/capture/altera-cvifw.c
 +  struct resource *res;
 +  res = request_mem_region(pIor->phys, pIor->size, pIor->des);
 +  if (!res) {
-+    DBG_PRINT("%s:Couldn't request memory region at 0x%08lX\n",
++    DBG_ERROR("%s:Couldn't request memory region at 0x%08lX\n",
 +              pIor->des, pIor->phys);
 +    return -1;
 +  }
 +  pIor->virt= ioremap(pIor->phys, pIor->size);
 +  if (!pIor->virt) {
-+    DBG_PRINT("%s:Couldn't remap memory region at 0x%08lX\n",
++    DBG_ERROR("%s:Couldn't remap memory region at 0x%08lX\n",
 +              pIor->des, pIor->phys);
 +    return -1;
 +  }
 +
 +  if(pIor->dir!=DMA_NONE){
-+    pIor->dma = dma_map_single(NULL, // TODO va bene senza rif a dev ???? pDrv->dev,
-+                                pIor->virt,
-+                                pIor->size,
-+                                pIor->dir);
++    pIor->dma = dma_map_single(cvifwDevice->vdev[0].dev,//NULL, // TODO va bene senza rif a dev ???? pDrv->dev,
++                               pIor->virt,
++                               pIor->size,
++                               pIor->dir);
 +    if (!pIor->dma) {
-+      DBG_PRINT("%s:Couldn't dma_map_single at %p\n",
++      DBG_ERROR("%s:Couldn't dma_map_single at %p\n",
 +                pIor->des, (long unsigned int)pIor->virt);
 +      return -ENODEV;
 +    }
@@ -352,59 +373,40 @@ Index: git/drivers/media/platform/mxc/capture/altera-cvifw.c
 +static int cvifw_getresources(struct pci_dev *pdev)
 +{
 +  struct cvifw_dev       *dev = cvifwDevice;
-+  int                     ret;
 +  unsigned long           pci_bar_adr;
 +  unsigned long           pci_bar_len;
-+  void __iomem           *pci_mm_regs;
 +
 +  pci_bar_adr = pci_resource_start(dev->pci_dev, 0);
 +  pci_bar_len = pci_resource_len(dev->pci_dev, 0);
 +  DBG_PRINT("PCI BASE %08X %08X\n", pci_bar_adr, pci_bar_len);
 +  if (!pci_bar_adr) {
-+    DBG_PRINT("ERROR:NO PCIe bar found\n");
++    DBG_ERROR("No PCIe bar found\n");
 +    return -EINVAL;
 +  }
-+
-+  dev->vdev[0].cvi_res.phys = pci_bar_adr + BAR0_CVI0_OFS;
-+  dev->vdev[0].cvi_res.size = 0x80;
-+  dev->vdev[0].cvi_res.des  = "cvifw_cvi0";
-+  dev->vdev[0].cvi_res.dir  = DMA_NONE;
-+//  dev->vdev[0].cvi_res.irq  = -1; //TODO anche quelli sotto
 +
 +  dev->vdev[0].fw_res.phys = pci_bar_adr + BAR0_FW0_OFS;
 +  dev->vdev[0].fw_res.size = 0x100;
 +  dev->vdev[0].fw_res.des  = "cvifw_fw0";
 +  dev->vdev[0].fw_res.dir  = DMA_NONE;
-+//  dev->vdev[0].fw_res.irq  = -1;
-+
-+  dev->vdev[0].irq = pdev->irq;//TODO ????????????????
-+
-+  dev->vdev[1].cvi_res.phys = pci_bar_adr + BAR0_CVI1_OFS;
-+  dev->vdev[1].cvi_res.size = 0x80;
-+  dev->vdev[1].cvi_res.des  = "cvifw_cvi1";
-+  dev->vdev[1].cvi_res.dir  = DMA_NONE;
-+//  dev->vdev[1].cvi_res.irq  = -1;
++  dev->vdev[0].irq = pdev->irq;
 +
 +  dev->vdev[1].fw_res.phys = pci_bar_adr + BAR0_FW1_OFS;
 +  dev->vdev[1].fw_res.size = 0x100;
 +  dev->vdev[1].fw_res.des  = "cvifw_fw1";
 +  dev->vdev[1].fw_res.dir  = DMA_NONE;
-+//  dev->vdev[1].fw_res.irq  = -1;
-+
-+  dev->vdev[1].irq = pdev->irq;//TODO ????????????????
++  dev->vdev[1].irq = pdev->irq;
 +
 +	dev->ctrl_res.phys = pci_bar_adr + BAR0_CTRL_OFS;
 +  dev->ctrl_res.size = 0x100;
 +  dev->ctrl_res.des  = "cvifw_ctrl";
 +  dev->ctrl_res.dir  = DMA_NONE;
-+//  dev->ctrl.irq  = -1;
 +
 +  DBG_PRINT("PCIe get resources:\n"
-+            "   vdev 0 cvi: %p, fw: %p, irq %d\n"
-+            "   vdev 1 cvi: %p, fw: %p, irq %d\n"
++            "   vdev 0 fw: %p, irq %d\n"
++            "   vdev 1 fw: %p, irq %d\n"
 +            "   ctrl: %p\n",
-+            dev->vdev[0].cvi_res.phys, dev->vdev[0].fw_res.phys, dev->vdev[0].irq,
-+            dev->vdev[1].cvi_res.phys, dev->vdev[1].fw_res.phys, dev->vdev[1].irq,
++            dev->vdev[0].fw_res.phys, dev->vdev[0].irq,
++            dev->vdev[1].fw_res.phys, dev->vdev[1].irq,
 +            dev->ctrl_res.phys);
 +
 +  return 0;
@@ -421,7 +423,7 @@ Index: git/drivers/media/platform/mxc/capture/altera-cvifw.c
 +{
 +  int i;
 +
-+  spin_lock_bh(&dev->queue_lock);
++  spin_lock(&dev->queue_lock);
 +
 +  INIT_LIST_HEAD(&dev->inqueue);
 +  INIT_LIST_HEAD(&dev->dmaqueue);
@@ -432,7 +434,7 @@ Index: git/drivers/media/platform/mxc/capture/altera-cvifw.c
 +    dev->frame[i].buf.bytesused = 0;
 +  }
 +
-+  spin_unlock_bh(&dev->queue_lock);
++  spin_unlock(&dev->queue_lock);
 +}
 +
 +/**
@@ -441,6 +443,8 @@ Index: git/drivers/media/platform/mxc/capture/altera-cvifw.c
 +static void reinit_framequeues(struct cvifw_vdev *dev)
 +{
 +  int i;
++
++  spin_lock(&dev->queue_lock);
 +
 +  INIT_LIST_HEAD(&dev->inqueue);
 +  INIT_LIST_HEAD(&dev->dmaqueue);
@@ -451,6 +455,28 @@ Index: git/drivers/media/platform/mxc/capture/altera-cvifw.c
 +    dev->frame[i].state = F_UNUSED;
 +    dev->frame[i].buf.bytesused = 0;
 +  }
++
++  spin_unlock(&dev->queue_lock);
++}
++
++/**
++ * Release buffers
++ */
++static void release_buffers(struct cvifw_vdev *dev)
++{
++  int i;
++  if(dev->frame){
++    for (i = dev->frames_num-1; i >= 0; i--){
++      dma_unmap_page(NULL,
++                     dev->frame[i].buf_phys,
++                     dev->frame_buf_size,
++                     DMA_BIDIRECTIONAL);
++      kfree(dev->frame[i].buf_virt);
++    }
++    kfree(dev->frame);
++  }
++  dev->frames_num = 0;
++  dev->flags &= ~FLAG_BUFFERS_AVAILABLE;
 +}
 +
 +/**
@@ -461,10 +487,11 @@ Index: git/drivers/media/platform/mxc/capture/altera-cvifw.c
 +                                     int mem_type)
 +{
 +  int i;
-+DBG_PRINT("request %d buffer\n", count);
 +
++  release_buffers(dev);
++  DBG_PRINT("request %d buffer\n", count);
 +  if (count > MAX_DMA_FRAMEBUFFERS) {
-+    DBG_ERROR("Buffer count too big, set it to %d\n", MAX_DMA_FRAMEBUFFERS);
++    DBG_PRINT("Buffer count too big, set it to %d\n", MAX_DMA_FRAMEBUFFERS);
 +    count = MAX_DMA_FRAMEBUFFERS;
 +  }
 +  dev->frame = kzalloc((sizeof(struct altera_frame) * count), GFP_KERNEL);
@@ -474,10 +501,6 @@ Index: git/drivers/media/platform/mxc/capture/altera-cvifw.c
 +  }
 +  dev->frames_num = 0;
 +
-+DBG_PRINT("v2f.fmt.pix sizeimage %d, width %d, height %d\n",
-+          dev->v2f.fmt.pix.sizeimage,
-+          dev->v2f.fmt.pix.width,
-+          dev->v2f.fmt.pix.height);
 +  if (!dev->v2f.fmt.pix.sizeimage) {
 +    if (dev->v2f.fmt.pix.width && dev->v2f.fmt.pix.height) {
 +      dev->v2f.fmt.pix.sizeimage = dev->v2f.fmt.pix.width *
@@ -488,21 +511,16 @@ Index: git/drivers/media/platform/mxc/capture/altera-cvifw.c
 +      return 0;
 +    }
 +  }
-+/*
-+
-+  dev->frame[i].buf.length    = dev->pix_format.width * dev->pix_format.height * 4;
-+    dev->frame[i].buf.length    = dev->v2f.fmt.pix.sizeimage;
-+ */
 +
 +  /* try to create "count" buffers, or try to create at least one buffer */
 +  dev->frame_buf_size = (dev->v2f.fmt.pix.sizeimage+PAGE_SIZE-1) & PAGE_MASK;
-+  for (i = 0; i < count; i++) {
++  for (i=0; i<count; i++) {
 +    dev->frame[i].buf_virt = kmalloc(dev->frame_buf_size, GFP_DMA);
 +    if (dev->frame[i].buf_virt == NULL) {
-+      DBG_PRINT("fail to allocate %d B of DMA memory\n", dev->frame_buf_size);
++      DBG_ERROR("Fail to allocate %d B of DMA memory\n", dev->frame_buf_size);
 +      break;
 +    }
-+    dev->frame[i].buf_phys = (void*)virt_to_phys(dev->frame[i].buf_virt);
++    dev->frame[i].buf_phys = (dma_addr_t)virt_to_phys(dev->frame[i].buf_virt);
 +
 +    DBG_PRINT("PA %p : VA %p Size %X\n",
 +              dev->frame[i].buf_phys,
@@ -519,12 +537,13 @@ Index: git/drivers/media/platform/mxc/capture/altera-cvifw.c
 +  if (dev->frames_num == 0) {
 +    DBG_ERROR("Failed to create any buffer! free and go out\n");
 +    kfree(dev->frame);
++    dev->frame = NULL;
 +    return 0;
 +  }
 +
 +  /* fill frame buffer handles and parameters */
 +  /* initialize all frame buffers */
-+  for (i = 0; i < dev->frames_num; i++) {
++  for (i=0; i<dev->frames_num; i++) {
 +    dev->frame[i].state         = F_UNUSED;
 +    dev->frame[i].buf.index     = i;
 +    dev->frame[i].buf.m.offset  = dev->frame[i].buf_phys;
@@ -532,7 +551,7 @@ Index: git/drivers/media/platform/mxc/capture/altera-cvifw.c
 +    dev->frame[i].buf.bytesused = 0;
 +    dev->frame[i].buf.type      = V4L2_BUF_TYPE_VIDEO_CAPTURE;
 +    dev->frame[i].buf.sequence  = 0;
-+    dev->frame[i].buf.field     = V4L2_FIELD_NONE;
++    dev->frame[i].buf.field     = V4L2_FIELD_INTERLACED;//V4L2_FIELD_NONE;
 +    dev->frame[i].buf.memory    = V4L2_MEMORY_MMAP;
 +    dev->frame[i].buf.flags     = 0;
 +  }
@@ -541,9 +560,9 @@ Index: git/drivers/media/platform/mxc/capture/altera-cvifw.c
 +  DBG_PRINT("return %d\n", dev->frames_num);
 +  return dev->frames_num;
 +
-+error_frame:
++// TODO error_frame:
 +
-+  for (i = dev->frames_num-1; i >= 0; i--) {
++  for (i=dev->frames_num-1; i>=0; i--) {
 +    dma_unmap_page(NULL,
 +                   dev->frame[i].buf_phys,
 +                   dev->frame_buf_size,
@@ -553,25 +572,6 @@ Index: git/drivers/media/platform/mxc/capture/altera-cvifw.c
 +  kfree(dev->frame);
 +  DBG_PRINT("return %d\n", -ENOMEM);
 +  return -ENOMEM;
-+}
-+
-+/**
-+ * Release buffers
-+ */
-+static void release_buffers(struct cvifw_vdev *dev)
-+{
-+  int i;
-+
-+  for (i = dev->frames_num-1; i >= 0; i--){
-+    dma_unmap_page(NULL,
-+                   dev->frame[i].buf_phys,
-+                   dev->frame_buf_size,
-+                   DMA_BIDIRECTIONAL);
-+    kfree(dev->frame[i].buf_virt);
-+  }
-+  kfree(dev->frame);
-+  dev->frames_num = 0;
-+  dev->flags &= ~FLAG_BUFFERS_AVAILABLE;
 +}
 +
 +/** **************************************************************************
@@ -599,7 +599,7 @@ Index: git/drivers/media/platform/mxc/capture/altera-cvifw.c
 +  memset(cap, 0, sizeof(*cap));
 +  strncpy((char*)cap->card  , CARD_NAME  , sizeof(cap->card  )-1);
 +  strncpy((char*)cap->driver, DRIVER_NAME, sizeof(cap->driver)-1);
-+  cap->version = DRIVER_VERSION;
++  cap->version = 0x00030E01;
 +  cap->capabilities = V4L2_CAP_VIDEO_CAPTURE |
 +                      V4L2_CAP_STREAMING     |
 +                      V4L2_CAP_VIDEO_OVERLAY ;
@@ -732,19 +732,10 @@ Index: git/drivers/media/platform/mxc/capture/altera-cvifw.c
 +        return -EFAULT;
 +      }
 +    }
-+DBG_PRINT("f->fmt..pix sizeimage %d, width %d, height %d\n",
-+          f->fmt.pix.sizeimage,
-+          f->fmt.pix.width,
-+          f->fmt.pix.height);
-+DBG_PRINT("v2f.fmt.pix sizeimage %d, width %d, height %d\n",
-+          dev->v2f.fmt.pix.sizeimage,
-+          dev->v2f.fmt.pix.width,
-+          dev->v2f.fmt.pix.height);
 +    break;
 +
 +  case V4L2_BUF_TYPE_VIDEO_OVERLAY:
 +    DBG_PRINT("type is V4L2_BUF_TYPE_VIDEO_OVERLAY\n");
-+    pr_debug("   type=V4L2_BUF_TYPE_VIDEO_OVERLAY\n");
 +    //TODO serve???   retval = verify_preview(cam, &f->fmt.win);
 +    dev->win = f->fmt.win;
 +    break;
@@ -771,16 +762,16 @@ Index: git/drivers/media/platform/mxc/capture/altera-cvifw.c
 +  return 0;
 +}
 +
-+static int g_input(struct file *file, void  *priv, int *input)
++static int g_input(struct file *file, void *priv, unsigned int *input)
 +{
 +  DBG_PRINT("\n");
 +  *input = 0;
 +  return 0;
 +}
 +
-+static int s_input(struct file *file, void  *priv, int input)
++static int s_input(struct file *file, void *priv, unsigned int input)
 +{
-+  DBG_PRINT("input  = %d\n", input);
++  DBG_PRINT("input = %d\n", input);
 +  //TODO if (input != 0)
 +  //  return -EINVAL;
 +
@@ -791,7 +782,7 @@ Index: git/drivers/media/platform/mxc/capture/altera-cvifw.c
 +                           struct v4l2_frmsizeenum *fsize)
 +{
 +  struct cvifw_vdev    *dev = video_drvdata(file);
-+DBG_PRINT("\n");
++
 +  if (!dev->sensor){
 +    DBG_ERROR("Slave not found!\n");
 +    return -ENODEV;
@@ -825,8 +816,8 @@ Index: git/drivers/media/platform/mxc/capture/altera-cvifw.c
 +static int querybuf(struct file *file, void  *priv, struct v4l2_buffer *b)
 +{
 +  struct cvifw_vdev    *dev = video_drvdata(file);
-+DBG_PRINT("Index %d\n", b->index);
 +
++  DBG_PRINT("Index %d\n", b->index);
 +  if (!(dev->flags & FLAG_BUFFERS_AVAILABLE)) {
 +    DBG_ERROR("No available buffers!\n");
 +    return -ENOMEM;
@@ -850,20 +841,24 @@ Index: git/drivers/media/platform/mxc/capture/altera-cvifw.c
 +static int qbuf(struct file *file, void  *priv, struct v4l2_buffer *b)
 +{
 +  struct cvifw_vdev    *dev = video_drvdata(file);
-+DBG_PRINT("index %d\n", b->index);
 +
-+  if (!(dev->flags & FLAG_BUFFERS_AVAILABLE))
++  DBG_PRINT("index %d\n", b->index);
++  if (!(dev->flags & FLAG_BUFFERS_AVAILABLE)) {
++    DBG_ERROR("NO BUFFERS_AVAILABLE\n");
 +    return -ENOMEM;
-+
-+  if (b->type != V4L2_BUF_TYPE_VIDEO_CAPTURE || b->index >= dev->frames_num)
++  }
++  if (b->type != V4L2_BUF_TYPE_VIDEO_CAPTURE || b->index >= dev->frames_num) {
++    DBG_ERROR("Buffer type isn't VIDEO_CAPTURE  or index is greater than max\n");
 +    return -EINVAL;
-+
-+  if (dev->frame[b->index].state != F_UNUSED)
++  }
++  if (dev->frame[b->index].state != F_UNUSED) {
++    DBG_ERROR("Buffer state isn't UNUSED\n");
 +    return -EAGAIN;
-+
-+  if (b->memory != V4L2_MEMORY_MMAP)
++  }
++  if (b->memory != V4L2_MEMORY_MMAP) {
++    DBG_ERROR("Memory type isn't MEMORY_MMAP\n");
 +    return -EINVAL;
-+
++  }
 +  dma_sync_single_for_device(dev->dev,
 +                             dev->frame[b->index].buf_phys,
 +                             dev->frame[b->index].buf.length,
@@ -871,11 +866,10 @@ Index: git/drivers/media/platform/mxc/capture/altera-cvifw.c
 +
 +  dev->frame[b->index].state = F_QUEUED;
 +
-+  spin_lock_bh(&dev->queue_lock);
++  spin_lock(&dev->queue_lock);
 +  list_add_tail(&dev->frame[b->index].frame, &dev->inqueue);
-+  spin_unlock_bh(&dev->queue_lock);
++  spin_unlock(&dev->queue_lock);
 +
-+//printk(KERN_INFO "%s:%s:done\n", DRIVER_NAME, __func__);
 +  return 0;
 +}
 +
@@ -885,7 +879,7 @@ Index: git/drivers/media/platform/mxc/capture/altera-cvifw.c
 +  struct altera_frame  *frame;
 +  int                   ret = 0;
 +
-+DBG_PRINT("index %d\n", b->index);
++  DBG_PRINT("index %d\n", b->index);
 +
 +  if (!(dev->flags & FLAG_BUFFERS_AVAILABLE)) {
 +    return -ENOMEM;
@@ -900,29 +894,27 @@ Index: git/drivers/media/platform/mxc/capture/altera-cvifw.c
 +      if (file->f_flags & O_NONBLOCK) {
 +        return -EAGAIN;
 +      }
-+      ret = wait_event_timeout(dev->wait, !list_empty(&dev->outqueue), HZ/5);
++      DBG_PRINT("wait_event outqueue\n");
++      ret = wait_event_timeout(dev->wait, !list_empty(&dev->outqueue), HZ);
 +    } else {
-+      if (FLAG_ISSET(FLAG_STREAM_ON)) {
-+        ret = wait_event_timeout(dev->wait,
-+                                 (dev->flags & FLAG_BUFFER_IN_SYNC), HZ);
-+      }
++      DBG_PRINT("wait_event BUFFER_IN_SYNC\n");
++      ret = wait_event_timeout(dev->wait,
++                              (dev->flags & FLAG_BUFFER_IN_SYNC), HZ);
 +    }
 +    if (ret == 0) {
 +      DBG_ERROR("Timeout expired\n");
-+      ret = -ETIMEDOUT;
-+    }
-+    if (!FLAG_ISSET(FLAG_STREAM_ON)) {
-+      ret = -EPERM;
++      return -ETIMEDOUT;
 +    }
 +    if (ret < 0) {
++      DBG_ERROR("Wait event\n");
 +      return ret;
 +    }
 +  }
 +
-+  spin_lock_bh(&dev->queue_lock);
++  spin_lock(&dev->queue_lock);
 +  frame = list_entry(dev->outqueue.next, struct altera_frame, frame);
 +  list_del(dev->outqueue.next);
-+  spin_unlock_bh(&dev->queue_lock);
++  spin_unlock(&dev->queue_lock);
 +
 +  dma_sync_single_for_cpu(dev->dev,
 +                          frame->buf_phys,
@@ -931,10 +923,10 @@ Index: git/drivers/media/platform/mxc/capture/altera-cvifw.c
 +
 +  frame->state = F_UNUSED;
 +  memcpy(b, &frame->buf, sizeof(*b));
-+DBG_PRINT("index %d pa %p\n", b->index, frame->buf_phys);
-+
 +  if (frame->vma_use_count)
 +    b->flags |= V4L2_BUF_FLAG_MAPPED;
++  //b->field = V4L2_FIELD_INTERLACED;
++  DBG_PRINT("index %d pa %p\n", b->index, frame->buf_phys);
 +
 +  return 0;
 +}
@@ -943,7 +935,6 @@ Index: git/drivers/media/platform/mxc/capture/altera-cvifw.c
 +{
 +  struct cvifw_vdev    *dev = video_drvdata(file);
 +  struct altera_frame  *frame;
-+DBG_PRINT("entry\n");
 +
 +  dev_dbg(dev->v4l2_dev.dev, "%s()\n", __func__);
 +
@@ -957,37 +948,64 @@ Index: git/drivers/media/platform/mxc/capture/altera-cvifw.c
 +    return 0;
 +  }
 +  if (!list_empty(&dev->outqueue)){
++    spin_lock(&dev->queue_lock);
 +    INIT_LIST_HEAD(&dev->outqueue);
++    spin_unlock(&dev->queue_lock);
 +  }
 +  if (!list_empty(&dev->dmaqueue)){
++    spin_lock(&dev->queue_lock);
 +    INIT_LIST_HEAD(&dev->dmaqueue);
++    spin_unlock(&dev->queue_lock);
 +  }
 +
-+  altera_fw_hw_init(dev->fw_res.virt,
-+                    0,                                // double buffer
-+                    0,                                // sync type
-+                    dev->v2f.fmt.pix.width / 4,       // wlen
-+                    dev->v2f.fmt.pix.bytesperline,    // stride
-+                    dev->v2f.fmt.pix.pixelformat);    // oputput format
-+  
++  altera_fw_hw_init(dev->fw_res.virt,               // device regs base address
++                    0,                              // double buffer
++                    0,                              // sync type
++                    dev->v2f.fmt.pix.width,         // hres
++                    dev->v2f.fmt.pix.height,        // vres
++                    dev->v2f.fmt.pix.pixelformat);  // oputput format
++
 +  reinit_framequeues(dev);
 +
++  spin_lock(&dev->queue_lock);
 +  /* write video buffer address where frame writer will stream data */
-+DBG_PRINT("call list_entry\n");
 +  frame = list_entry(dev->inqueue.next, struct altera_frame, frame);
 +  /* remove the entry from the inqueue and put it in the dma queue */
 +  list_move_tail(&frame->frame, &dev->dmaqueue);
-+DBG_PRINT("write base0 %p\n", frame->buf_phys);
++  spin_unlock(&dev->queue_lock);
++DBG_PRINT("write base0 %p size %08X\n", frame->buf_phys, dev->frame_buf_size);
 +  altera_fw_hw_addr0(dev->fw_res.virt, frame->buf_phys, dev->frame_buf_size);
 +
++  
 +  dev->capture_pid = current->pid;
-+  dev->capture_on = true;
++  dev->capture_on  = true;
 +
 +  /* start acquisition */
 +  FLAG_SET(FLAG_STREAM_ON);
 +  FLAG_SET(FLAG_BUFFER_IN_SYNC);
 +  FLAG_SET(FLAG_FIRST_FRAME);
 +  altera_fw_hw_start(dev->fw_res.virt);
++
++  {
++#define CVIFW_TIMEOUT  10000
++    int i;
++    unsigned long reg;
++    for (i=0; i<CVIFW_TIMEOUT; i++) {
++      reg = altera_fw_hw_clearint(dev->fw_res.virt);
++      if (reg & FW_STS_BUSY ) {
++        break;
++      }
++    }
++    if (i>=CVIFW_TIMEOUT) {
++      return -1;
++    }
++  }
++  spin_lock(&dev->queue_lock);
++  frame = list_entry(dev->inqueue.next, struct altera_frame, frame);
++  list_move_tail(&frame->frame, &dev->dmaqueue);
++  spin_unlock(&dev->queue_lock);
++DBG_PRINT("write base0 %p size %08X\n", frame->buf_phys, dev->frame_buf_size);
++  altera_fw_hw_addr0(dev->fw_res.virt, frame->buf_phys, dev->frame_buf_size);
 +
 +  return 0;
 +}
@@ -1050,7 +1068,7 @@ Index: git/drivers/media/platform/mxc/capture/altera-cvifw.c
 +{
 +  struct cvifw_vdev  *dev = video_drvdata(file);
 +  if (!dev->sensor){
-+    DBG_ERROR("slave not found!\n");
++    DBG_ERROR("Slave not found!\n");
 +    return -ENODEV;
 +  }
 +  if (std_id == V4L2_STD_PAL) {
@@ -1086,22 +1104,21 @@ Index: git/drivers/media/platform/mxc/capture/altera-cvifw.c
 +static int g_std(struct file *file, void *fh, v4l2_std_id *std_id)
 +{
 +  struct cvifw_vdev  *dev = video_drvdata(file);
-+  struct v4l2_format  tv_fmt;
++  struct v4l2_format  slv_fmt;
 +
-+DBG_PRINT("\n");
 +  if (!dev->sensor){
 +    DBG_ERROR("Slave not found!\n");
 +    return -ENODEV;
 +  }
-+  tv_fmt.type = V4L2_BUF_TYPE_PRIVATE;
-+  vidioc_int_g_fmt_cap(dev->sensor, &tv_fmt);
++  slv_fmt.type = V4L2_BUF_TYPE_PRIVATE;
++  vidioc_int_g_fmt_cap(dev->sensor, &slv_fmt);
 +  if (dev->std_auto) {
-+    if (dev->standard.id != tv_fmt.fmt.pix.pixelformat) {
-+      DBG_PRINT("Changing standard to %Lx\n", tv_fmt.fmt.pix.pixelformat);
-+      s_std(file, NULL, tv_fmt.fmt.pix.pixelformat);
++    if (dev->standard.id != slv_fmt.fmt.pix.pixelformat) {
++      DBG_PRINT("Changing standard to %Lx\n", slv_fmt.fmt.pix.pixelformat);
++      s_std(file, NULL, slv_fmt.fmt.pix.pixelformat);
 +    }
 +  }
-+  *std_id = tv_fmt.fmt.pix.pixelformat;
++  *std_id = slv_fmt.fmt.pix.pixelformat;
 +  return 0;
 +}
 +
@@ -1203,7 +1220,7 @@ Index: git/drivers/media/platform/mxc/capture/altera-cvifw.c
 +
 +static int g_ctrl(struct file *file, void  *fh, struct v4l2_control *ctrl)
 +{
-+  struct cvifw_vdev    *dev = video_drvdata(file);
++//  struct cvifw_vdev    *dev = video_drvdata(file);
 +  DBG_PRINT("ctrl id %d\n", ctrl->id);
 +
 +  switch (ctrl->id) {
@@ -1345,42 +1362,49 @@ Index: git/drivers/media/platform/mxc/capture/altera-cvifw.c
 +/** **************************************************************************
 + *                         Interrupt handling
 + ************************************************************************** */
-+#define FW_STS_INT_E          0x00000010
-+#define FW_STS_INT_S          0x00000020
-+
 +static irqreturn_t cvifw_isr(int irq, void *pdev)
 +{
 +  struct cvifw_vdev    *dev = (struct cvifw_vdev *)pdev;
 +  unsigned long         reg;
 +  struct altera_frame  *frame;
-+DBG_PRINT("dev [%p]\n", dev);
++
 +  reg = altera_fw_hw_clearint(dev->fw_res.virt);
-+  // start frame
++DBG_IRQ_PRINT("dev [%p] FIRST_FRAME %d sts %08X\n",
++          dev, FLAG_ISSET(FLAG_FIRST_FRAME)?1:0, reg);
 +  if (reg & FW_STS_INT_S) {
-+    FLAG_CLR(FLAG_FIRST_FRAME);
-+    if (FLAG_ISSET(FLAG_BUFFER_IN_SYNC) && !list_empty(&dev->inqueue)) {
-+      frame = list_entry(dev->inqueue.next, struct altera_frame, frame);
-+      list_move_tail(&frame->frame, &dev->dmaqueue);
-+      altera_fw_hw_addr0(dev->fw_res.virt, frame->buf_phys, dev->frame_buf_size);
-+    } else if (FLAG_ISCLR(FLAG_BUFFER_IN_SYNC) && list_empty(&dev->outqueue)) {
-+      reinit_framequeues(dev);
-+      FLAG_SET(FLAG_BUFFER_IN_SYNC);
-+    } else if (FLAG_ISSET(FLAG_BUFFER_IN_SYNC)) {
-+      FLAG_CLR(FLAG_BUFFER_IN_SYNC);
-+    }
-+  }
-+  // end frame
-+  if ( (reg & FW_STS_INT_E) && FLAG_ISCLR(FLAG_FIRST_FRAME) ) {
-+    if (!list_empty(&dev->dmaqueue)) {
-+      frame = list_entry(dev->dmaqueue.next, struct altera_frame, frame);
-+      do_gettimeofday(&frame->buf.timestamp);
-+      frame->buf.sequence++;
-+      frame->state = F_DONE;
-+      frame->buf.bytesused = frame->buf.length;
-+      // remove the entry from the dmaqueue and put it in the outqueue
-+      list_move_tail(&frame->frame, &dev->outqueue);
-+      wake_up(&dev->wait);
-+DBG_PRINT("wake_up dev->wait\n");
++    if (FLAG_ISSET(FLAG_BUFFER_IN_SYNC)) {
++      if (!list_empty(&dev->inqueue)) {
++        spin_lock(&dev->queue_lock);
++        frame = list_entry(dev->inqueue.next, struct altera_frame, frame);
++        list_move_tail(&frame->frame, &dev->dmaqueue);
++        spin_unlock(&dev->queue_lock);
++        altera_fw_hw_addr0(dev->fw_res.virt, frame->buf_phys, dev->frame_buf_size);
++DBG_IRQ_PRINT("altera_fw_hw_addr0 index %d %p\n", frame->buf.index, frame->buf_phys);
++      } else {
++        // input queue is empty go in out of sync
++DBG_IRQ_PRINT("input queue is empty go in out of sync\n");
++//printk("altera_cvifw irq %d:input queue is empty go in out of sync\n", irq);
++        FLAG_CLR(FLAG_BUFFER_IN_SYNC);
++      }
++      if (!list_empty(&dev->dmaqueue)) {
++        spin_lock(&dev->queue_lock);
++        frame = list_entry(dev->dmaqueue.next, struct altera_frame, frame);
++        do_gettimeofday(&frame->buf.timestamp);
++        frame->buf.sequence++;
++        frame->state = F_DONE;
++        frame->buf.bytesused = frame->buf.length;
++        // remove the entry from the dmaqueue and put it in the outqueue
++        list_move_tail(&frame->frame, &dev->outqueue);
++        spin_unlock(&dev->queue_lock);
++        wake_up(&dev->wait);
++DBG_IRQ_PRINT("wake_up dev->wait frame index %d\n", frame->buf.index);
++      }
++    } else {
++      // out of sync
++      if (!list_empty(&dev->inqueue)) {
++DBG_IRQ_PRINT("resync\n");
++        FLAG_SET(FLAG_BUFFER_IN_SYNC);
++      }
 +    }
 +  }
 +  return IRQ_HANDLED;
@@ -1403,7 +1427,7 @@ Index: git/drivers/media/platform/mxc/capture/altera-cvifw.c
 +
 +  mutex_lock(&dev->fops_lock);
 +
-+  dev->flags &= ~FLAG_DEINTERLACE;
++//  dev->flags &= ~FLAG_DEINTERLACE;
 +
 +//  dev->output_format = V4L2_PIX_FMT_RGB32;
 +//  dev->output_bpp = 32;
@@ -1435,31 +1459,20 @@ Index: git/drivers/media/platform/mxc/capture/altera-cvifw.c
 +    return -EBADF;
 +  }
 +  // initial pix format data
-+  /*
-+  dev->pix_format.width        = dev->video_norm.width;
-+  dev->pix_format.height       = dev->video_norm.height;
-+  dev->pix_format.pixelformat  = dev->output_format;
-+  dev->pix_format.field        = V4L2_FIELD_NONE;
-+  dev->pix_format.bytesperline = dev->pix_format.width * (dev->output_bpp / 8);
-+  dev->pix_format.sizeimage    = dev->frame_buf_size;
-+  dev->pix_format.colorspace   = V4L2_COLORSPACE_SRGB;
-+  dev->pix_format.priv         = 0;
-+*/
 +  DBG_PRINT("call vidioc_int_g_fmt_cap\n");
-+
 +  slv_fmt.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
 +  ret = vidioc_int_g_fmt_cap(dev->sensor, &slv_fmt);
 +  DBG_PRINT("vidioc_int_g_fmt_cap return %d W: %d, H: %d\n",
 +            ret,
 +            slv_fmt.fmt.pix.width,
 +            slv_fmt.fmt.pix.height);
-+
++//TODO
 +  dev->v2f.fmt.pix.width        = slv_fmt.fmt.pix.width;
 +  dev->v2f.fmt.pix.height       = slv_fmt.fmt.pix.height;
-+  dev->v2f.fmt.pix.pixelformat  = V4L2_PIX_FMT_RGB32;
-+  dev->v2f.fmt.pix.field        = V4L2_FIELD_NONE;
-+  dev->v2f.fmt.pix.bytesperline = slv_fmt.fmt.pix.width * 4;
-+  dev->v2f.fmt.pix.sizeimage    = slv_fmt.fmt.pix.width * 4 * slv_fmt.fmt.pix.height;
++  dev->v2f.fmt.pix.pixelformat  = V4L2_PIX_FMT_UYVY;
++  dev->v2f.fmt.pix.field        = V4L2_FIELD_INTERLACED;//V4L2_FIELD_NONE;
++  dev->v2f.fmt.pix.bytesperline = slv_fmt.fmt.pix.width * 2;
++  dev->v2f.fmt.pix.sizeimage    = slv_fmt.fmt.pix.width * 2 * slv_fmt.fmt.pix.height;
 +  dev->v2f.fmt.pix.colorspace   = V4L2_COLORSPACE_SRGB;
 +  dev->v2f.fmt.pix.priv         = 0;
 +
@@ -1468,7 +1481,6 @@ Index: git/drivers/media/platform/mxc/capture/altera-cvifw.c
 +          dev->v2f.fmt.pix.width,
 +          dev->v2f.fmt.pix.height);
 +
-+  DBG_PRINT("call vidioc_int_s_power, vidioc_int_init, vidioc_int_dev_init\n");
 +  vidioc_int_s_power(dev->sensor, 1);
 +  vidioc_int_init(dev->sensor);
 +  vidioc_int_dev_init(dev->sensor);
@@ -1478,8 +1490,6 @@ Index: git/drivers/media/platform/mxc/capture/altera-cvifw.c
 +  dev->flags &= ~FLAG_DO_UPDATE;
 +  FLAG_CLR(FLAG_STREAM_ON);
 +  dev->flags |= FLAG_DEVICE_IN_USE;
-+
-+  //TODO regs_update(dev);
 +
 +  mutex_unlock(&dev->fops_lock);
 +
@@ -1507,7 +1517,8 @@ Index: git/drivers/media/platform/mxc/capture/altera-cvifw.c
 +  struct cvifw_vdev  *vdev = video_drvdata(file);
 +  int                 len;
 +
-+  len = sprintf(buf, "read minor %d, vdev [%p], csi %d video_drvdata [%p];\n",
++  len = sprintf(buf,
++                "read minor %d, vdev [%p], csi %d video_drvdata [%p];\n",
 +                iminor(file->f_path.dentry->d_inode),
 +                vdev,
 +                vdev->csi_id,
@@ -1549,7 +1560,7 @@ Index: git/drivers/media/platform/mxc/capture/altera-cvifw.c
 +  }
 +  size = vma->vm_end - vma->vm_start;
 +  if (size != PAGE_ALIGN(dev->frame[0].buf.length)) {
-+    DBG_ERROR("size page align error\n");
++    DBG_ERROR("Size page align error\n");
 +    goto error_unlock;
 +  }
 +
@@ -1585,12 +1596,15 @@ Index: git/drivers/media/platform/mxc/capture/altera-cvifw.c
 +static unsigned int cvifw_poll(struct file *file, poll_table *wait)
 +{
 +  unsigned int res = v4l2_ctrl_poll(file, wait);
-+/*
-+  mutex_lock(&meye.lock);
++/*TODO
++  struct cvifw_vdev  *dev = video_drvdata(file);
++
++  mutex_lock(&dev->fops_lock);
 +  poll_wait(file, &meye.proc_list, wait);
-+  if (kfifo_len(&meye.doneq))
++  if (kfifo_len(&meye.doneq)){
 +    res |= POLLIN | POLLRDNORM;
-+  mutex_unlock(&meye.lock);
++  }
++  mutex_unlock(&dev->fops_lock);
 +  */
 +  return res;
 +}
@@ -1612,8 +1626,8 @@ Index: git/drivers/media/platform/mxc/capture/altera-cvifw.c
 +static int v4l2_master_attach(struct v4l2_int_device *slave)
 +{
 +  struct cvifw_vdev  *vdev  = slave->u.slave->master->priv;
-+  struct sensor_data *sdata = slave->priv;
-+  struct v4l2_format slv_fmt;
++//  struct sensor_data *sdata = slave->priv;
++  struct v4l2_format  slv_fmt;
 +
 +
 +  DBG_PRINT("Enter:slave.name = %s, master.name = %s\n",
@@ -1622,7 +1636,6 @@ Index: git/drivers/media/platform/mxc/capture/altera-cvifw.c
 +            slave->name, sdata->csi, vdev->csi_id);
 +
 +  vdev->sensor = slave;
-+//TODO impostazioni varie, non credo sevano tutte quelle in mxc_v4l2_capture
 +
 +  vidioc_int_dev_exit(slave);
 +  vidioc_int_s_power(slave, 0);
@@ -1634,8 +1647,8 @@ Index: git/drivers/media/platform/mxc/capture/altera-cvifw.c
 +
 +  vdev->v2f.fmt.pix.width        = slv_fmt.fmt.pix.width;
 +  vdev->v2f.fmt.pix.height       = slv_fmt.fmt.pix.height;
-+  vdev->v2f.fmt.pix.pixelformat  = V4L2_PIX_FMT_RGB32;
-+  vdev->v2f.fmt.pix.field        = V4L2_FIELD_NONE;
++  vdev->v2f.fmt.pix.pixelformat  = V4L2_PIX_FMT_UYVY;
++  vdev->v2f.fmt.pix.field        = V4L2_FIELD_INTERLACED;//V4L2_FIELD_NONE;
 +  vdev->v2f.fmt.pix.bytesperline = slv_fmt.fmt.pix.width * 4;
 +  vdev->v2f.fmt.pix.sizeimage    = slv_fmt.fmt.pix.width * 4 * slv_fmt.fmt.pix.height;
 +  vdev->v2f.fmt.pix.colorspace   = V4L2_COLORSPACE_SRGB;
@@ -1651,6 +1664,7 @@ Index: git/drivers/media/platform/mxc/capture/altera-cvifw.c
 +static void v4l2_master_detach(struct v4l2_int_device *slave)
 +{
 +  DBG_PRINT("Enter\n");
++  vidioc_int_dev_exit(slave);
 +}
 +
 +/*! Information about this driver. */
@@ -1665,28 +1679,18 @@ Index: git/drivers/media/platform/mxc/capture/altera-cvifw.c
 +static int v4l2_dev_reg(struct cvifw_vdev *dev)
 +{
 +  int                       ret;
-+  struct v4l2_ctrl_handler *hdl      = &dev->hdl;
++//  struct v4l2_ctrl_handler *hdl      = &dev->hdl;
 +  struct v4l2_device       *v4l2_dev = &dev->v4l2_dev;
 +  struct video_device      *vdev;
 +
-+DBG_PRINT("entry dev [%p]\n", dev);
-+
-+  DBG_PRINT("mutex spin_lock & waitqueue init\n");
 +  mutex_init(&dev->fops_lock);
 +  spin_lock_init(&dev->queue_lock);
 +  init_waitqueue_head(&dev->wait);
 +
-+  DBG_PRINT("remap PCIe iomem\n");
-+  ret = remap(&dev->cvi_res);
-+  if(ret){
-+    //pci_disable_device(pdmgDevice->pci_dev);
-+    DBG_PRINT("cvi remap failed\n" );
-+    //return -ENODEV;
-+  }
 +  ret = remap(&dev->fw_res);
 +  if(ret){
 +    //pci_disable_device(pdmgDevice->pci_dev);
-+    DBG_PRINT("fw remap failed\n" );
++    DBG_ERROR("fw remap failed\n" );
 +    //return -ENODEV;
 +  }
 +
@@ -1715,10 +1719,7 @@ Index: git/drivers/media/platform/mxc/capture/altera-cvifw.c
 +*/
 +//  set_bit(V4L2_FL_USE_FH_PRIO, &meye.vdev->flags); ????? cosa fa?????
 +
-+
 +  vdev = &dev->video_dev;
-+DBG_PRINT("vdev allocated\n");
-+  //memcpy(vdev, &cvifw_template, sizeof(cvifw_template));
 +  strlcpy(vdev->name, DRIVER_NAME, sizeof(vdev->name));
 +  vdev->fops      = &cvifw_fops,
 +  vdev->ioctl_ops = &cvifw_ioctl_ops,
@@ -1731,7 +1732,6 @@ Index: git/drivers/media/platform/mxc/capture/altera-cvifw.c
 +
 +DBG_PRINT("video_register_device vdev:%p, video_nr: %d\n", vdev, dev->video_nr);
 +  ret = video_register_device(vdev, VFL_TYPE_GRABBER, dev->video_nr);
-+DBG_PRINT("video_register_device return %d\n", ret);
 +  if (ret < 0) {
 +    v4l2_err(v4l2_dev, "video_register_device failed\n");
 +    //goto outvideoreg;
@@ -1746,18 +1746,14 @@ Index: git/drivers/media/platform/mxc/capture/altera-cvifw.c
 +    v4l2_err(v4l2_dev, "dev self kmalloc failed!\n");
 +    return -1;
 +  }
-+DBG_PRINT("dev->self [%p]\n", dev->self);
++
 +  dev->self->module = THIS_MODULE;
 +  sprintf(dev->self->name, "mxc_v4l2_cap%d", dev->csi_id);
 +  dev->self->type = v4l2_int_type_master;
 +  dev->self->priv = dev;
 +  dev->self->u.master = &v4l2_master;
-+DBG_PRINT("Call v4l2_int_device_register\n");
++
 +  v4l2_int_device_register(dev->self);
-+
-+
-+  // TODO vanno gestiti ?????
-+
 +
 +  /* setup cropping */
 +/*
@@ -1806,7 +1802,8 @@ Index: git/drivers/media/platform/mxc/capture/altera-cvifw.c
 +
 +/**/
 +
-+  v4l2_info(v4l2_dev, "Altera ClockedVideoInput-FrameWriter Driver v%s dev %s.\n",
++  v4l2_info(v4l2_dev,
++            "Altera ClockedVideoInput-FrameWriter Driver v%s dev %s.\n",
 +            DRIVER_VERSION, video_device_node_name(vdev));
 +
 +  return 0;
@@ -1849,7 +1846,7 @@ Index: git/drivers/media/platform/mxc/capture/altera-cvifw.c
 +  DBG_PRINT("MSI Interrupt is %d.\n", dev->irq);
 +#endif
 +
-+  err = request_irq(dev->irq, cvifw_isr, 0, "cvifw", dev);
++  err = request_irq(dev->irq, cvifw_isr, IRQF_SHARED, "cvifw", dev);
 +  if (err) {
 +    DBG_ERROR("Failed request IRQ #%d\n", dev->irq);
 +    pci_disable_msi(dev->pci_dev);
@@ -1866,8 +1863,10 @@ Index: git/drivers/media/platform/mxc/capture/altera-cvifw.c
 +static int v4l2_int_unreg(struct cvifw_vdev *dev)
 +{
 +  free_irq(dev->irq, dev);
++#if 0
 +  pci_disable_msi(dev->pci_dev);
 +  pci_clear_master(dev->pci_dev);
++#endif
 +  return 0;
 +}
 +
@@ -1916,7 +1915,6 @@ Index: git/drivers/media/platform/mxc/capture/altera-cvifw.c
 +    // TODO return -ENODEV;
 +  }
 +
-+  /**/
 +//TODO, mettere l'int request in dev reg APPENA FUNZIONA
 +  DBG_PRINT("pci_dev bus %p, bus->msi %p, dev->msi_cap %p current_state %08X\n",
 +            pdev->bus, pdev->bus->msi, pdev->msi_cap,
@@ -1928,67 +1926,47 @@ Index: git/drivers/media/platform/mxc/capture/altera-cvifw.c
 +    DBG_ERROR("pci_enable_msi_range(%p, 0, 2) return %d\n", pdev, err);
 +    //TODO
 +  }
-+  cvifwDevice->vdev[0].irq = pdev->irq;
-+  cvifwDevice->vdev[1].irq = pdev->irq + 1;
-+  DBG_PRINT("MSI Interrupt is %d %d.\n",
-+            cvifwDevice->vdev[0].irq,
-+            cvifwDevice->vdev[1].irq);
-+/**/
++  //pci_clear_master(pdev);
 +
 +  cvifwDevice->vdev[0].video_nr  = CVIFW0_MINOR;
 +  cvifwDevice->vdev[0].csi_id    = CVIFW0_CSI;
 +  cvifwDevice->vdev[0].pci_dev   = pdev;
 +  cvifwDevice->vdev[0].dev       = &pdev->dev;
 +  cvifwDevice->vdev[0].video_idx = TV_NOT_LOCKED;
-+  cvifwDevice->vdev[0].irq       = pdev->irq;// TODO
++  cvifwDevice->vdev[0].irq       = pdev->irq;
 +  DBG_PRINT("Call v4l2_dev_reg(%p)\n", &cvifwDevice->vdev[0]);
 +  err = v4l2_dev_reg(&cvifwDevice->vdev[0]);
 +  if(err){
 +    DBG_ERROR("Error on v4l2_dev_reg vdev 0 ret %d\n", err);
 +    //TODO
 +  }
-+/**/
 +  DBG_PRINT("Call v4l2_int_reg(%p)\n", &cvifwDevice->vdev[0]);
 +  err = v4l2_int_reg(&cvifwDevice->vdev[0]);
 +  if(err){
 +    DBG_ERROR("Error on v4l2_int_reg vdev 0 ret %d\n", err);
 +    //TODO
 +  }
-+/**/
++
 +  cvifwDevice->vdev[1].video_nr  = CVIFW1_MINOR;
 +  cvifwDevice->vdev[1].csi_id    = CVIFW1_CSI;
 +  cvifwDevice->vdev[1].pci_dev   = pdev;
 +  cvifwDevice->vdev[1].dev       = &pdev->dev;
 +  cvifwDevice->vdev[1].video_idx = TV_NOT_LOCKED;
-+  cvifwDevice->vdev[1].irq       = pdev->irq;//TODO
++  cvifwDevice->vdev[1].irq       = pdev->irq;
 +  DBG_PRINT("Call v4l2_dev_reg(%p)\n", &cvifwDevice->vdev[1]);
 +  err = v4l2_dev_reg(&cvifwDevice->vdev[1]);
 +  if(err){
 +    DBG_ERROR("v4l2_dev_reg vdev 1 ret %d\n", err);
 +    //TODO
 +  }
-+/*
 +  DBG_PRINT("Call v4l2_int_reg(%p)\n", &cvifwDevice->vdev[1]);
 +  err = v4l2_int_reg(&cvifwDevice->vdev[1]);
 +  if(err){
 +    DBG_ERROR("v4l2_int_reg vdev 1 ret %d\n", err);
 +    //TODO
 +  }
-+*/
 +
 +
-+//TODO richiesta interrupt
-+/*
-+  err = request_irq(dev->irq, cvifw_isr, 0, "cvifw", dev);
-+  if (err) {
-+    DBG_ERROR("Failed request IRQ #%d\n", dev->irq);
-+    pci_disable_msi(dev->pci_dev);
-+    pci_clear_master(dev->pci_dev);
-+    //pci_disable_device(dev->pci_dev);
-+    return -ENODEV;
-+  }
-+  DBG_PRINT("IRQ request irq %d OK\n", dev->irq);
-+*/
 +  DBG_PRINT("done\n");
 +  return 0;
 +}
@@ -2026,31 +2004,6 @@ Index: git/drivers/media/platform/mxc/capture/altera-cvifw.c
 +    printk(KERN_ERR "Error registering %s driver\n", DRIVER_NAME);
 +    return err;
 +  }
-+
-+/*
-+  err = cvifw_dev_init(cvifwDevice, DRIVER_NAME);
-+  if( err < 0) {
-+    pci_disable_device(cvifwDevice->pci_dev);
-+    DBG_PRINT("Device Registration failed\n" );
-+    return -1;
-+  }
-+  */
-+
-+/*TODO
-+  err = remap(&cvifwDevice->cvifw_res);
-+  if(err){
-+    pci_disable_device(cvifwDevice->pci_dev);
-+    DBG_PRINT("PDMg remap failed\n" );
-+    return -ENODEV;
-+  }
-+
-+  err = remap(&pdmgDevice->s2mm_res);
-+  if(err){
-+    pci_disable_device(pdmgDevice->pci_dev);
-+    DBG_PRINT("S2MM DMA remap failed\n" );
-+    return -ENODEV;
-+  }
-+*/
 +
 +  return 0;
 +}
@@ -2092,8 +2045,8 @@ Index: git/drivers/media/platform/mxc/capture/altera-cvifw.c
 Index: git/drivers/media/platform/mxc/capture/altera-cvifw-hw.c
 ===================================================================
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ git/drivers/media/platform/mxc/capture/altera-cvifw-hw.c	2015-11-17 09:21:21.000000000 +0100
-@@ -0,0 +1,184 @@
++++ git/drivers/media/platform/mxc/capture/altera-cvifw-hw.c	2015-12-07 15:11:30.315719420 +0100
+@@ -0,0 +1,219 @@
 +/**
 + * Altera CVI FW hardware specific functions
 + */
@@ -2101,7 +2054,13 @@ Index: git/drivers/media/platform/mxc/capture/altera-cvifw-hw.c
 +#include <linux/io.h>
 +#include <linux/mm.h>
 +#include <linux/videodev2.h>
-+
++#if 0
++#define DBG_PRINT(fmt, ...)   printk("%s:%s:"fmt, "cvifwhw", __func__, ##__VA_ARGS__);
++#define DBG_ERROR(fmt, ...)   printk("%s:%s:ERROR:"fmt, "cvifwhw", __func__, ##__VA_ARGS__);
++#else
++#define DBG_PRINT(fmt, ...)
++#define DBG_ERROR(fmt, ...)
++#endif
 +/* FPGA Frame Writer registers definition */
 +#define FW_CTRL_OFS         0x0000
 +#define FW_CTRL_GO            0x00000001
@@ -2127,7 +2086,10 @@ Index: git/drivers/media/platform/mxc/capture/altera-cvifw-hw.c
 +#define FW_PACKER_OFS       0x000C
 +#define FW_PACKER_RGBA8888    0
 +#define FW_PACKER_RGBX888     1
-+#define FW_PACKER_RGB565      2
++#define FW_PACKER_RGB888      2
++#define FW_PACKER_RGB565      3
++#define FW_PACKER_RGBA555     4
++#define FW_PACKER_YCBCR8      5
 +
 +#define FW_STRIDE_OFS       0x0010
 +
@@ -2187,14 +2149,17 @@ Index: git/drivers/media/platform/mxc/capture/altera-cvifw-hw.c
 +void altera_fw_hw_init(void *regb,
 +                       int dbuf,
 +                       int sync_type,
-+                       unsigned long wlen,
-+                       unsigned long stride,
-+                       int output_format)
++                       unsigned short hres,
++                       unsigned short vres,
++                       int format)
 +{
 +  unsigned long ctrl;
-+  //unsigned long wlen;
++  unsigned long wlen;
 +  unsigned long pack;
-+  //unsigned long stride;
++  unsigned long stride;
++  unsigned long res;
++  unsigned long bpp;
++
 +  ctrl = 0;
 +  if (dbuf) {
 +    ctrl |= FW_CTRL_DBUFFER;
@@ -2204,19 +2169,41 @@ Index: git/drivers/media/platform/mxc/capture/altera-cvifw-hw.c
 +  case 1: ctrl |= FW_CTRL_SYNC_SLAVE ; break;
 +  case 2: ctrl |= FW_CTRL_SYNC_MANUAL; break;
 +  }
-+  //wlen = dev->pix_format.width / 4;
-+  switch (output_format) {
++/* TODO
++  switch (format) {
 +  default:
-+  case V4L2_PIX_FMT_RGB32  : pack = FW_PACKER_RGBA8888; break;
-+  case V4L2_PIX_FMT_RGB24  : pack = FW_PACKER_RGBX888 ; break;
-+  case V4L2_PIX_FMT_RGB565X: pack = FW_PACKER_RGB565  ; break;
-+  }
-+//  stride = dev->pix_format.bytesperline;
-+
-+  __raw_writel(ctrl  , regb + FW_CTRL_OFS    );
-+  __raw_writel(wlen  , regb + FW_WORD_LEN_OFS);
-+  __raw_writel(pack  , regb + FW_PACKER_OFS  );
-+  __raw_writel(stride, regb + FW_STRIDE_OFS  );
++  case V4L2_PIX_FMT_RGB32  : pack = FW_PACKER_RGBA8888; bpp = 4; break;
++//  case V4L2_PIX_FMT_RGB24: pack = FW_PACKER_RGBX888 ; bpp = 4; break;
++  case V4L2_PIX_FMT_RGB24  : pack = FW_PACKER_RGB888  ; bpp = 3; break;
++  case V4L2_PIX_FMT_RGB565X: pack = FW_PACKER_RGB565  ; bpp = 2; break;
++  case V4L2_PIX_FMT_RGB555X: pack = FW_PACKER_RGBA555 ; bpp = 2; break;
++  case V4L2_PIX_FMT_UYVY   : pack = FW_PACKER_YCBCR8  ; bpp = 2; break;
++  }*/
++bpp = 2;
++wlen   = hres / bpp;
++pack   = FW_PACKER_YCBCR8;
++stride = hres * bpp;
++res    = ((vres)<<16) | (hres);
++DBG_PRINT("dbuf %d, sync_type %d, hres %d, vres %d, format %08X\n"
++          "CTRL       %08X\n"
++          "WORD_LEN   %08X\n"
++          "PACKER     %08X\n"
++          "STRIDE     %08X\n"
++          "BURST_SIZE %08X\n"
++          "IMG_SIZE   %08X\n",
++          dbuf, sync_type, hres, vres, format,
++          ctrl  ,
++          wlen  ,
++          pack  ,
++          stride,
++          8     ,
++          res   );
++  __raw_writel(ctrl  , regb + FW_CTRL_OFS      );
++  __raw_writel(wlen  , regb + FW_WORD_LEN_OFS  );
++  __raw_writel(pack  , regb + FW_PACKER_OFS    );
++  __raw_writel(stride, regb + FW_STRIDE_OFS    );
++  __raw_writel(8     , regb + FW_BURST_SIZE_OFS);
++  __raw_writel(res   , regb + FW_IMG_SIZE_OFS  );
 +}
 +
 +/**
@@ -2237,7 +2224,8 @@ Index: git/drivers/media/platform/mxc/capture/altera-cvifw-hw.c
 +  unsigned long reg;
 +
 +  reg = __raw_readl(regb + FW_CTRL_OFS);
-+  reg |= FW_CTRL_GO | FW_CTRL_INTENA_E | FW_CTRL_INTENA_S;
++//  reg |= FW_CTRL_GO | FW_CTRL_INTENA_E | FW_CTRL_INTENA_S;
++  reg |= FW_CTRL_GO | FW_CTRL_INTENA_S;
 +  __raw_writel(reg, regb + FW_CTRL_OFS);
 +}
 +

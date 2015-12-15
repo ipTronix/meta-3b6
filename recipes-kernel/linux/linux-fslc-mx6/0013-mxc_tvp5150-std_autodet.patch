@@ -1,0 +1,718 @@
+Index: git/drivers/media/platform/mxc/capture/mxc_tvp5150.c
+===================================================================
+--- git.orig/drivers/media/platform/mxc/capture/mxc_tvp5150.c	2015-12-02 15:47:35.585733202 +0100
++++ git/drivers/media/platform/mxc/capture/mxc_tvp5150.c	2015-12-02 16:03:27.869726176 +0100
+@@ -5,9 +5,23 @@
+  * This code is placed under the terms of the GNU General Public License v2
+  */
+ 
+-//#define TVP5150_DBG
+ //#define DEBUG
+ 
++#ifdef DEBUG
++  #define DRIVER_NAME "tvp5150"
++  #define TVP5150_DBG
++  #define DBG_PRINT(fmt, ...)   printk("%s:%s:"fmt, \
++                                        DRIVER_NAME, __func__, \
++                                        ##__VA_ARGS__);
++  #define DBG_ERROR(fmt, ...)   printk("%s:%s:ERROR:"fmt, \
++                                        DRIVER_NAME, __func__, \
++                                        ##__VA_ARGS__);
++#else
++  #define DBG_PRINT(fmt, ...)
++  #define DBG_ERROR(fmt, ...)
++#endif
++
++
+ #include <linux/clk.h>
+ #include <linux/i2c.h>
+ #include <linux/slab.h>
+@@ -36,17 +50,6 @@
+ module_param(debug, int, 0);
+ MODULE_PARM_DESC(debug, "Debug level (0-2)");
+ 
+-struct tvp5150 {
+-	struct sensor_data       sen;     /* must be the first, used in mxc_v4l2_capture */
+-	struct v4l2_rect         rect;
+-	v4l2_std_id              norm;    /* Current set standard */
+-	u32                      input;
+-	u32                      output;
+-	int                      enable;
+-	struct v4l2_int_device   int_dev;
+-	struct v4l2_int_slave    slave;
+-};
+-
+ static const struct i2c_device_id tvp5150_id[] = {
+ 	{"tvp5150", 0},
+ 	{},
+@@ -85,13 +88,13 @@
+ 
+ /*! Video format structure. */
+ typedef struct {
+-	int v4l2_id;        /*!< Video for linux ID. */
++	int  v4l2_id;       /*!< Video for linux ID. */
+ 	char name[16];      /*!< Name (e.g., "NTSC", "PAL", etc.) */
+-	u16 raw_width;      /*!< Raw width. */
+-	u16 raw_height;     /*!< Raw height. */
+-	u16 active_width;   /*!< Active width. */
+-	u16 active_height;  /*!< Active height. */
+-	int frame_rate;     /*!< Frame rate. */
++	u16  raw_width;     /*!< Raw width. */
++	u16  raw_height;    /*!< Raw height. */
++	u16  active_width;  /*!< Active width. */
++	u16  active_height; /*!< Active height. */
++	int  frame_rate;    /*!< Frame rate. */
+ } video_fmt_t;
+ 
+ /*! Description of video formats supported.
+@@ -103,14 +106,14 @@
+ 	{			/*! NTSC */
+ 		.v4l2_id = V4L2_STD_NTSC,
+ 		.name          = "NTSC",
+-		.raw_width     = 720,	/* SENS_FRM_WIDTH */
+-		.raw_height    = 525,	/* SENS_FRM_HEIGHT */
+-		.active_width  = 720,	/* ACT_FRM_WIDTH plus 1 */
+-		.active_height = 480,	/* ACT_FRM_WIDTH plus 1 */
++		.raw_width     = 720,  /* SENS_FRM_WIDTH */
++		.raw_height    = 525,  /* SENS_FRM_HEIGHT */
++		.active_width  = 720,  /* ACT_FRM_WIDTH plus 1 */
++		.active_height = 480,  /* ACT_FRM_WIDTH plus 1 */
+ 		.frame_rate    = 30,
+ 	},
+ 	{			/*! (B, D, G, H, I, N) PAL */
+-		.v4l2_id = V4L2_STD_PAL,
++		.v4l2_id       = V4L2_STD_PAL,
+ 		.name          = "PAL",
+ 		.raw_width     = 720,
+ 		.raw_height    = 625,
+@@ -122,24 +125,24 @@
+ 	 * TODO complete video format
+ 	 */
+ 	{			/*! (M) PAL ITU-R BT.601 */
+-		.v4l2_id = V4L2_STD_PAL_M,
++		.v4l2_id       = V4L2_STD_PAL_M,
+ 		.name          = "PAL M",
+ 	},
+ 	{			/*! PAL-Nc ITU-R BT.601 */
+-		.v4l2_id = V4L2_STD_PAL_N | V4L2_STD_PAL_Nc,
++		.v4l2_id       = V4L2_STD_PAL_N | V4L2_STD_PAL_Nc,
+ 		.name          = "PAL-Nc",
+ 	},
+ 	{			/*! NTSC 4.43 ITU-R BT.601 */
+-		.v4l2_id = V4L2_STD_NTSC_443,
++		.v4l2_id       = V4L2_STD_NTSC_443,
+ 		.name          = "NTSC 4.43",
+ 	},
+-	{			/*! ECAM ITU-R BT.601 */
+-		.v4l2_id = V4L2_STD_SECAM,
++	{			/*! SECAM ITU-R BT.601 */
++		.v4l2_id       = V4L2_STD_SECAM,
+ 		.name          = "SECAM",
+ 	},
+ 
+ 	{			/*! Unlocked standard */
+-		.v4l2_id = V4L2_STD_ALL,
++		.v4l2_id       = V4L2_STD_ALL,
+ 		.name          = "Autodetect",
+ 		.raw_width     = 720,
+ 		.raw_height    = 625,
+@@ -149,35 +152,48 @@
+ 	},
+ };
+ 
+-/* supported controls */
+-/* This hasn't been fully implemented yet.
+- * This is how it should work, though. */
++/**
++ * Supported controls
++ * This hasn't been fully implemented yet.
++ * This is how it should work, though.
++ */
+ static struct v4l2_queryctrl tvp5150_qctrl[] = {
+ 	{
+ 		.id = V4L2_CID_BRIGHTNESS,
+ 		.type          = V4L2_CTRL_TYPE_INTEGER,
+ 		.name          = "Brightness",
+-		.minimum       = 0,		/* check this value */
+-		.maximum       = 255,		/* check this value */
+-		.step          = 1,		/* check this value */
+-		.default_value = 127,	/* check this value */
++		.minimum       = 0,   /* check this value */
++		.maximum       = 255, /* check this value */
++		.step          = 1,   /* check this value */
++		.default_value = 127, /* check this value */
+ 		.flags = 0,
+ 	}, {
+ 		.id = V4L2_CID_SATURATION,
+ 		.type          = V4L2_CTRL_TYPE_INTEGER,
+ 		.name          = "Saturation",
+-		.minimum       = 0,		/* check this value */
+-		.maximum       = 255,		/* check this value */
+-		.step          = 0x1,		/* check this value */
+-		.default_value = 127,	/* check this value */
++		.minimum       = 0,   /* check this value */
++		.maximum       = 255, /* check this value */
++		.step          = 0x1, /* check this value */
++		.default_value = 127, /* check this value */
+ 		.flags = 0,
+ 	}
+ };
+ 
++/**
++ */
++struct tvp5150 {
++  struct sensor_data       sen;     /* must be the first, used in mxc_v4l2_capture */
++  video_fmt_idx            video_idx;
++  u32                      input;
++  u32                      output;
++  int                      enable;
++  struct v4l2_int_device   int_dev;
++  struct v4l2_int_slave    slave;
++};
+ 
+-/***********************************************************************
+- * I2C transfert.
+- ***********************************************************************/
++/** **************************************************************************
++ *                             I2C transfert
++ ************************************************************************** */
+ 
+ /*! Read one register from a i2c slave device.
+  *
+@@ -192,7 +208,7 @@
+ 
+ 	val = i2c_smbus_read_byte_data(c, reg);
+ 	if (val < 0) {
+-		printk(KERN_ERR "TVP5150:i2cRead reg %02X error\n", reg);
++		DBG_ERROR(KERN_ERR "i2cRead reg %02X error\n", reg);
+ 		return -1;
+ 	}
+ 	return val;
+@@ -212,7 +228,7 @@
+ 
+ 	ret = i2c_smbus_write_byte_data(c, reg, val);
+ 	if (ret < 0) {
+-		printk(KERN_ERR "TVP5150:i2cWrite reg %02X error, val=%2x\n", reg, val);
++		DBG_ERROR("i2cWrite reg %02X error, val=%02x\n", reg, val);
+ 		return;
+ 	}
+ 	return;
+@@ -396,7 +412,7 @@
+ 		break;
+ 	}
+ 
+-	printk("Selecting video route: route input=%i, output=%i "
++	DBG_PRINT("Selecting video route: route input=%i, output=%i "
+ 			"=> tvp5150 input=%i, opmode=%i\n",
+ 			core->input, core->output,
+ 			input, opmode);
+@@ -495,9 +511,9 @@
+ };
+ 
+ struct i2c_vbi_ram_value {
+-	u16 reg;
++	u16                     reg;
+ 	struct tvp5150_vbi_type type;
+-	unsigned char values[16];
++	unsigned char           values[16];
+ };
+ 
+ /* This struct have the values for each supported VBI Standard
+@@ -628,7 +644,6 @@
+ 	struct i2c_client *c = core->sen.i2c_client;
+ 	int                fmt = 0;
+ 
+-	core->norm = std;
+ 	/* First tests should be against specific std */
+ 	if (std == V4L2_STD_ALL) {
+ 		fmt = VIDEO_STD_AUTO_SWITCH_BIT;	/* Autodetect mode */
+@@ -647,12 +662,13 @@
+ 		else if (std & V4L2_STD_SECAM)
+ 			fmt = VIDEO_STD_SECAM_BIT;
+ 	}
+-	printk("Set video std register to %d.\n", fmt);
++	DBG_PRINT("Set video std register to %d.\n", fmt);
+ 	tvp5150_write(c, TVP5150_VIDEO_STD, fmt);
++
+ 	return 0;
+ }
+ 
+-static int tvp5150_reset(struct tvp5150 *core, u32 val)
++static int tvp5150_reset(struct tvp5150 *core)
+ {
+ 	struct i2c_client *c = core->sen.i2c_client;
+ 
+@@ -671,7 +687,8 @@
+ //	/* Initialize image preferences */
+ //	v4l2_ctrl_handler_setup(&decoder->hdl);
+ 
+-	tvp5150_set_std(core, core->norm);
++//	tvp5150_set_std(core, video_fmts[core->video_idx].v4l2_id);
++	tvp5150_set_std(core, V4L2_STD_ALL);
+ 	return 0;
+ };
+ 
+@@ -687,30 +704,31 @@
+  *
+  *  @return		V4L2 Standard ID.
+  */
+-static v4l2_std_id tvp5150_get_std(struct sensor_data *sen)// TODO struct i2c_client *c)
++static v4l2_std_id tvp5150_get_std(struct tvp5150 *core)
+ {
+-// 	//TODO confrontare con adv7180_get_std
+-	int val = tvp5150_read(sen->i2c_client, TVP5150_STATUS_REG_5);
+-	int std;
+-printk("TVP5150:tvp5150_get_std Status Reg #5 %02X\n", val);
++	int val = tvp5150_read(core->sen.i2c_client, TVP5150_STATUS_REG_5);
++	int idx;
++//DBG_PRINT("Status Reg #5 %02X\n", val);
+ 
+ 	switch (val & 0x0F) {
+-	case 0x1: std = TVP5150_NTSC      ; break;
+-	case 0x3: std = TVP5150_PAL       ; break;
+-	case 0x5: std = TVP5150_PAL_M     ; break;
+-	case 0x7: std = TVP5150_PAL_N     ; break;
+-	case 0x9: std = TVP5150_NTSC_443  ; break;
+-	case 0xB: std = TVP5150_SECAM     ; break;
+-	default : std = TVP5150_NOT_LOCKED; break;
++	case 0x1: idx = TVP5150_NTSC      ; break;
++	case 0x3: idx = TVP5150_PAL       ; break;
++	case 0x5: idx = TVP5150_PAL_M     ; break;
++	case 0x7: idx = TVP5150_PAL_N     ; break;
++	case 0x9: idx = TVP5150_NTSC_443  ; break;
++	case 0xB: idx = TVP5150_SECAM     ; break;
++	default : idx = TVP5150_NOT_LOCKED; break;
+ 	}
++	core->video_idx = idx;
++	core->sen.streamcap.timeperframe.denominator = video_fmts[idx].frame_rate;
++	core->sen.streamcap.timeperframe.numerator   = 1;
++	core->sen.pix.width  = video_fmts[idx].raw_width ;
++	core->sen.pix.height = video_fmts[idx].raw_height;
++	core->sen.pix.pixelformat = V4L2_PIX_FMT_UYVY;
++	core->sen.pix.priv        = 1;  /* 1 is used to indicate TV in */
++	//core->sen.on = true;
+ 
+-	//video_idx = idx;
+-	//adv7180_data.std_id = *std;
+-	sen->pix.width  = video_fmts[std].raw_width ;
+-	sen->pix.height = video_fmts[std].raw_height;
+-
+-	return video_fmts[std].v4l2_id;
+-
++	return video_fmts[idx].v4l2_id;
+ }
+ 
+ /***********************************************************************
+@@ -734,7 +752,7 @@
+  */
+ static int ioctl_g_ifparm(struct v4l2_int_device *s, struct v4l2_ifparm *p)
+ {
+-	printk("TVP5150:ioctl_g_ifparm\n");
++	DBG_PRINT("TVP5150:ioctl_g_ifparm\n");
+ 
+ 	if (s == NULL) {
+ 		pr_err("TVP5150:ERROR!! no slave device set!\n");
+@@ -744,12 +762,9 @@
+ 	/* Initialize structure to 0s then set any non-0 values. */
+ 	memset(p, 0, sizeof(*p));
+ 	p->if_type = V4L2_IF_TYPE_BT656; /* This is the only possibility. */
+-	p->u.bt656.mode = V4L2_IF_TYPE_BT656_MODE_NOBT_8BIT;
+-//	p->u.bt656.clock_curr = 27000000;
++	p->u.bt656.mode            = V4L2_IF_TYPE_BT656_MODE_NOBT_8BIT;
+ 	p->u.bt656.nobt_hs_inv     = 1;
+ 	p->u.bt656.bt_sync_correct = 0;
+-//	p->u.bt656.latch_clk_inv   = 0;
+-//	p->u.bt656.nobt_vs_inv     = 0;
+ 
+ 	// TVP5150 has a dedicated clock so no clock settings needed.
+ 
+@@ -773,7 +788,7 @@
+ {
+ 	struct tvp5150 *core = s->priv;
+ 
+-  printk("TVP5150:ioctl_s_power\n");
++  DBG_PRINT("TVP5150:ioctl_s_power\n");
+ 
+   if (on) {
+ 		//scrivere 1 in Operation mode control TODO
+@@ -797,7 +812,7 @@
+ 	struct tvp5150          *core  = s->priv;
+ 	struct v4l2_captureparm *cparm = &a->parm.capture;
+ 
+-printk("TVP5150:ioctl_g_parm\n");
++DBG_PRINT("TVP5150:ioctl_g_parm\n");
+ 	dev_dbg(&core->sen.i2c_client->dev, "tvp5150:ioctl_g_parm\n");
+ 
+ 	switch (a->type) {
+@@ -842,7 +857,7 @@
+ {
+ 	struct tvp5150 *core = s->priv;
+ 
+-printk("TVP5150:ioctl_s_parm\n");
++DBG_PRINT("TVP5150:ioctl_s_parm\n");
+ 	dev_dbg(&core->sen.i2c_client->dev, "tvp5150:ioctl_s_parm\n");
+ 
+ 	switch (a->type) {
+@@ -875,24 +890,32 @@
+ static int ioctl_g_fmt_cap(struct v4l2_int_device *s, struct v4l2_format *f)
+ {
+ 	struct tvp5150 *core = s->priv;
+-printk("TVP5150:ioctl_g_fmt_cap\n");
++	DBG_PRINT("TVP5150:ioctl_g_fmt_cap\n");
+ 	dev_dbg(&core->sen.i2c_client->dev, "tvp5150:ioctl_g_fmt_cap\n");
+ 
+ 	switch (f->type) {
+ 	case V4L2_BUF_TYPE_VIDEO_CAPTURE:
+-		printk("   Returning size of %dx%d\n",
+-			 core->sen.pix.width, core->sen.pix.height);
+-//		f->fmt.pix = core->sen.pix;
+ 		memcpy(&f->fmt.pix, &core->sen.pix, sizeof(struct v4l2_pix_format));;
+-		//f->fmt.pix.width  = 720;
+-		//f->fmt.pix.height = 625;
++		DBG_PRINT("Returning size of %dx%d\n", f->fmt.pix.width, f->fmt.pix.height);
+ 		break;
+ 
+-	case V4L2_BUF_TYPE_PRIVATE:// {
+-		//v4l2_std_id std;
+-		//std = tvp5150_get_std(&core->sen);//TODO .i2c_client);
+-		f->fmt.pix.pixelformat = tvp5150_get_std(&core->sen);//(u32)std;
+-		//}
++	case V4L2_BUF_TYPE_PRIVATE:
++		f->fmt.pix.pixelformat = tvp5150_get_std(core);
++#ifdef DEBUG
++		static unsigned long oldstd;
++		if(oldstd!=f->fmt.pix.pixelformat){
++			char* stdname;
++			unsigned char vb_start;
++			unsigned char vb_stop;
++			switch(f->fmt.pix.pixelformat){
++			case V4L2_STD_PAL : stdname = "V4L2_STD_PAL" ; break;
++			case V4L2_STD_NTSC: stdname = "V4L2_STD_NTSC"; break;
++			default           : stdname = "UNKNOWN"      ; break;
++			}
++			DBG_PRINT("std changed to %s\n", stdname);
++			oldstd = f->fmt.pix.pixelformat;
++		}
++#endif
+ 		break;
+ 
+ 	default:
+@@ -919,7 +942,7 @@
+ 	struct tvp5150 *core = s->priv;
+ 	int i;
+ 
+-printk("TVP5150:ioctl_queryctrl\n");
++DBG_PRINT("TVP5150:ioctl_queryctrl\n");
+ 	dev_dbg(&core->sen.i2c_client->dev, "tvp5150:ioctl_queryctrl\n");
+ 	for (i = 0; i < ARRAY_SIZE(tvp5150_qctrl); i++) {
+ 		if (qc->id && qc->id == tvp5150_qctrl[i].id) {
+@@ -944,7 +967,7 @@
+ 	struct tvp5150 *core = s->priv;
+ 	int ret = 0;
+ 
+-printk("TVP5150:ioctl_g_ctrl:id %d\n", vc->id);
++DBG_PRINT("TVP5150:ioctl_g_ctrl:id %d\n", vc->id);
+ 	dev_dbg(&core->sen.i2c_client->dev, "tvp5150:ioctl_g_ctrl\n");
+ 
+ 	switch (vc->id) {
+@@ -1023,7 +1046,7 @@
+ 	int retval = 0;
+ 	u8 tmp;
+ 
+-printk("TVP5150:ioctl_s_ctrl:id %d\n", vc->id);
++DBG_PRINT("TVP5150:ioctl_s_ctrl:id %d\n", vc->id);
+ 	dev_dbg(&core->sen.i2c_client->dev, "tvp5150:ioctl_s_ctrl\n");
+ 
+ 	switch (vc->id) {
+@@ -1094,18 +1117,49 @@
+ static int ioctl_enum_framesizes(struct v4l2_int_device *s,
+                                  struct v4l2_frmsizeenum *fsize)
+ {
+-	int video_idx;
++	struct tvp5150 *core = s->priv;
++
+ 	if (fsize->index >= 1)
+ 		return -EINVAL;
+ 
+-	video_idx = TVP5150_PAL; //TODO deve tornare l'attuale
+-	fsize->discrete.width  = video_fmts[video_idx].active_width;
+-	fsize->discrete.height = video_fmts[video_idx].active_height;
++	fsize->discrete.width  = video_fmts[core->video_idx].active_width;
++	fsize->discrete.height = video_fmts[core->video_idx].active_height;
++DBG_PRINT("return %d x %d\n", fsize->discrete.width, fsize->discrete.height);
+ 
+ 	return 0;
+ }
+ 
+ /*!
++ * ioctl_enum_frameintervals - V4L2 sensor interface handler for
++ *			       VIDIOC_ENUM_FRAMEINTERVALS ioctl
++ * @s: pointer to standard V4L2 device structure
++ * @fival: standard V4L2 VIDIOC_ENUM_FRAMEINTERVALS ioctl structure
++ *
++ * Return 0 if successful, otherwise -EINVAL.
++ */
++static int ioctl_enum_frameintervals(struct v4l2_int_device *s,
++                                     struct v4l2_frmivalenum *fival)
++{
++	int i;
++DBG_PRINT("index %d, width %d, height %d\n", fival->index, fival->width, fival->height);
++	if (fival->index != 0)
++		return -EINVAL;
++
++	for (i=0; i<ARRAY_SIZE(video_fmts)-1; i++) {
++		if ((fival->width  == video_fmts[i].active_width ) &&
++		    (fival->height == video_fmts[i].active_height) ){
++			fival->type = V4L2_FRMIVAL_TYPE_DISCRETE;
++			fival->discrete.denominator = video_fmts[i].frame_rate;
++			fival->discrete.numerator   = 1;
++			return 0;
++		}
++	}
++
++	return -EINVAL;
++
++}
++
++/*!
+  * ioctl_g_chip_ident - V4L2 sensor interface handler for
+  *			VIDIOC_DBG_G_CHIP_IDENT ioctl
+  * @s: pointer to standard V4L2 device structure
+@@ -1130,7 +1184,7 @@
+  */
+ static int ioctl_init(struct v4l2_int_device *s)
+ {
+-	printk("TVP5150:ioctl_init\n");
++	DBG_PRINT("\n");
+ 	return 0;
+ }
+ 
+@@ -1143,7 +1197,7 @@
+ static int ioctl_dev_init(struct v4l2_int_device *s)
+ {
+ 	struct tvp5150 *core = s->priv;
+-printk("TVP5150:ioctl_dev_init\n");
++DBG_PRINT("\n");
+ 	dev_dbg(&core->sen.i2c_client->dev, "tvp5150:ioctl_dev_init\n");
+ 	return 0;
+ }
+@@ -1153,41 +1207,27 @@
+  */
+ static struct v4l2_int_ioctl_desc tvp5150_ioctl_desc[] = {
+ 
+-	{vidioc_int_dev_init_num       , (v4l2_int_ioctl_func*)ioctl_dev_init},
+-	//{vidioc_int_dev_exit_num       , (v4l2_int_ioctl_func*)ioctl_dev_exit},
+-	{vidioc_int_s_power_num        , (v4l2_int_ioctl_func*)ioctl_s_power},
+-	{vidioc_int_g_ifparm_num       , (v4l2_int_ioctl_func*)ioctl_g_ifparm},
+-	//{vidioc_int_g_needs_reset_num  , (v4l2_int_ioctl_func*)ioctl_g_needs_reset},
+-	//{vidioc_int_reset_num          , (v4l2_int_ioctl_func *)ioctl_reset},
+-	{vidioc_int_init_num           , (v4l2_int_ioctl_func*)ioctl_init},
+-	//{vidioc_int_enum_fmt_cap_num   , (v4l2_int_ioctl_func*)ioctl_enum_fmt_cap},
+-	//{vidioc_int_try_fmt_cap_num    , (v4l2_int_ioctl_func*)ioctl_try_fmt_cap},
+-	{vidioc_int_g_fmt_cap_num      , (v4l2_int_ioctl_func*)ioctl_g_fmt_cap},
+-	//{vidioc_int_s_fmt_cap_num      , (v4l2_int_ioctl_func*)ioctl_s_fmt_cap},
+-	{vidioc_int_g_parm_num         , (v4l2_int_ioctl_func*)ioctl_g_parm},
+-	{vidioc_int_s_parm_num         , (v4l2_int_ioctl_func*)ioctl_s_parm},
+-	{vidioc_int_queryctrl_num      , (v4l2_int_ioctl_func*)ioctl_queryctrl},
+-	{vidioc_int_g_ctrl_num         , (v4l2_int_ioctl_func*)ioctl_g_ctrl},
+-	{vidioc_int_s_ctrl_num         , (v4l2_int_ioctl_func*)ioctl_s_ctrl},
+-	{vidioc_int_enum_framesizes_num, (v4l2_int_ioctl_func*)ioctl_enum_framesizes},
+-	{vidioc_int_g_chip_ident_num   , (v4l2_int_ioctl_func*)ioctl_g_chip_ident},
+-};
+-/*TODO
+-static struct v4l2_int_slave tvp5150_slave = {
+-	.ioctls     = tvp5150_ioctl_desc,
+-	.num_ioctls = ARRAY_SIZE(tvp5150_ioctl_desc),
++	{vidioc_int_dev_init_num           , (v4l2_int_ioctl_func*)ioctl_dev_init},
++	//{vidioc_int_dev_exit_num           , (v4l2_int_ioctl_func*)ioctl_dev_exit},
++	{vidioc_int_s_power_num            , (v4l2_int_ioctl_func*)ioctl_s_power},
++	{vidioc_int_g_ifparm_num           , (v4l2_int_ioctl_func*)ioctl_g_ifparm},
++	//{vidioc_int_g_needs_reset_num      , (v4l2_int_ioctl_func*)ioctl_g_needs_reset},
++	//{vidioc_int_reset_num              , (v4l2_int_ioctl_func *)ioctl_reset},
++	{vidioc_int_init_num               , (v4l2_int_ioctl_func*)ioctl_init},
++	//{vidioc_int_enum_fmt_cap_num       , (v4l2_int_ioctl_func*)ioctl_enum_fmt_cap},
++	//{vidioc_int_try_fmt_cap_num        , (v4l2_int_ioctl_func*)ioctl_try_fmt_cap},
++	{vidioc_int_g_fmt_cap_num          , (v4l2_int_ioctl_func*)ioctl_g_fmt_cap},
++	//{vidioc_int_s_fmt_cap_num          , (v4l2_int_ioctl_func*)ioctl_s_fmt_cap},
++	{vidioc_int_g_parm_num             , (v4l2_int_ioctl_func*)ioctl_g_parm},
++	{vidioc_int_s_parm_num             , (v4l2_int_ioctl_func*)ioctl_s_parm},
++	{vidioc_int_queryctrl_num          , (v4l2_int_ioctl_func*)ioctl_queryctrl},
++	{vidioc_int_g_ctrl_num             , (v4l2_int_ioctl_func*)ioctl_g_ctrl},
++	{vidioc_int_s_ctrl_num             , (v4l2_int_ioctl_func*)ioctl_s_ctrl},
++	{vidioc_int_enum_framesizes_num    , (v4l2_int_ioctl_func*)ioctl_enum_framesizes},
++	{vidioc_int_enum_frameintervals_num, (v4l2_int_ioctl_func*)ioctl_enum_frameintervals},
++	{vidioc_int_g_chip_ident_num       , (v4l2_int_ioctl_func*)ioctl_g_chip_ident},
+ };
+-*/
+-/*TODO
+-static struct v4l2_int_device tvp5150_int_device = {
+-	.module = THIS_MODULE,
+-	.name   = "tvp5150",
+-	.type   = v4l2_int_type_slave,
+-	.u = {
+-		.slave = &tvp5150_slave,
+-	},
+-};
+-*/
++
+ /*!
+  * TVP5150 probe.
+  *
+@@ -1204,8 +1244,7 @@
+ 	struct device      *dev = &c->dev;
+ 	struct regmap      *gpr;
+ 
+-int video_idx;
+-	printk("TVP5150:probe:\n");
++	DBG_PRINT("TVP5150:probe:\n");
+ 
+ 	/* Check if the adapter supports the needed features */
+ 	if (!i2c_check_functionality(c->adapter,
+@@ -1217,14 +1256,13 @@
+ 		return -ENOMEM;
+ 	}
+ 
+-	video_idx = TVP5150_PAL; //TODO deve tornare l'attuale
++	core->video_idx = TVP5150_PAL; //TODO deve tornare l'attuale
+ 
+ 	core->sen.i2c_client = c;
+-	core->sen.streamcap.timeperframe.denominator = 25;//TODO
++	core->sen.streamcap.timeperframe.denominator = video_fmts[core->video_idx].frame_rate;
+ 	core->sen.streamcap.timeperframe.numerator   = 1;
+-	core->norm = V4L2_STD_ALL;
+-	core->sen.pix.width       = video_fmts[video_idx].raw_width;
+-	core->sen.pix.height      = video_fmts[video_idx].raw_height;
++	core->sen.pix.width       = video_fmts[core->video_idx].raw_width;
++	core->sen.pix.height      = video_fmts[core->video_idx].raw_height;
+ 	core->sen.pix.pixelformat = V4L2_PIX_FMT_UYVY;  /* YUV422 */
+ 	core->sen.pix.priv        = 1;  /* 1 is used to indicate TV in */
+ 	core->sen.on = true;
+@@ -1237,21 +1275,21 @@
+ 
+ 	ret = of_property_read_u32(dev->of_node, "mclk", &core->sen.mclk);
+ 	if (ret) {
+-		printk("TVP5150:probe:mclk frequency is invalid\n");
++		DBG_PRINT("TVP5150:probe:mclk frequency is invalid\n");
+ 		dev_err(dev, "mclk frequency is invalid\n");
+ 		return ret;
+ 	}
+ 
+ 	ret = of_property_read_u32(dev->of_node, "mclk_source", (u32*)&(core->sen.mclk_source));
+ 	if (ret) {
+-		printk("TVP5150:probe:mclk_source is invalid\n");
++		DBG_PRINT("TVP5150:probe:mclk_source is invalid\n");
+ 		dev_err(dev, "mclk_source invalid\n");
+ 		return ret;
+ 	}
+ 
+ 	ret = of_property_read_u32(dev->of_node, "csi_id", &core->sen.csi);
+ 	if (ret) {
+-		printk("TVP5150:probe:csi_id is invalid\n");
++		DBG_PRINT("TVP5150:probe:csi_id is invalid\n");
+ 		dev_err(dev, "csi_id invalid\n");
+ 		return ret;
+ 	}
+@@ -1285,40 +1323,33 @@
+ 			goto free_core;
+ 		tvp5150_id[i] = res;
+ 	}
+-	printk("TVP5150:probe:chip found @ 0x%02x (%s)\n",
++	DBG_PRINT("chip found @ 0x%02x (%s)\n",
+ 	        c->addr << 1, c->adapter->name);
+ 	if (tvp5150_id[2] == 4 && tvp5150_id[3] == 0) { /* Is TVP5150AM1 */
+-		printk("TVP5150:probe:tvp%02x%02xam1 detected.\n",
++		DBG_PRINT("tvp%02x%02xam1 detected.\n",
+ 		        tvp5150_id[0], tvp5150_id[1]);
+ 		/* ITU-T BT.656.4 timing */
+ 		tvp5150_write(c, TVP5150_REV_SELECT, 0);
+ 	} else {
+ 		/* Is TVP5150A */
+ 		if (tvp5150_id[2] == 3 || tvp5150_id[3] == 0x21) {
+-			printk("TVP5150:probe:tvp%02x%02xa detected.\n",
++			DBG_PRINT("tvp%02x%02xa detected.\n",
+ 			        tvp5150_id[2], tvp5150_id[3]);
+ 		} else {
+-			printk("TVP5150:probe:*** unknown tvp%02x%02x chip detected.\n",
++			DBG_PRINT("*** unknown tvp%02x%02x chip detected.\n",
+ 			        tvp5150_id[2], tvp5150_id[3]);
+-			printk("TVP5150:probe:*** Rom ver is %d.%d\n",
++			DBG_PRINT("*** Rom ver is %d.%d\n",
+ 			        tvp5150_id[2], tvp5150_id[3]);
+ 		}
+ 	}
+ 
+-	tvp5150_reset(core, 0);
++	tvp5150_reset(core);
+ 
+-	core->norm   = V4L2_STD_ALL;	/* Default is autodetect */
++	DBG_PRINT("set core variables\n");
+ 	core->input  = TVP5150_COMPOSITE1;
+ 	core->enable = 1;
+ 
+-	/* Default is no cropping */
+-	core->rect.top = 0;
+-	if (tvp5150_get_std(&core->sen/* TODO c*/) & V4L2_STD_525_60)
+-		core->rect.height = TVP5150_V_MAX_525_60;
+-	else
+-		core->rect.height = TVP5150_V_MAX_OTHERS;
+-	core->rect.left  = 0;
+-	core->rect.width = TVP5150_H_MAX;
++	tvp5150_get_std(core);
+ #ifdef TVP5150_DBG
+ 	tvp5150_log_status(c);
+ #endif
+@@ -1335,18 +1366,18 @@
+ 	sprintf(core->slave.attach_to  , "mxc_v4l2_cap%d", core->sen.csi);
+ 	        core->int_dev.u	.slave = &core->slave;
+ 
+-	printk("TVP5150:probe:int_dev name '%s', attach_to '%s', master ptr [%p]\n",
++	DBG_PRINT("int_dev name '%s', attach_to '%s', master ptr [%p]\n",
+ 				 core->int_dev.name,
+ 				 core->int_dev.u.slave->attach_to,
+ 				 core->int_dev.u.slave->master);
+-	printk("TVP5150:probe: i2c_client: [%p], i2c_device_id: [%p], core: [%p]\n",
++	DBG_PRINT("TVP5150:probe: i2c_client: [%p], i2c_device_id: [%p], core: [%p]\n",
+ 					c, id, core);
+ 
+ 	ret = v4l2_int_device_register(&core->int_dev);
+ 
+ 	clk_disable_unprepare(core->sen.sensor_clk);
+ 
+-	printk("TVP5150:probe:DONE ret %d,Registered to v4l2 master %s\n",
++	DBG_PRINT("DONE ret %d,Registered to v4l2 master %s\n",
+ 				 ret, core->int_dev.u.slave->attach_to);
+ 
+ 	return ret;
+@@ -1362,7 +1393,7 @@
+ //	struct v4l2_subdev *sd = i2c_get_clientdata(c);
+ //	struct tvp5150 *decoder = to_tvp5150(sd);
+ 
+-	printk("tvp5150: removing tvp5150 adapter on address 0x%x\n", c->addr<<1);
++	DBG_PRINT("tvp5150: removing tvp5150 adapter on address 0x%x\n", c->addr<<1);
+ 
+ //TODO	v4l2_int_device_unregister(&tvp5150_int_device);
+ //TODO	kfree(to_tvp5150(sd));
+@@ -1399,7 +1430,7 @@
+  */
+ static void __exit tvp5150_exit(void)
+ {
+-	printk("tvp5150_exit\n");
++	DBG_PRINT("tvp5150_exit\n");
+ 	i2c_del_driver(&tvp5150_i2c_driver);
+ }
+ 
+Index: git/drivers/media/platform/mxc/capture/mxc_v4l2_capture.c
+===================================================================
+--- git.orig/drivers/media/platform/mxc/capture/mxc_v4l2_capture.c	2015-12-02 15:47:31.581733231 +0100
++++ git/drivers/media/platform/mxc/capture/mxc_v4l2_capture.c	2015-12-02 15:47:36.525733195 +0100
+@@ -185,8 +185,8 @@
+ 	 .raw_width = 720,		/* SENS_FRM_WIDTH */
+ 	 .raw_height = 525,		/* SENS_FRM_HEIGHT */
+ 	 .active_width = 720,		/* ACT_FRM_WIDTH */
+-	 .active_height = 480,		/* ACT_FRM_HEIGHT */
+-	 .active_top = 13,
++	 .active_height = 488,		/* ACT_FRM_HEIGHT */
++	 .active_top = 0,
+ 	 .active_left = 0,
+ 	 },
+ 	{			/*! (B, G, H, I, N) PAL */
