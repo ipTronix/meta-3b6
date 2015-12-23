@@ -1,0 +1,18 @@
+diff --git a/src/platformsupport/eglconvenience/qeglpbuffer_p.h b/src/platformsupport/eglconvenience/qeglpbuffer_p.h
+index 81fdab8..ec222bf 100644
+--- a/src/platformsupport/eglconvenience/qeglpbuffer_p.h
++++ b/src/platformsupport/eglconvenience/qeglpbuffer_p.h
+@@ -44,10 +44,11 @@
+ //
+ // We mean it.
+ //
+-
+-#include <EGL/egl.h>
++#include <qtextstream.h>
++#include <qdatastream.h>
+ #include <qpa/qplatformoffscreensurface.h>
+ #include <QtPlatformSupport/private/qeglplatformcontext_p.h>
++#include <EGL/egl.h>
+ 
+ QT_BEGIN_NAMESPACE
+ 
