@@ -6,12 +6,14 @@ LIC_FILES_CHKSUM = "file://${COMMON_LICENSE_DIR}/MIT;md5=0835ade698e0bcf8506ecda
 SRC_URI = "file://tvin.c \
            file://capture.c \
            file://capture.h \
+           file://output.c \
+           file://output.h \
            "
 
 S = "${WORKDIR}"
 
 do_compile() {
-	${CC} tvin.c capture.c -lpthread -o tvin
+	${CC} tvin.c capture.c output.c -lpthread -o tvin
 }
 
 do_install() {

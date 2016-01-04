@@ -11,7 +11,7 @@ typedef struct {
   unsigned char  *start;
   size_t          offset;
   unsigned int    length;
-}sBuf, psBuf;
+}sCapBuf, psCapBuf;
 
 /**
  */
@@ -27,7 +27,7 @@ typedef struct {
   int         bpl;    //bytes per line
   int         imsize; //image size
   int         nbuf;
-  sBuf        buf[CAP_NUM_BUF];
+  sCapBuf     buf[CAP_NUM_BUF];
 }sCapDev, *psCapDev;
 
 int capture_open(char* name, psCapDev pCap);

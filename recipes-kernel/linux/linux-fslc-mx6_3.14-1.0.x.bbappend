@@ -20,6 +20,7 @@ SRC_URI_append_tera-he = " \
    file://0012-altera-cvifw.patch \
    file://0013-mxc_tvp5150-std_autodet.patch \
    file://0014-nxp_pn5xx.patch \
+   file://0015-splashlogo.patch \
    file://defconfig \
 "
 

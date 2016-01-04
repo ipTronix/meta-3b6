@@ -1,0 +1,9 @@
+echo ========================================
+echo ==       u-boot recovery script       ==
+echo ========================================
+setenv image recovery/zImage-mfgtool
+setenv fsimage recovery/recovery.u-boot
+setenv fsloadaddr 0x19000000
+setenv loadfs 'fatload mmc ${mmcdev}:${mmcpart} ${fsloadaddr} ${fsimage}'
+setenv recoveryboot 'run loadfdt; run loadimage; run loadfs; bootz ${loadaddr} ${fsloadaddr} ${fdt_addr}'
+run recoveryboot

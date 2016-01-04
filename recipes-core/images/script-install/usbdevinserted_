@@ -1,0 +1,52 @@
+#! /bin/sh
+
+md5Check() {
+  md5c=$(md5sum $1 | cut -d ' ' -f 1)
+  md5f=$(cut -d ' ' -f1 $1.md5)
+  if [ $md5f = $md5c ]
+  then
+    echo "true"
+  else
+    echo "false"
+  fi
+}
+
+dev_usb="/dev/usbdisk"
+usb_mnt_path="/mnt/usbdisk/"
+fw_path=${usb_mnt_path}"firmware/"
+fw_tar=${fw_path}"firmware.tar.gz"
+
+dev_emmc="/dev/mmcblk2p1"
+emmc_mnt_path="/mnt/p1/"
+
+update_script=${emmc_mnt_path}"update.sh"
+
+mkdir -p ${usb_mnt_path}
+mount ${dev_usb} ${usb_mnt_path}
+
+if [ -d ${fw_path} ]
+then
+  if [ -f ${fw_tar} ]
+  then
+    if [ $(md5Check ${fw_tar}) = "true" ]
+    then
+      mkdir -p ${emmc_mnt_path}
+      mount ${dev_emmc} ${emmc_mnt_path}
+
+      cd ${emmc_mnt_path}
+      tar xvzf ${fw_tar}
+
+      if [ -f ${update_script} ]
+      then
+        sh ${update_script}
+      fi
+
+      cd /
+      sync && sync
+      umount ${emmc_mnt_path}
+    fi
+  fi
+fi
+
+umount ${usb_mnt_path}
+reboot

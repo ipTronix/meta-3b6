@@ -44,6 +44,7 @@ extern "C"{
 #include <linux/videodev2.h>
 
 #include "capture.h"
+#include "output.h"
 
 /**/
 #define RNG_SIZE 4
@@ -86,37 +87,7 @@ int rngGet(psRng pRng, int* item)
 #define TFAIL -1
 #define TPASS 0
 
-struct testbuffer {
-  unsigned char  *start;
-  size_t          offset;
-  unsigned int    length;
-};
-
-char v4l_output_dev[100] = "/dev/video17";
-int fd_output_v4l = 0;
-
-int g_fmt = V4L2_PIX_FMT_UYVY;
-int g_rotate = 0;
-int g_vflip = 0;
-int g_hflip = 0;
-int g_vdi_enable = 0;
-int g_vdi_motion = 0;
-int g_tb = 0;
-int g_output_num_buffers = 4;
-int g_display_width = 0;
-int g_display_height = 0;
-int g_display_top = 0;
-int g_display_left = 0;
-int g_frame_size;
-int g_frame_period = 33333;
-v4l2_std_id g_current_std = V4L2_STD_PAL;
-
-struct testbuffer output_buffers[4];
-
-typedef struct {
-  char        name[100];
-  int         fd;
-}sOutDev, *psOutDev;
+//v4l2_std_id g_current_std = V4L2_STD_PAL;
 
 typedef struct {
   pthread_t   tid;
@@ -127,6 +98,10 @@ typedef struct {
 
 #define TVIN_CAP_TOT 4
 sCapDev   capture[TVIN_CAP_TOT];
+
+sOutDev   output;
+psOutDev  pOut = &output;
+
 
 sRng rng[TVIN_CAP_TOT] =
 {
@@ -143,162 +118,6 @@ int process_cmdline(int argc, char **argv);
 
 /**
  */
-int output_prepare(void)
-{
-  int i;
-  struct v4l2_buffer output_buf;
-
-  for(i=0; i<g_output_num_buffers; i++){
-    memset(&output_buf, 0, sizeof(output_buf));
-    output_buf.type   = V4L2_BUF_TYPE_VIDEO_OUTPUT;
-    output_buf.memory = V4L2_MEMORY_MMAP;
-    output_buf.index  = i;
-    if (ioctl(fd_output_v4l, VIDIOC_QUERYBUF, &output_buf) < 0) {
-      printf("VIDIOC_QUERYBUF error\n");
-      return TFAIL;
-    }
-
-    output_buffers[i].length = output_buf.length;
-    output_buffers[i].offset = (size_t) output_buf.m.offset;
-    output_buffers[i].start  = mmap(NULL, output_buffers[i].length,
-                                    PROT_READ | PROT_WRITE, MAP_SHARED,
-                                    fd_output_v4l, output_buffers[i].offset);
-    if(output_buffers[i].start == NULL){
-      printf("v4l2 tvin test: output mmap failed\n");
-      return TFAIL;
-    }
-    printf("output_prepare buf #%d offset=%p addr=%p len=%08X\n",
-           i,
-           output_buffers[i].offset,
-           output_buffers[i].start ,
-           output_buffers[i].length);
-  }
-  return 0;
-}
-
-/**
- */
-int output_setup(int width, int height)
-{
-  struct v4l2_control         ctrl;
-  struct v4l2_format          fmt;
-  struct v4l2_framebuffer     fb;
-  struct v4l2_cropcap         cropcap;
-  struct v4l2_crop            crop;
-  struct v4l2_capability      cap;
-  struct v4l2_fmtdesc         fmtdesc;
-  struct v4l2_requestbuffers  buf_req;
-
-  if(!ioctl(fd_output_v4l, VIDIOC_QUERYCAP, &cap)){
-    printf("driver=%s, card=%s, bus=%s, "
-            "version=0x%08x, "
-            "capabilities=0x%08x\n",
-            cap.driver, cap.card, cap.bus_info,
-            cap.version,
-            cap.capabilities);
-  }
-
-  fmtdesc.index = 0;
-  fmtdesc.type  = V4L2_BUF_TYPE_VIDEO_OUTPUT;
-  while(!ioctl(fd_output_v4l, VIDIOC_ENUM_FMT, &fmtdesc)){
-    printf("fmt %s: fourcc = 0x%08x\n",
-            fmtdesc.description,
-            fmtdesc.pixelformat);
-    fmtdesc.index++;
-  }
-
-  memset(&cropcap, 0, sizeof(cropcap));
-  cropcap.type = V4L2_BUF_TYPE_VIDEO_OUTPUT;
-  if(ioctl(fd_output_v4l, VIDIOC_CROPCAP, &cropcap) < 0){
-    printf("get crop capability failed\n");
-    close(fd_output_v4l);
-    return TFAIL;
-  }
-
-  crop.type = V4L2_BUF_TYPE_VIDEO_OUTPUT;
-  crop.c.top    = g_display_top;//TODO
-  crop.c.left   = g_display_left;
-  crop.c.width  = g_display_width;
-  crop.c.height = g_display_height;
-  if(ioctl(fd_output_v4l, VIDIOC_S_CROP, &crop) < 0){
-    printf("set crop failed\n");
-    close(fd_output_v4l);
-    return TFAIL;
-  }
-
-  // Set rotation
-  ctrl.id    = V4L2_CID_ROTATE;
-  ctrl.value = g_rotate; //TODO
-  if(ioctl(fd_output_v4l, VIDIOC_S_CTRL, &ctrl) < 0){
-    printf("set ctrl rotate failed\n");
-    close(fd_output_v4l);
-    return TFAIL;
-  }
-  ctrl.id    = V4L2_CID_VFLIP;
-  ctrl.value = g_vflip;//TODO
-  if(ioctl(fd_output_v4l, VIDIOC_S_CTRL, &ctrl) < 0){
-    printf("set ctrl vflip failed\n");
-    close(fd_output_v4l);
-    return TFAIL;
-  }
-  ctrl.id    = V4L2_CID_HFLIP;
-  ctrl.value = g_hflip;//TODO
-  if (ioctl(fd_output_v4l, VIDIOC_S_CTRL, &ctrl) < 0) {
-    printf("set ctrl hflip failed\n");
-    close(fd_output_v4l);
-    return TFAIL;
-  }
-/*
-  if (g_vdi_enable) {//TODO
-    ctrl.id = V4L2_CID_MXC_MOTION;
-    ctrl.value = g_vdi_motion; //TODO
-    if (ioctl(fd_output_v4l, VIDIOC_S_CTRL, &ctrl) < 0) {
-      printf("set ctrl motion failed\n");
-      close(fd_output_v4l);
-      return TFAIL;
-    }
-  }
-*/
-  fb.flags = V4L2_FBUF_FLAG_OVERLAY;
-  ioctl(fd_output_v4l, VIDIOC_S_FBUF, &fb);
-
-  memset(&fmt, 0, sizeof(fmt));
-  fmt.type = V4L2_BUF_TYPE_VIDEO_OUTPUT;
-  fmt.fmt.pix.width        = width;
-  fmt.fmt.pix.height       = height;
-  fmt.fmt.pix.pixelformat  = g_fmt;
-  fmt.fmt.pix.bytesperline = width;
-  fmt.fmt.pix.priv         = 0;
-  fmt.fmt.pix.sizeimage    = 0;
-  if(g_tb){ //TODO
-    fmt.fmt.pix.field = V4L2_FIELD_INTERLACED_TB;
-  }else{
-    fmt.fmt.pix.field = V4L2_FIELD_INTERLACED_BT;
-  }
-  if(ioctl(fd_output_v4l, VIDIOC_S_FMT, &fmt) < 0){
-    printf("set format failed\n");
-    return TFAIL;
-  }
-
-  if(ioctl(fd_output_v4l, VIDIOC_G_FMT, &fmt) < 0){
-    printf("get format failed\n");
-    return TFAIL;
-  }
-  g_frame_size = fmt.fmt.pix.sizeimage; //TODO
-  printf("g_frame_size %d\n", g_frame_size);
-
-  memset(&buf_req, 0, sizeof(buf_req));
-  buf_req.count  = g_output_num_buffers; //TODO
-  buf_req.type   = V4L2_BUF_TYPE_VIDEO_OUTPUT;
-  buf_req.memory = V4L2_MEMORY_MMAP;
-  if(ioctl(fd_output_v4l, VIDIOC_REQBUFS, &buf_req) < 0){
-    printf("request buffers failed\n");
-    return TFAIL;
-  }
-
-  return 0;
-}
-
 int tv_stdCheck()
 {
 #if 0
@@ -375,6 +194,7 @@ void* tv_task_mst(void* arg)
 {
   psTaskArg           pTask = (psTaskArg)arg;
   psCapDev            pCap = pTask->pCap;
+  psOutDev            pOut = pTask->pOut;
   struct v4l2_buffer  capture_buf;
   struct v4l2_buffer  output_buf;
   enum v4l2_buf_type  type;
@@ -416,13 +236,13 @@ void* tv_task_mst(void* arg)
     memset(&output_buf, 0, sizeof(output_buf));
     output_buf.type   = V4L2_BUF_TYPE_VIDEO_OUTPUT;
     output_buf.memory = V4L2_MEMORY_MMAP;
-    ret = ioctl(fd_output_v4l, VIDIOC_DQBUF, &output_buf);
+    ret = ioctl(pOut->fd, VIDIOC_DQBUF, &output_buf);
     if(ret<0){
       printf( "thread mst:ERROR:VIDIOC_DQBUF output failed (%d).\n", ret);
       return NULL;
     }
     // set output buffer address
-    op = output_buffers[output_buf.index].start;
+    op = pOut->buf[output_buf.index].start;
     // copy main thread capture buffer
     ip = pCap->buf[capture_buf.index].start;
     for(j=0; j<pCap->height; j++){
@@ -442,7 +262,7 @@ void* tv_task_mst(void* arg)
       // copy other threads capture buffer
       if(capBufIdx[i]>=0 && capBufIdx[i]<pCap->nbuf){
         ip = capture[i].buf[capBufIdx[i]].start;
-        op = output_buffers[output_buf.index].start;
+        op = pOut->buf[output_buf.index].start;
         switch(i){
         case 0: break;
         case 1: op += pCap->bpl; break;
@@ -457,7 +277,7 @@ void* tv_task_mst(void* arg)
       }
     }
     // Enqueue output buffer
-    ret = ioctl(fd_output_v4l, VIDIOC_QBUF, &output_buf);
+    ret = ioctl(pOut->fd, VIDIOC_QBUF, &output_buf);
     if(ret<0){
       printf("thread mst: VIDIOC_QBUF output failed (%d)\n", ret);
       return NULL;
@@ -578,6 +398,7 @@ int main(int argc, char **argv)
   int                 i;
   int                 ret;
   char               *cap_device[4];
+  char               *out_device;
 
   printf("%s "__DATE__" "__TIME__"\n", argv[0]);
 
@@ -601,46 +422,43 @@ int main(int argc, char **argv)
     }
   }
 
-  if ((fd_output_v4l = open(v4l_output_dev, O_RDWR, 0)) < 0) {
-    printf("Unable to open %s\n", v4l_output_dev);
+  out_device = "/dev/video17";
+  if(output_open(out_device, pOut)){
+    printf("Unable to open %s\n", cap_device[i]);
     return TFAIL;
   }
-  if(output_setup(capture[0].width*2, capture[0].height*2) < 0){
+
+  pOut->fmt = V4L2_PIX_FMT_UYVY;
+  pOut->width  = capture[0].width  * 2;
+  pOut->height = capture[0].height * 2;
+  pOut->disp_top    =    0;
+  pOut->disp_left   =    0;
+  pOut->disp_width  = 1280;
+  pOut->disp_height =  800;
+
+  if(output_setup(pOut)<0){
     printf("Setup v4l output failed.\n");
     close(capture[0].fd);
     return TFAIL;
   }
-  if (output_prepare() < 0) {
+  if(output_prepare(pOut)<0){
     printf("output_prepare failed\n");
     return TFAIL;
   }
 
   overlay_set();
 
-  for(i=0; i<g_output_num_buffers; i++){
-    struct v4l2_buffer  output_buf;
-    memset(&output_buf, 0, sizeof(output_buf));
-    output_buf.type   = V4L2_BUF_TYPE_VIDEO_OUTPUT;
-    output_buf.memory = V4L2_MEMORY_MMAP;
-    output_buf.index  = i;
-    printf("VIDIOC_QBUF #%d output.\n", i);
-    ret = ioctl(fd_output_v4l, VIDIOC_QBUF, &output_buf);
-    if(ret < 0){
-      printf("VIDIOC_QBUF #%d output failed (%d).\n", i, ret);
-      return TFAIL;
-    }
-  }
-
-  printf("start output stream\n");
-  type = V4L2_BUF_TYPE_VIDEO_OUTPUT;
-  if(ioctl(fd_output_v4l, VIDIOC_STREAMON, &type) < 0){
+  if(output_start(pOut) < 0){
     printf("Could not start output stream\n");
     return TFAIL;
   }
+
+
   printf("pthread_create master\n");
   i = 0;
   task[i].pCap   = &capture[i];
   task[i].capIdx = 0;
+  task[i].pOut   = pOut;
   ret = pthread_create(&task[i].tid, NULL, tv_task_mst, &task[i]);
   if(ret){
     printf("ERROR pthread_create master\n");
@@ -662,14 +480,9 @@ int main(int argc, char **argv)
   }
 
 exit:
-  type = V4L2_BUF_TYPE_VIDEO_OUTPUT;
-  ioctl(fd_output_v4l, VIDIOC_STREAMOFF, &type);
+  output_stop(pOut);
+  output_close(pOut);
 
-  for (i=0; i<g_output_num_buffers; i++) {
-    munmap(output_buffers[i].start, output_buffers[i].length);
-  }
-
-  close(fd_output_v4l);
   for(i=0; i<TVIN_CAP_TOT; i++){
     capture_close(&capture[i]);
   }
@@ -682,7 +495,8 @@ int process_cmdline(int argc, char **argv)
 {
   int i;
 
-  for (i = 1; i < argc; i++) {
+  for(i=1; i<argc; i++){
+    /*
     if (strcmp(argv[i], "-ow") == 0) {
       g_display_width = atoi(argv[++i]);
     }
@@ -715,7 +529,9 @@ int process_cmdline(int argc, char **argv)
     else if (strcmp(argv[i], "-tb") == 0) {
       g_tb = 1;
     }
-    else if (strcmp(argv[i], "-help") == 0) {
+    */
+    //else
+      if (strcmp(argv[i], "-help") == 0) {
       printf("MXC Video4Linux TVin Test\n\n" \
           "Syntax: mxc_v4l2_tvin.out\n" \
           " -ow <capture display width>\n" \
@@ -730,9 +546,11 @@ int process_cmdline(int argc, char **argv)
       return TFAIL;
     }
   }
+  /*
   if ((g_display_width == 0) || (g_display_height == 0)) {
     printf("Zero display width or height\n");
     return TFAIL;
   }
+  */
   return 0;
 }

@@ -1,7 +1,7 @@
 Index: git/arch/arm/boot/dts/imx6q-tera-he.dts
 ===================================================================
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ git/arch/arm/boot/dts/imx6q-tera-he.dts	2015-11-26 13:26:12.352236032 +0100
++++ git/arch/arm/boot/dts/imx6q-tera-he.dts	2015-12-09 15:26:22.385818432 +0100
 @@ -0,0 +1,237 @@
 +/*
 + * Copyright 2012 Freescale Semiconductor, Inc.
@@ -243,7 +243,7 @@ Index: git/arch/arm/boot/dts/imx6q-tera-he.dts
 Index: git/arch/arm/boot/dts/imx6q-tera-he.dtsi
 ===================================================================
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ git/arch/arm/boot/dts/imx6q-tera-he.dtsi	2015-11-26 13:26:12.352236032 +0100
++++ git/arch/arm/boot/dts/imx6q-tera-he.dtsi	2015-12-18 10:12:57.862961416 +0100
 @@ -0,0 +1,718 @@
 +/*
 + * Copyright 2012 Freescale Semiconductor, Inc.
@@ -965,8 +965,8 @@ Index: git/arch/arm/boot/dts/imx6q-tera-he.dtsi
 +};
 Index: git/arch/arm/boot/dts/Makefile
 ===================================================================
---- git.orig/arch/arm/boot/dts/Makefile	2015-11-26 13:26:07.308236123 +0100
-+++ git/arch/arm/boot/dts/Makefile	2015-11-26 13:26:12.352236032 +0100
+--- git.orig/arch/arm/boot/dts/Makefile	2015-12-09 15:25:56.205818625 +0100
++++ git/arch/arm/boot/dts/Makefile	2015-12-09 15:26:22.389818432 +0100
 @@ -179,6 +179,7 @@
  	imx6q-sabresd-uart.dtb \
  	imx6q-sabresd-hdcp.dtb \
@@ -978,7 +978,7 @@ Index: git/arch/arm/boot/dts/Makefile
 Index: git/arch/arm/boot/dts/imx6q-tera-he-iomux.dtsi
 ===================================================================
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ git/arch/arm/boot/dts/imx6q-tera-he-iomux.dtsi	2015-11-27 15:25:28.961095150 +0100
++++ git/arch/arm/boot/dts/imx6q-tera-he-iomux.dtsi	2015-12-18 13:12:02.706995290 +0100
 @@ -0,0 +1,398 @@
 +/*
 + * Copyright 2015
@@ -1126,8 +1126,8 @@ Index: git/arch/arm/boot/dts/imx6q-tera-he-iomux.dtsi
 +*/
 +		pinctrl_enet: enetgrp {
 +			fsl,pins = <
-+				MX6QDL_PAD_KEY_COL1__ENET_MDIO         0x1b0b0
-+				MX6QDL_PAD_KEY_COL2__ENET_MDC          0x1b0b0
++				MX6QDL_PAD_ENET_MDIO__ENET_MDIO        0x1b0b0
++				MX6QDL_PAD_ENET_MDC__ENET_MDC          0x1b0b0
 +				MX6QDL_PAD_RGMII_TXC__RGMII_TXC        0x1b0b0
 +				MX6QDL_PAD_RGMII_TD0__RGMII_TD0        0x1b0b0
 +				MX6QDL_PAD_RGMII_TD1__RGMII_TD1        0x1b0b0
