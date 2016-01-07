@@ -29,6 +29,7 @@ SRC_URI = "git://git.ti.com/wilink8-wlan/wl18xx.git;branch=${BRANCH_wl18xx};dest
 
 export KLIB_BUILD="${STAGING_KERNEL_DIR}"
 export KLIB="${D}"
+export KCFLAGS="-O2 -pipe -g -feliminate-unused-debug-types -Wno-error=date-time"
 
 do_configure() {
     cd "${WORKDIR}/backports"
