@@ -20,7 +20,7 @@ do_install () {
 		install -d ${D}/${f}
 	done
 	
-	find BluetopiaPM -type f -name '*' ! -name '*.debug*' | -name '*.a' | while read f
+	find BluetopiaPM -type f -name '*' ! -name '*.debug*' ! -name '*.a' ! -name '*.c' ! -name '*.h' ! -name '*.mak' | while read f
 	do
 		install $f ${D}/${f}
 	done
