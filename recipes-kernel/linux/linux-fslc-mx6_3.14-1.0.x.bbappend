@@ -22,6 +22,7 @@ SRC_URI_append_tera-he = " \
    file://0014-nxp_pn5xx.patch \
    file://0015-splashlogo.patch \
    file://0016-Flexcan-fix-fifo-overrun.patch \
+   file://0017-DTB_added_rev2_gpio-Audio_fixed_for_kernel.patch \
    file://defconfig \
 "
 

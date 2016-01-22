@@ -44,9 +44,9 @@ then
       cd /
       sync && sync
       umount ${emmc_mnt_path}
+      umount ${usb_mnt_path}
+      reboot
     fi
   fi
 fi
 
-umount ${usb_mnt_path}
-reboot
