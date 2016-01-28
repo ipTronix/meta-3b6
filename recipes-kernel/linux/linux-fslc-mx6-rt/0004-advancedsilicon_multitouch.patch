@@ -1,0 +1,30 @@
+Index: git/drivers/hid/hid-ids.h
+===================================================================
+--- git.orig/drivers/hid/hid-ids.h	2015-10-30 12:58:37.458716340 +0100
++++ git/drivers/hid/hid-ids.h	2015-11-02 09:35:35.209548003 +0100
+@@ -43,6 +43,9 @@
+ #define USB_VENDOR_ID_ADS_TECH		0x06e1
+ #define USB_DEVICE_ID_ADS_TECH_RADIO_SI470X	0xa155
+ 
++#define USB_VENDOR_ID_ADVANCEDSILICON	0x2619
++#define USB_DEVICE_ID_ADVANCEDSILICON_8810	0x8810
++
+ #define USB_VENDOR_ID_AFATECH		0x15a4
+ #define USB_DEVICE_ID_AFATECH_AF9016	0x9016
+ 
+Index: git/drivers/hid/hid-multitouch.c
+===================================================================
+--- git.orig/drivers/hid/hid-multitouch.c	2015-10-30 12:58:37.462716340 +0100
++++ git/drivers/hid/hid-multitouch.c	2015-11-02 09:41:16.737541887 +0100
+@@ -1052,6 +1052,11 @@
+ 		MT_USB_DEVICE(USB_VENDOR_ID_ACTIONSTAR,
+ 			USB_DEVICE_ID_ACTIONSTAR_1011) },
+ 
++	/* AdvancedSilicon */
++        { .driver_data = MT_CLS_DEFAULT,
++                MT_USB_DEVICE(USB_VENDOR_ID_ADVANCEDSILICON,
++                        USB_DEVICE_ID_ADVANCEDSILICON_8810) },
++
+ 	/* Atmel panels */
+ 	{ .driver_data = MT_CLS_SERIAL,
+ 		MT_USB_DEVICE(USB_VENDOR_ID_ATMEL,

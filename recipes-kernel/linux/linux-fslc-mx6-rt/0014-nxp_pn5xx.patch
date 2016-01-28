@@ -1,0 +1,1303 @@
+Index: git/drivers/nfc/nxp-pn5xx/Kconfig
+===================================================================
+--- /dev/null	1970-01-01 00:00:00.000000000 +0000
++++ git/drivers/nfc/nxp-pn5xx/Kconfig	2015-11-25 13:51:54.807411514 +0100
+@@ -0,0 +1,12 @@
++config NFC_NXP_PN5XX
++	tristate "NXP PN5XX based driver"
++	depends on I2C
++	select CRC_CCITT
++	default n
++	---help---
++	  NXP PN5XX driver based on I2C.
++	  This is a driver to provides I2C access to PN5xx NFC Controller devices
++
++	  To compile this driver as a module, choose m here.
++	  The module will be called pn5xx_i2c.
++	  Say N if unsure.
+Index: git/drivers/nfc/nxp-pn5xx/LICENSE
+===================================================================
+--- /dev/null	1970-01-01 00:00:00.000000000 +0000
++++ git/drivers/nfc/nxp-pn5xx/LICENSE	2015-07-14 17:00:16.000000000 +0200
+@@ -0,0 +1,340 @@
++                    GNU GENERAL PUBLIC LICENSE
++                       Version 2, June 1991
++
++ Copyright (C) 1989, 1991 Free Software Foundation, Inc., <http://fsf.org/>
++ 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
++ Everyone is permitted to copy and distribute verbatim copies
++ of this license document, but changing it is not allowed.
++
++                            Preamble
++
++  The licenses for most software are designed to take away your
++freedom to share and change it.  By contrast, the GNU General Public
++License is intended to guarantee your freedom to share and change free
++software--to make sure the software is free for all its users.  This
++General Public License applies to most of the Free Software
++Foundation's software and to any other program whose authors commit to
++using it.  (Some other Free Software Foundation software is covered by
++the GNU Lesser General Public License instead.)  You can apply it to
++your programs, too.
++
++  When we speak of free software, we are referring to freedom, not
++price.  Our General Public Licenses are designed to make sure that you
++have the freedom to distribute copies of free software (and charge for
++this service if you wish), that you receive source code or can get it
++if you want it, that you can change the software or use pieces of it
++in new free programs; and that you know you can do these things.
++
++  To protect your rights, we need to make restrictions that forbid
++anyone to deny you these rights or to ask you to surrender the rights.
++These restrictions translate to certain responsibilities for you if you
++distribute copies of the software, or if you modify it.
++
++  For example, if you distribute copies of such a program, whether
++gratis or for a fee, you must give the recipients all the rights that
++you have.  You must make sure that they, too, receive or can get the
++source code.  And you must show them these terms so they know their
++rights.
++
++  We protect your rights with two steps: (1) copyright the software, and
++(2) offer you this license which gives you legal permission to copy,
++distribute and/or modify the software.
++
++  Also, for each author's protection and ours, we want to make certain
++that everyone understands that there is no warranty for this free
++software.  If the software is modified by someone else and passed on, we
++want its recipients to know that what they have is not the original, so
++that any problems introduced by others will not reflect on the original
++authors' reputations.
++
++  Finally, any free program is threatened constantly by software
++patents.  We wish to avoid the danger that redistributors of a free
++program will individually obtain patent licenses, in effect making the
++program proprietary.  To prevent this, we have made it clear that any
++patent must be licensed for everyone's free use or not licensed at all.
++
++  The precise terms and conditions for copying, distribution and
++modification follow.
++
++                    GNU GENERAL PUBLIC LICENSE
++   TERMS AND CONDITIONS FOR COPYING, DISTRIBUTION AND MODIFICATION
++
++  0. This License applies to any program or other work which contains
++a notice placed by the copyright holder saying it may be distributed
++under the terms of this General Public License.  The "Program", below,
++refers to any such program or work, and a "work based on the Program"
++means either the Program or any derivative work under copyright law:
++that is to say, a work containing the Program or a portion of it,
++either verbatim or with modifications and/or translated into another
++language.  (Hereinafter, translation is included without limitation in
++the term "modification".)  Each licensee is addressed as "you".
++
++Activities other than copying, distribution and modification are not
++covered by this License; they are outside its scope.  The act of
++running the Program is not restricted, and the output from the Program
++is covered only if its contents constitute a work based on the
++Program (independent of having been made by running the Program).
++Whether that is true depends on what the Program does.
++
++  1. You may copy and distribute verbatim copies of the Program's
++source code as you receive it, in any medium, provided that you
++conspicuously and appropriately publish on each copy an appropriate
++copyright notice and disclaimer of warranty; keep intact all the
++notices that refer to this License and to the absence of any warranty;
++and give any other recipients of the Program a copy of this License
++along with the Program.
++
++You may charge a fee for the physical act of transferring a copy, and
++you may at your option offer warranty protection in exchange for a fee.
++
++  2. You may modify your copy or copies of the Program or any portion
++of it, thus forming a work based on the Program, and copy and
++distribute such modifications or work under the terms of Section 1
++above, provided that you also meet all of these conditions:
++
++    a) You must cause the modified files to carry prominent notices
++    stating that you changed the files and the date of any change.
++
++    b) You must cause any work that you distribute or publish, that in
++    whole or in part contains or is derived from the Program or any
++    part thereof, to be licensed as a whole at no charge to all third
++    parties under the terms of this License.
++
++    c) If the modified program normally reads commands interactively
++    when run, you must cause it, when started running for such
++    interactive use in the most ordinary way, to print or display an
++    announcement including an appropriate copyright notice and a
++    notice that there is no warranty (or else, saying that you provide
++    a warranty) and that users may redistribute the program under
++    these conditions, and telling the user how to view a copy of this
++    License.  (Exception: if the Program itself is interactive but
++    does not normally print such an announcement, your work based on
++    the Program is not required to print an announcement.)
++
++These requirements apply to the modified work as a whole.  If
++identifiable sections of that work are not derived from the Program,
++and can be reasonably considered independent and separate works in
++themselves, then this License, and its terms, do not apply to those
++sections when you distribute them as separate works.  But when you
++distribute the same sections as part of a whole which is a work based
++on the Program, the distribution of the whole must be on the terms of
++this License, whose permissions for other licensees extend to the
++entire whole, and thus to each and every part regardless of who wrote it.
++
++Thus, it is not the intent of this section to claim rights or contest
++your rights to work written entirely by you; rather, the intent is to
++exercise the right to control the distribution of derivative or
++collective works based on the Program.
++
++In addition, mere aggregation of another work not based on the Program
++with the Program (or with a work based on the Program) on a volume of
++a storage or distribution medium does not bring the other work under
++the scope of this License.
++
++  3. You may copy and distribute the Program (or a work based on it,
++under Section 2) in object code or executable form under the terms of
++Sections 1 and 2 above provided that you also do one of the following:
++
++    a) Accompany it with the complete corresponding machine-readable
++    source code, which must be distributed under the terms of Sections
++    1 and 2 above on a medium customarily used for software interchange; or,
++
++    b) Accompany it with a written offer, valid for at least three
++    years, to give any third party, for a charge no more than your
++    cost of physically performing source distribution, a complete
++    machine-readable copy of the corresponding source code, to be
++    distributed under the terms of Sections 1 and 2 above on a medium
++    customarily used for software interchange; or,
++
++    c) Accompany it with the information you received as to the offer
++    to distribute corresponding source code.  (This alternative is
++    allowed only for noncommercial distribution and only if you
++    received the program in object code or executable form with such
++    an offer, in accord with Subsection b above.)
++
++The source code for a work means the preferred form of the work for
++making modifications to it.  For an executable work, complete source
++code means all the source code for all modules it contains, plus any
++associated interface definition files, plus the scripts used to
++control compilation and installation of the executable.  However, as a
++special exception, the source code distributed need not include
++anything that is normally distributed (in either source or binary
++form) with the major components (compiler, kernel, and so on) of the
++operating system on which the executable runs, unless that component
++itself accompanies the executable.
++
++If distribution of executable or object code is made by offering
++access to copy from a designated place, then offering equivalent
++access to copy the source code from the same place counts as
++distribution of the source code, even though third parties are not
++compelled to copy the source along with the object code.
++
++  4. You may not copy, modify, sublicense, or distribute the Program
++except as expressly provided under this License.  Any attempt
++otherwise to copy, modify, sublicense or distribute the Program is
++void, and will automatically terminate your rights under this License.
++However, parties who have received copies, or rights, from you under
++this License will not have their licenses terminated so long as such
++parties remain in full compliance.
++
++  5. You are not required to accept this License, since you have not
++signed it.  However, nothing else grants you permission to modify or
++distribute the Program or its derivative works.  These actions are
++prohibited by law if you do not accept this License.  Therefore, by
++modifying or distributing the Program (or any work based on the
++Program), you indicate your acceptance of this License to do so, and
++all its terms and conditions for copying, distributing or modifying
++the Program or works based on it.
++
++  6. Each time you redistribute the Program (or any work based on the
++Program), the recipient automatically receives a license from the
++original licensor to copy, distribute or modify the Program subject to
++these terms and conditions.  You may not impose any further
++restrictions on the recipients' exercise of the rights granted herein.
++You are not responsible for enforcing compliance by third parties to
++this License.
++
++  7. If, as a consequence of a court judgment or allegation of patent
++infringement or for any other reason (not limited to patent issues),
++conditions are imposed on you (whether by court order, agreement or
++otherwise) that contradict the conditions of this License, they do not
++excuse you from the conditions of this License.  If you cannot
++distribute so as to satisfy simultaneously your obligations under this
++License and any other pertinent obligations, then as a consequence you
++may not distribute the Program at all.  For example, if a patent
++license would not permit royalty-free redistribution of the Program by
++all those who receive copies directly or indirectly through you, then
++the only way you could satisfy both it and this License would be to
++refrain entirely from distribution of the Program.
++
++If any portion of this section is held invalid or unenforceable under
++any particular circumstance, the balance of the section is intended to
++apply and the section as a whole is intended to apply in other
++circumstances.
++
++It is not the purpose of this section to induce you to infringe any
++patents or other property right claims or to contest validity of any
++such claims; this section has the sole purpose of protecting the
++integrity of the free software distribution system, which is
++implemented by public license practices.  Many people have made
++generous contributions to the wide range of software distributed
++through that system in reliance on consistent application of that
++system; it is up to the author/donor to decide if he or she is willing
++to distribute software through any other system and a licensee cannot
++impose that choice.
++
++This section is intended to make thoroughly clear what is believed to
++be a consequence of the rest of this License.
++
++  8. If the distribution and/or use of the Program is restricted in
++certain countries either by patents or by copyrighted interfaces, the
++original copyright holder who places the Program under this License
++may add an explicit geographical distribution limitation excluding
++those countries, so that distribution is permitted only in or among
++countries not thus excluded.  In such case, this License incorporates
++the limitation as if written in the body of this License.
++
++  9. The Free Software Foundation may publish revised and/or new versions
++of the General Public License from time to time.  Such new versions will
++be similar in spirit to the present version, but may differ in detail to
++address new problems or concerns.
++
++Each version is given a distinguishing version number.  If the Program
++specifies a version number of this License which applies to it and "any
++later version", you have the option of following the terms and conditions
++either of that version or of any later version published by the Free
++Software Foundation.  If the Program does not specify a version number of
++this License, you may choose any version ever published by the Free Software
++Foundation.
++
++  10. If you wish to incorporate parts of the Program into other free
++programs whose distribution conditions are different, write to the author
++to ask for permission.  For software which is copyrighted by the Free
++Software Foundation, write to the Free Software Foundation; we sometimes
++make exceptions for this.  Our decision will be guided by the two goals
++of preserving the free status of all derivatives of our free software and
++of promoting the sharing and reuse of software generally.
++
++                            NO WARRANTY
++
++  11. BECAUSE THE PROGRAM IS LICENSED FREE OF CHARGE, THERE IS NO WARRANTY
++FOR THE PROGRAM, TO THE EXTENT PERMITTED BY APPLICABLE LAW.  EXCEPT WHEN
++OTHERWISE STATED IN WRITING THE COPYRIGHT HOLDERS AND/OR OTHER PARTIES
++PROVIDE THE PROGRAM "AS IS" WITHOUT WARRANTY OF ANY KIND, EITHER EXPRESSED
++OR IMPLIED, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
++MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.  THE ENTIRE RISK AS
++TO THE QUALITY AND PERFORMANCE OF THE PROGRAM IS WITH YOU.  SHOULD THE
++PROGRAM PROVE DEFECTIVE, YOU ASSUME THE COST OF ALL NECESSARY SERVICING,
++REPAIR OR CORRECTION.
++
++  12. IN NO EVENT UNLESS REQUIRED BY APPLICABLE LAW OR AGREED TO IN WRITING
++WILL ANY COPYRIGHT HOLDER, OR ANY OTHER PARTY WHO MAY MODIFY AND/OR
++REDISTRIBUTE THE PROGRAM AS PERMITTED ABOVE, BE LIABLE TO YOU FOR DAMAGES,
++INCLUDING ANY GENERAL, SPECIAL, INCIDENTAL OR CONSEQUENTIAL DAMAGES ARISING
++OUT OF THE USE OR INABILITY TO USE THE PROGRAM (INCLUDING BUT NOT LIMITED
++TO LOSS OF DATA OR DATA BEING RENDERED INACCURATE OR LOSSES SUSTAINED BY
++YOU OR THIRD PARTIES OR A FAILURE OF THE PROGRAM TO OPERATE WITH ANY OTHER
++PROGRAMS), EVEN IF SUCH HOLDER OR OTHER PARTY HAS BEEN ADVISED OF THE
++POSSIBILITY OF SUCH DAMAGES.
++
++                     END OF TERMS AND CONDITIONS
++
++            How to Apply These Terms to Your New Programs
++
++  If you develop a new program, and you want it to be of the greatest
++possible use to the public, the best way to achieve this is to make it
++free software which everyone can redistribute and change under these terms.
++
++  To do so, attach the following notices to the program.  It is safest
++to attach them to the start of each source file to most effectively
++convey the exclusion of warranty; and each file should have at least
++the "copyright" line and a pointer to where the full notice is found.
++
++    {description}
++    Copyright (C) {year}  {fullname}
++
++    This program is free software; you can redistribute it and/or modify
++    it under the terms of the GNU General Public License as published by
++    the Free Software Foundation; either version 2 of the License, or
++    (at your option) any later version.
++
++    This program is distributed in the hope that it will be useful,
++    but WITHOUT ANY WARRANTY; without even the implied warranty of
++    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++    GNU General Public License for more details.
++
++    You should have received a copy of the GNU General Public License along
++    with this program; if not, write to the Free Software Foundation, Inc.,
++    51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
++
++Also add information on how to contact you by electronic and paper mail.
++
++If the program is interactive, make it output a short notice like this
++when it starts in an interactive mode:
++
++    Gnomovision version 69, Copyright (C) year name of author
++    Gnomovision comes with ABSOLUTELY NO WARRANTY; for details type `show w'.
++    This is free software, and you are welcome to redistribute it
++    under certain conditions; type `show c' for details.
++
++The hypothetical commands `show w' and `show c' should show the appropriate
++parts of the General Public License.  Of course, the commands you use may
++be called something other than `show w' and `show c'; they could even be
++mouse-clicks or menu items--whatever suits your program.
++
++You should also get your employer (if you work as a programmer) or your
++school, if any, to sign a "copyright disclaimer" for the program, if
++necessary.  Here is a sample; alter the names:
++
++  Yoyodyne, Inc., hereby disclaims all copyright interest in the program
++  `Gnomovision' (which makes passes at compilers) written by James Hacker.
++
++  {signature of Ty Coon}, 1 April 1989
++  Ty Coon, President of Vice
++
++This General Public License does not permit incorporating your program into
++proprietary programs.  If your program is a subroutine library, you may
++consider it more useful to permit linking proprietary applications with the
++library.  If this is what you want to do, use the GNU Lesser General
++Public License instead of this License.
++
+Index: git/drivers/nfc/nxp-pn5xx/Makefile
+===================================================================
+--- /dev/null	1970-01-01 00:00:00.000000000 +0000
++++ git/drivers/nfc/nxp-pn5xx/Makefile	2015-07-14 17:00:16.000000000 +0200
+@@ -0,0 +1,23 @@
++KERNELRELEASE ?= $(shell uname -r)
++BUILD_KERNEL_PATH ?= /lib/modules/$(KERNELRELEASE)/build
++INSTALL_MOD_PATH ?= $(INSTALL_PATH)/lib/modules/$(KERNELRELEASE)
++INSTALL_PN5XX_I2C_PATH ?= $(INSTALL_MOD_PATH)/kernel/drivers/nfc
++
++obj-m := pn5xx_i2c.o
++nxp-pn5xx-objs := pn5xx_i2c.o
++
++all: pn5xx_i2c.ko
++
++pn5xx_i2c.ko: pn5xx_i2c.c pn5xx_i2c.h
++	@echo "Compiling kernel module"
++	$(MAKE) -C $(BUILD_KERNEL_PATH) M=$(CURDIR) modules
++
++install: all
++	mkdir -p $(INSTALL_PN5XX_I2C_PATH)
++	install -m 644 pn5xx_i2c.ko $(INSTALL_PN5XX_I2C_PATH)
++
++clean:
++	$(MAKE) -C $(BUILD_KERNEL_PATH) M=$(CURDIR) clean
++
++.PHONY: all install clean
++.EXPORT_ALL_VARIABLES:
+Index: git/drivers/nfc/nxp-pn5xx/README.md
+===================================================================
+--- /dev/null	1970-01-01 00:00:00.000000000 +0000
++++ git/drivers/nfc/nxp-pn5xx/README.md	2015-07-14 17:00:16.000000000 +0200
+@@ -0,0 +1,2 @@
++# nxp-pn5xx
++NXP's NFC Open Source Kernel mode driver
+Index: git/drivers/nfc/nxp-pn5xx/pn5xx_i2c.c
+===================================================================
+--- /dev/null	1970-01-01 00:00:00.000000000 +0000
++++ git/drivers/nfc/nxp-pn5xx/pn5xx_i2c.c	2015-07-14 17:00:16.000000000 +0200
+@@ -0,0 +1,780 @@
++/*
++ * Copyright (C) 2010 Trusted Logic S.A.
++ * modifications copyright (C) 2015 NXP B.V.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
++ *
++ */
++
++#include <linux/kernel.h>
++#include <linux/module.h>
++#include <linux/fs.h>
++#include <linux/slab.h>
++#include <linux/init.h>
++#include <linux/list.h>
++#include <linux/i2c.h>
++#include <linux/irq.h>
++#include <linux/jiffies.h>
++#include <linux/uaccess.h>
++#include <linux/delay.h>
++#include <linux/interrupt.h>
++#include <linux/io.h>
++#include <linux/platform_device.h>
++#include <linux/gpio.h>
++#include <linux/miscdevice.h>
++#include <linux/spinlock.h>
++#include "pn5xx_i2c.h"
++#include <linux/of_gpio.h>
++#include <linux/regulator/consumer.h>
++#include <linux/of.h>
++
++#define MAX_BUFFER_SIZE	512
++
++#define MODE_OFF    0
++#define MODE_RUN    1
++#define MODE_FW     2
++
++/* Only pn548, pn547 and pn544 are supported */
++#define CHIP "pn544"
++#define DRIVER_CARD "PN54x NFC"
++#define DRIVER_DESC "NFC driver for PN54x Family"
++
++#ifndef CONFIG_OF
++#define CONFIG_OF
++#endif
++
++struct pn54x_dev	{
++	wait_queue_head_t read_wq;
++	struct mutex read_mutex;
++	struct i2c_client *client;
++	struct miscdevice pn54x_device;
++	int ven_gpio;
++	int firm_gpio;
++	int irq_gpio;
++	int clkreq_gpio;
++	struct regulator *pvdd_reg;
++	struct regulator *vbat_reg;
++	struct regulator *pmuvcc_reg;
++	struct regulator *sevdd_reg;
++	bool irq_enabled;
++	spinlock_t irq_enabled_lock;
++};
++
++/**********************************************************
++ * Interrupt control and handler
++ **********************************************************/
++static void pn54x_disable_irq(struct pn54x_dev *pn54x_dev)
++{
++	unsigned long flags;
++
++	spin_lock_irqsave(&pn54x_dev->irq_enabled_lock, flags);
++	if (pn54x_dev->irq_enabled) {
++		disable_irq_nosync(pn54x_dev->client->irq);
++		pn54x_dev->irq_enabled = false;
++	}
++	spin_unlock_irqrestore(&pn54x_dev->irq_enabled_lock, flags);
++}
++
++static irqreturn_t pn54x_dev_irq_handler(int irq, void *dev_id)
++{
++	struct pn54x_dev *pn54x_dev = dev_id;
++
++	pn54x_disable_irq(pn54x_dev);
++
++	/* Wake up waiting readers */
++	wake_up(&pn54x_dev->read_wq);
++
++	return IRQ_HANDLED;
++}
++
++/**********************************************************
++ * private functions
++ **********************************************************/
++static int pn544_enable(struct pn54x_dev *dev, int mode)
++{
++	int r;
++
++	/* turn on the regulators */
++	/* -- if the regulators were specified, they're required */
++	if(dev->pvdd_reg != NULL)
++	{
++		r = regulator_enable(dev->pvdd_reg);
++		if (r < 0){
++			pr_err("%s: not able to enable pvdd\n", __func__);
++			return r;
++		}
++	}
++	if(dev->vbat_reg != NULL)
++	{
++		r = regulator_enable(dev->vbat_reg);
++		if (r < 0){
++			pr_err("%s: not able to enable vbat\n", __func__);
++			goto enable_exit0;
++		}
++	}
++	if(dev->pmuvcc_reg != NULL)
++	{
++		r = regulator_enable(dev->pmuvcc_reg);
++		if (r < 0){
++			pr_err("%s: not able to enable pmuvcc\n", __func__);
++			goto enable_exit1;
++		}
++	}
++	if(dev->sevdd_reg != NULL)
++	{
++		r = regulator_enable(dev->sevdd_reg);
++		if (r < 0){
++			pr_err("%s: not able to enable sevdd\n", __func__);
++			goto enable_exit2;
++		}
++	}
++
++	if (MODE_RUN == mode) {
++		pr_info("%s power on\n", __func__);
++		if (gpio_is_valid(dev->firm_gpio))
++			gpio_set_value(dev->firm_gpio, 0);
++		gpio_set_value(dev->ven_gpio, 1);
++		msleep(100);
++	}
++	else if (MODE_FW == mode) {
++		/* power on with firmware download (requires hw reset)
++		 */
++		pr_info("%s power on with firmware\n", __func__);
++		gpio_set_value(dev->ven_gpio, 1);
++		msleep(20);
++		if (gpio_is_valid(dev->firm_gpio)) {
++			gpio_set_value(dev->firm_gpio, 1);
++		}
++		else {
++			pr_err("%s Unused Firm GPIO %d\n", __func__, mode);
++			return GPIO_UNUSED;
++		}
++		msleep(20);
++		gpio_set_value(dev->ven_gpio, 0);
++		msleep(100);
++		gpio_set_value(dev->ven_gpio, 1);
++		msleep(20);
++	}
++	else {
++		pr_err("%s bad arg %d\n", __func__, mode);
++		return -EINVAL;
++	}
++
++	return 0;
++
++enable_exit2:
++	if(dev->pmuvcc_reg) regulator_disable(dev->pmuvcc_reg);
++enable_exit1:
++	if(dev->vbat_reg) regulator_disable(dev->vbat_reg);
++enable_exit0:
++	if(dev->pvdd_reg) regulator_disable(dev->pvdd_reg);
++
++	return r;
++}
++
++static void pn544_disable(struct pn54x_dev *dev)
++{
++	/* power off */
++	pr_info("%s power off\n", __func__);
++	if (gpio_is_valid(dev->firm_gpio))
++		gpio_set_value(dev->firm_gpio, 0);
++	gpio_set_value(dev->ven_gpio, 0);
++	msleep(100);
++
++	if(dev->sevdd_reg) regulator_disable(dev->sevdd_reg);
++	if(dev->pmuvcc_reg) regulator_disable(dev->pmuvcc_reg);
++	if(dev->vbat_reg) regulator_disable(dev->vbat_reg);
++	if(dev->pvdd_reg) regulator_disable(dev->pvdd_reg);
++
++}
++
++/**********************************************************
++ * driver functions
++ **********************************************************/
++static ssize_t pn54x_dev_read(struct file *filp, char __user *buf,
++		size_t count, loff_t *offset)
++{
++	struct pn54x_dev *pn54x_dev = filp->private_data;
++	char tmp[MAX_BUFFER_SIZE];
++	int ret;
++
++	if (count > MAX_BUFFER_SIZE)
++		count = MAX_BUFFER_SIZE;
++
++	pr_debug("%s : reading %zu bytes.\n", __func__, count);
++
++	mutex_lock(&pn54x_dev->read_mutex);
++
++	if (!gpio_get_value(pn54x_dev->irq_gpio)) {
++		if (filp->f_flags & O_NONBLOCK) {
++			ret = -EAGAIN;
++			goto fail;
++		}
++
++		while (1) {
++			pn54x_dev->irq_enabled = true;
++			enable_irq(pn54x_dev->client->irq);
++			ret = wait_event_interruptible(
++					pn54x_dev->read_wq,
++					!pn54x_dev->irq_enabled);
++
++			pn54x_disable_irq(pn54x_dev);
++
++			if (ret)
++				goto fail;
++
++			if (gpio_get_value(pn54x_dev->irq_gpio))
++				break;
++
++			pr_warning("%s: spurious interrupt detected\n", __func__);
++		}
++	}
++
++	/* Read data */
++	ret = i2c_master_recv(pn54x_dev->client, tmp, count);
++
++	mutex_unlock(&pn54x_dev->read_mutex);
++
++	/* pn54x seems to be slow in handling I2C read requests
++	 * so add 1ms delay after recv operation */
++	udelay(1000);
++
++	if (ret < 0) {
++		pr_err("%s: i2c_master_recv returned %d\n", __func__, ret);
++		return ret;
++	}
++	if (ret > count) {
++		pr_err("%s: received too many bytes from i2c (%d)\n",
++			__func__, ret);
++		return -EIO;
++	}
++	if (copy_to_user(buf, tmp, ret)) {
++		pr_warning("%s : failed to copy to user space\n", __func__);
++		return -EFAULT;
++	}
++	return ret;
++
++fail:
++	mutex_unlock(&pn54x_dev->read_mutex);
++	return ret;
++}
++
++static ssize_t pn54x_dev_write(struct file *filp, const char __user *buf,
++		size_t count, loff_t *offset)
++{
++	struct pn54x_dev  *pn54x_dev;
++	char tmp[MAX_BUFFER_SIZE];
++	int ret;
++
++	pn54x_dev = filp->private_data;
++
++	if (count > MAX_BUFFER_SIZE)
++		count = MAX_BUFFER_SIZE;
++
++	if (copy_from_user(tmp, buf, count)) {
++		pr_err("%s : failed to copy from user space\n", __func__);
++		return -EFAULT;
++	}
++
++	pr_debug("%s : writing %zu bytes.\n", __func__, count);
++	/* Write data */
++	ret = i2c_master_send(pn54x_dev->client, tmp, count);
++	if (ret != count) {
++		pr_err("%s : i2c_master_send returned %d\n", __func__, ret);
++		ret = -EIO;
++	}
++
++	/* pn54x seems to be slow in handling I2C write requests
++	 * so add 1ms delay after I2C send oparation */
++	udelay(1000);
++
++	return ret;
++}
++
++static int pn54x_dev_open(struct inode *inode, struct file *filp)
++{
++	struct pn54x_dev *pn54x_dev = container_of(filp->private_data,
++											   struct pn54x_dev,
++											   pn54x_device);
++
++	filp->private_data = pn54x_dev;
++
++	pr_info("%s : %d,%d\n", __func__, imajor(inode), iminor(inode));
++
++	// pn544_enable(pn54x_dev, MODE_RUN);
++
++	return 0;
++}
++
++static int pn54x_dev_release(struct inode *inode, struct file *filp)
++{
++	// struct pn54x_dev *pn54x_dev = container_of(filp->private_data,
++	//										   struct pn54x_dev,
++	//										   pn54x_device);
++
++	pr_info("%s : closing %d,%d\n", __func__, imajor(inode), iminor(inode));
++
++	// pn544_disable(pn54x_dev);
++
++	return 0;
++}
++
++static long  pn54x_dev_ioctl(struct file *filp, unsigned int cmd,
++				unsigned long arg)
++{
++	struct pn54x_dev *pn54x_dev = filp->private_data;
++
++	pr_info("%s, cmd=%d, arg=%lu\n", __func__, cmd, arg);
++	switch (cmd) {
++	case PN544_SET_PWR:
++		if (arg == 2) {
++			/* power on w/FW */
++			if (GPIO_UNUSED == pn544_enable(pn54x_dev, arg)) {
++				return GPIO_UNUSED;
++			}
++		} else if (arg == 1) {
++			/* power on */
++			pn544_enable(pn54x_dev, arg);
++		} else  if (arg == 0) {
++			/* power off */
++			pn544_disable(pn54x_dev);
++		} else {
++			pr_err("%s bad SET_PWR arg %lu\n", __func__, arg);
++			return -EINVAL;
++		}
++		break;
++	case PN54X_CLK_REQ:
++		if(1 == arg){
++			if(gpio_is_valid(pn54x_dev->clkreq_gpio)){
++				gpio_set_value(pn54x_dev->clkreq_gpio, 1);
++			}
++			else {
++				pr_err("%s Unused Clkreq GPIO %lu\n", __func__, arg);
++				return GPIO_UNUSED;
++			}
++		}
++		else if(0 == arg) {
++			if(gpio_is_valid(pn54x_dev->clkreq_gpio)){
++				gpio_set_value(pn54x_dev->clkreq_gpio, 0);
++			}
++			else {
++				pr_err("%s Unused Clkreq GPIO %lu\n", __func__, arg);
++				return GPIO_UNUSED;
++			}
++		} else {
++			pr_err("%s bad CLK_REQ arg %lu\n", __func__, arg);
++			return -EINVAL;
++		}
++		break;
++	default:
++		pr_err("%s bad ioctl %u\n", __func__, cmd);
++		return -EINVAL;
++	}
++
++	return 0;
++}
++
++static const struct file_operations pn54x_dev_fops = {
++	.owner	= THIS_MODULE,
++	.llseek	= no_llseek,
++	.read	= pn54x_dev_read,
++	.write	= pn54x_dev_write,
++	.open	= pn54x_dev_open,
++	.release  = pn54x_dev_release,
++	.unlocked_ioctl  = pn54x_dev_ioctl,
++};
++
++
++/*
++ * Handlers for alternative sources of platform_data
++ */
++#ifdef CONFIG_OF
++/*
++ * Translate OpenFirmware node properties into platform_data
++ */
++static int pn54x_get_pdata(struct device *dev,
++							struct pn544_i2c_platform_data *pdata)
++{
++	struct device_node *node;
++	u32 flags;
++	int val;
++
++	/* make sure there is actually a device tree node */
++	node = dev->of_node;
++	if (!node)
++		return -ENODEV;
++
++	memset(pdata, 0, sizeof(*pdata));
++
++	/* read the dev tree data */
++
++	/* ven pin - enable's power to the chip - REQUIRED */
++	val = of_get_named_gpio_flags(node, "enable-gpios", 0, &flags);
++	if (val >= 0) {
++		pdata->ven_gpio = val;
++	}
++	else {
++		dev_err(dev, "VEN GPIO error getting from OF node\n");
++		return val;
++	}
++
++	/* firm pin - controls firmware download - OPTIONAL */
++	val = of_get_named_gpio_flags(node, "firmware-gpios", 0, &flags);
++	if (val >= 0) {
++		pdata->firm_gpio = val;
++	}
++	else {
++		pdata->firm_gpio = GPIO_UNUSED;
++		dev_warn(dev, "FIRM GPIO <OPTIONAL> error getting from OF node\n");
++	}
++
++	/* irq pin - data available irq - REQUIRED */
++	val = of_get_named_gpio_flags(node, "interrupt-gpios", 0, &flags);
++	if (val >= 0) {
++		pdata->irq_gpio = val;
++	}
++	else {
++		dev_err(dev, "IRQ GPIO error getting from OF node\n");
++		return val;
++	}
++
++	/* clkreq pin - controls the clock to the PN547 - OPTIONAL */
++	val = of_get_named_gpio_flags(node, "nxp,pn54x-clkreq", 0, &flags);
++	if (val >= 0) {
++		pdata->clkreq_gpio = val;
++	}
++	else {
++		pdata->clkreq_gpio = GPIO_UNUSED;
++		dev_warn(dev, "CLKREQ GPIO <OPTIONAL> error getting from OF node\n");
++	}
++
++	/* handle the regulator lines - these are optional
++	 * PVdd - pad Vdd (544, 547)
++	 * Vbat - Battery (544, 547)
++	 * PMUVcc - UICC Power (544, 547)
++	 * SEVdd - SE Power (544)
++	 *
++	 * Will attempt to load a matching Regulator Resource for each
++	 * If no resource is provided, then the input will not be controlled
++	 * Example: if only PVdd is provided, it is the only one that will be
++	 *  turned on/off.
++	 */
++	pdata->pvdd_reg = regulator_get(dev, "nxp,pn54x-pvdd");
++	if(IS_ERR(pdata->pvdd_reg)) {
++		pr_err("%s: could not get nxp,pn54x-pvdd, rc=%ld\n", __func__, PTR_ERR(pdata->pvdd_reg));
++		pdata->pvdd_reg = NULL;
++	}
++
++	pdata->vbat_reg = regulator_get(dev, "nxp,pn54x-vbat");
++	if (IS_ERR(pdata->vbat_reg)) {
++		pr_err("%s: could not get nxp,pn54x-vbat, rc=%ld\n", __func__, PTR_ERR(pdata->vbat_reg));
++		pdata->vbat_reg = NULL;
++	}
++
++	pdata->pmuvcc_reg = regulator_get(dev, "nxp,pn54x-pmuvcc");
++	if (IS_ERR(pdata->pmuvcc_reg)) {
++		pr_err("%s: could not get nxp,pn54x-pmuvcc, rc=%ld\n", __func__, PTR_ERR(pdata->pmuvcc_reg));
++		pdata->pmuvcc_reg = NULL;
++	}
++
++	pdata->sevdd_reg = regulator_get(dev, "nxp,pn54x-sevdd");
++	if (IS_ERR(pdata->sevdd_reg)) {
++		pr_err("%s: could not get nxp,pn54x-sevdd, rc=%ld\n", __func__, PTR_ERR(pdata->sevdd_reg));
++		pdata->sevdd_reg = NULL;
++	}
++
++	return 0;
++}
++#else
++static int pn54x_get_pdata(struct device *dev,
++							struct pn544_i2c_platform_data *pdata)
++{
++	pdata = dev->platform_data;
++	return 0;
++}
++#endif
++
++
++/*
++ * pn54x_probe
++ */
++#ifdef KERNEL_3_4_AND_OLDER
++ static int __devinit pn54x_probe(struct i2c_client *client,
++		const struct i2c_device_id *id)
++#else
++static int pn54x_probe(struct i2c_client *client,
++		const struct i2c_device_id *id)
++#endif
++{
++	int ret;
++	struct pn544_i2c_platform_data *pdata; // gpio values, from board file or DT
++	struct pn544_i2c_platform_data tmp_pdata;
++	struct pn54x_dev *pn54x_dev; // internal device specific data
++
++	pr_info("%s\n", __func__);
++
++	/* ---- retrieve the platform data ---- */
++	/* If the dev.platform_data is NULL, then */
++	/* attempt to read from the device tree */
++	if(!client->dev.platform_data)
++	{
++		ret = pn54x_get_pdata(&(client->dev), &tmp_pdata);
++		if(ret){
++			return ret;
++		}
++
++		pdata = &tmp_pdata;
++	}
++	else
++	{
++		pdata = client->dev.platform_data;
++	}
++
++	if (pdata == NULL) {
++		pr_err("%s : nfc probe fail\n", __func__);
++		return  -ENODEV;
++	}
++
++	/* validate the the adapter has basic I2C functionality */
++	if (!i2c_check_functionality(client->adapter, I2C_FUNC_I2C)) {
++		pr_err("%s : need I2C_FUNC_I2C\n", __func__);
++		return  -ENODEV;
++	}
++
++	/* reserve the GPIO pins */
++	pr_info("%s: request irq_gpio %d\n", __func__, pdata->irq_gpio);
++	ret = gpio_request(pdata->irq_gpio, "nfc_int");
++	if (ret){
++		pr_err("%s :not able to get GPIO irq_gpio\n", __func__);
++		return  -ENODEV;
++	}
++	ret = gpio_to_irq(pdata->irq_gpio);
++	if (ret < 0){
++		pr_err("%s :not able to map GPIO irq_gpio to an IRQ\n", __func__);
++		goto err_ven;
++	}
++	else{
++		client->irq = ret;
++	}
++
++	pr_info("%s: request ven_gpio %d\n", __func__, pdata->ven_gpio);
++	ret = gpio_request(pdata->ven_gpio, "nfc_ven");
++	if (ret){
++		pr_err("%s :not able to get GPIO ven_gpio\n", __func__);
++		goto err_ven;
++	}
++
++	if (gpio_is_valid(pdata->firm_gpio)) {
++		pr_info("%s: request firm_gpio %d\n", __func__, pdata->firm_gpio);
++		ret = gpio_request(pdata->firm_gpio, "nfc_firm");
++		if (ret){
++			pr_err("%s :not able to get GPIO firm_gpio\n", __func__);
++			goto err_firm;
++		}
++	}
++
++	if (gpio_is_valid(pdata->clkreq_gpio)) {
++		pr_info("%s: request clkreq_gpio %d\n", __func__, pdata->clkreq_gpio);
++		ret = gpio_request(pdata->clkreq_gpio, "nfc_clkreq");
++		if (ret){
++			pr_err("%s :not able to get GPIO clkreq_gpio\n", __func__);
++			goto err_clkreq;
++		}
++	}
++
++	/* allocate the pn54x driver information structure */
++	pn54x_dev = kzalloc(sizeof(*pn54x_dev), GFP_KERNEL);
++	if (pn54x_dev == NULL) {
++		dev_err(&client->dev, "failed to allocate memory for module data\n");
++		ret = -ENOMEM;
++		goto err_exit;
++	}
++
++	/* store the platform data in the driver info struct */
++	pn54x_dev->irq_gpio = pdata->irq_gpio;
++	pn54x_dev->ven_gpio = pdata->ven_gpio;
++	pn54x_dev->firm_gpio = pdata->firm_gpio;
++	pn54x_dev->clkreq_gpio = pdata->clkreq_gpio;
++	pn54x_dev->pvdd_reg = pdata->pvdd_reg;
++	pn54x_dev->vbat_reg = pdata->vbat_reg;
++	pn54x_dev->pmuvcc_reg = pdata->vbat_reg;
++	pn54x_dev->sevdd_reg = pdata->sevdd_reg;
++
++	pn54x_dev->client = client;
++
++	/* finish configuring the I/O */
++	ret = gpio_direction_input(pn54x_dev->irq_gpio);
++	if (ret < 0) {
++		pr_err("%s :not able to set irq_gpio as input\n", __func__);
++		goto err_exit;
++	}
++
++	ret = gpio_direction_output(pn54x_dev->ven_gpio, 0);
++	if (ret < 0) {
++		pr_err("%s : not able to set ven_gpio as output\n", __func__);
++		goto err_exit;
++	}
++
++	if (gpio_is_valid(pn54x_dev->firm_gpio)) {
++		ret = gpio_direction_output(pn54x_dev->firm_gpio, 0);
++		if (ret < 0) {
++			pr_err("%s : not able to set firm_gpio as output\n",
++				 __func__);
++			goto err_exit;
++		}
++	}
++
++	if (gpio_is_valid(pn54x_dev->clkreq_gpio)) {
++		ret = gpio_direction_output(pn54x_dev->clkreq_gpio, 0);
++		if (ret < 0) {
++			pr_err("%s : not able to set clkreq_gpio as output\n",
++				   __func__);
++			goto err_exit;
++		}
++	}
++
++	/* init mutex and queues */
++	init_waitqueue_head(&pn54x_dev->read_wq);
++	mutex_init(&pn54x_dev->read_mutex);
++	spin_lock_init(&pn54x_dev->irq_enabled_lock);
++
++	/* register as a misc device - character based with one entry point */
++	pn54x_dev->pn54x_device.minor = MISC_DYNAMIC_MINOR;
++	pn54x_dev->pn54x_device.name = CHIP;
++	pn54x_dev->pn54x_device.fops = &pn54x_dev_fops;
++	ret = misc_register(&pn54x_dev->pn54x_device);
++	if (ret) {
++		pr_err("%s : misc_register failed\n", __FILE__);
++		goto err_misc_register;
++	}
++
++	/* request irq.  the irq is set whenever the chip has data available
++	 * for reading.  it is cleared when all data has been read.
++	 */
++	pr_info("%s : requesting IRQ %d\n", __func__, client->irq);
++	pn54x_dev->irq_enabled = true;
++	ret = request_irq(client->irq, pn54x_dev_irq_handler,
++				IRQF_TRIGGER_HIGH, client->name, pn54x_dev);
++	if (ret) {
++		dev_err(&client->dev, "request_irq failed\n");
++		goto err_request_irq_failed;
++	}
++	pn54x_disable_irq(pn54x_dev);
++
++	i2c_set_clientdata(client, pn54x_dev);
++
++	return 0;
++
++err_request_irq_failed:
++	misc_deregister(&pn54x_dev->pn54x_device);
++err_misc_register:
++err_exit:
++	if (gpio_is_valid(pdata->clkreq_gpio))
++		gpio_free(pdata->clkreq_gpio);
++err_clkreq:
++	if (gpio_is_valid(pdata->firm_gpio))
++		gpio_free(pdata->firm_gpio);
++err_firm:
++	gpio_free(pdata->ven_gpio);
++err_ven:
++	gpio_free(pdata->irq_gpio);
++	return ret;
++}
++
++#ifdef KERNEL_3_4_AND_OLDER
++static int __devexit pn54x_remove(struct i2c_client *client)
++#else
++static int pn54x_remove(struct i2c_client *client)
++#endif
++{
++	struct pn54x_dev *pn54x_dev;
++
++	pr_info("%s\n", __func__);
++
++	pn54x_dev = i2c_get_clientdata(client);
++	free_irq(client->irq, pn54x_dev);
++	misc_deregister(&pn54x_dev->pn54x_device);
++	mutex_destroy(&pn54x_dev->read_mutex);
++	gpio_free(pn54x_dev->irq_gpio);
++	gpio_free(pn54x_dev->ven_gpio);
++	if (gpio_is_valid(pn54x_dev->firm_gpio))
++		gpio_free(pn54x_dev->firm_gpio);
++	if (gpio_is_valid(pn54x_dev->clkreq_gpio))
++		gpio_free(pn54x_dev->clkreq_gpio);
++	regulator_put(pn54x_dev->pvdd_reg);
++	regulator_put(pn54x_dev->vbat_reg);
++	regulator_put(pn54x_dev->pmuvcc_reg);
++	regulator_put(pn54x_dev->sevdd_reg);
++
++	kfree(pn54x_dev);
++
++	return 0;
++}
++
++/*
++ *
++ */
++#ifdef CONFIG_OF
++static struct of_device_id pn54x_dt_match[] = {
++	{ .compatible = "nxp,pn547", },
++	{ .compatible = "nxp,pn544", },
++	{},
++};
++MODULE_DEVICE_TABLE(of, pn54x_dt_match);
++#endif
++
++static const struct i2c_device_id pn54x_id[] = {
++	{ "pn547", 0 },
++	{ },
++};
++MODULE_DEVICE_TABLE(i2c, pn54x_id);
++
++static struct i2c_driver pn54x_driver = {
++	.id_table	= pn54x_id,
++	.probe		= pn54x_probe,
++#ifdef KERNEL_3_4_AND_OLDER
++	.remove		= __devexit_p(pn54x_remove),
++#else
++	.remove		= pn54x_remove,
++#endif
++	.driver		= {
++		.owner	= THIS_MODULE,
++		.name	= "pn544",
++		.of_match_table = pn54x_dt_match,
++	},
++};
++
++/*
++ * module load/unload record keeping
++ */
++
++static int __init pn54x_dev_init(void)
++{
++	pr_info("%s\n", __func__);
++	return i2c_add_driver(&pn54x_driver);
++}
++
++static void __exit pn54x_dev_exit(void)
++{
++	pr_info("%s\n", __func__);
++	i2c_del_driver(&pn54x_driver);
++}
++
++module_init(pn54x_dev_init);
++module_exit(pn54x_dev_exit);
++
++MODULE_AUTHOR("Sylvain Fonteneau");
++MODULE_DESCRIPTION(DRIVER_DESC);
++MODULE_LICENSE("GPL");
+Index: git/drivers/nfc/nxp-pn5xx/pn5xx_i2c.h
+===================================================================
+--- /dev/null	1970-01-01 00:00:00.000000000 +0000
++++ git/drivers/nfc/nxp-pn5xx/pn5xx_i2c.h	2015-07-14 17:00:16.000000000 +0200
+@@ -0,0 +1,50 @@
++/*
++ * Copyright (C) 2010 Trusted Logic S.A.
++ * modifications copyright (C) 2015 NXP B.V.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
++ */
++
++#define PN544_MAGIC	0xE9
++
++/*
++ * PN544 power control via ioctl
++ * PN544_SET_PWR(0): power off
++ * PN544_SET_PWR(1): power on
++ * PN544_SET_PWR(2): reset and power on with firmware download enabled
++ */
++
++#define PWR_OFF 0
++#define PWR_ON  1
++#define PWR_FW  2
++
++#define CLK_OFF 0
++#define CLK_ON  1
++
++#define GPIO_UNUSED -1
++
++#define PN544_SET_PWR	_IOW(PN544_MAGIC, 0x01, unsigned int)
++#define PN54X_CLK_REQ	_IOW(PN544_MAGIC, 0x02, unsigned int)
++
++struct pn544_i2c_platform_data {
++	unsigned int irq_gpio;
++	unsigned int ven_gpio;
++	unsigned int firm_gpio;
++	unsigned int clkreq_gpio;
++	struct regulator *pvdd_reg;
++	struct regulator *vbat_reg;
++	struct regulator *pmuvcc_reg;
++	struct regulator *sevdd_reg;
++};
+Index: git/drivers/nfc/nxp-pn5xx/sample_devicetree.txt
+===================================================================
+--- /dev/null	1970-01-01 00:00:00.000000000 +0000
++++ git/drivers/nfc/nxp-pn5xx/sample_devicetree.txt	2015-07-14 17:00:16.000000000 +0200
+@@ -0,0 +1,17 @@
++Example:
++
++&i2c{
++
++	status = "okay";
++
++	pn547: pn547@29 {
++
++		compatible = "nxp,pn547";
++
++		reg = <0x29>;
++		clock-frequency = <400000>;
++
++		interrupt-gpios = <&gpio2 17 0>;
++		enable-gpios = <&gpio4 21 0>;
++	};
++};
+Index: git/drivers/nfc/Kconfig
+===================================================================
+--- git.orig/drivers/nfc/Kconfig	2015-11-17 09:25:36.549429304 +0100
++++ git/drivers/nfc/Kconfig	2015-11-25 13:52:11.911411388 +0100
+@@ -15,6 +15,19 @@
+ 	  Say Y here to compile support for PN533 devices into the
+ 	  kernel or say M to compile it as module (pn533).
+ 
++config NFC_NXP_PN5XX
++	tristate "NXP PN5XX based driver"
++	depends on I2C
++	select CRC_CCITT
++	default n
++	---help---
++	  NXP PN5XX driver based on I2C.
++	  This is a driver to provides I2C access to PN5xx NFC Controller devices
++
++	  To compile this driver as a module, choose m here.
++	  The module will be called pn5xx_i2c.
++	  Say N if unsure.
++
+ config NFC_WILINK
+ 	tristate "Texas Instruments NFC WiLink driver"
+ 	depends on TI_ST && NFC_NCI
+@@ -57,6 +70,7 @@
+ 	  If unsure, say N.
+ 
+ source "drivers/nfc/pn544/Kconfig"
++source "drivers/nfc/nxp-pn5xx/Kconfig"
+ source "drivers/nfc/microread/Kconfig"
+ source "drivers/nfc/nfcmrvl/Kconfig"
+ 
+Index: git/drivers/nfc/Makefile
+===================================================================
+--- git.orig/drivers/nfc/Makefile	2015-11-17 09:25:36.549429304 +0100
++++ git/drivers/nfc/Makefile	2015-11-25 13:50:31.911412126 +0100
+@@ -3,6 +3,7 @@
+ #
+ 
+ obj-$(CONFIG_NFC_PN544)		+= pn544/
++obj-$(CONFIG_NFC_NXP_PN5XX)	+= nxp-pn5xx/
+ obj-$(CONFIG_NFC_MICROREAD)	+= microread/
+ obj-$(CONFIG_NFC_PN533)		+= pn533.o
+ obj-$(CONFIG_NFC_WILINK)	+= nfcwilink.o

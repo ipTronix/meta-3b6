@@ -22,6 +22,7 @@ IMAGE_INSTALL_append = " binutils libgcc libstdc++ \
     packagegroup-core-buildessential pkgconfig  \
     boost cmake zlib glib-2.0 \
     canutils libsocketcan \
+    iproute2 \
     packagegroup-qt5-qtcreator-debug \    
     cpufrequtils \
     gdb \
@@ -50,6 +51,7 @@ IMAGE_INSTALL_append = " binutils libgcc libstdc++ \
     qtmultimedia-qmlplugins \
     qtsvg \
     qtquick1 \
+    qtquickcontrols-qmlplugins \
     qtsvg-plugins \
     qtimageformats-plugins \
     qtsystems \
@@ -66,6 +68,7 @@ IMAGE_INSTALL_append = " binutils libgcc libstdc++ \
     e2fsprogs \
     cinematicexperience \
     script-install \
+    lpc-com \
     packagegroup-wilink-connectivity \
     packagegroup-fsl-tools-gpu \
     packagegroup-fsl-tools-gpu-external \

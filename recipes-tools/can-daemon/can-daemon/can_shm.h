@@ -8,7 +8,7 @@
 #define INCLUDE_CAN_SHM
 
 // CAN-bus present in device
-#define	N_CAN		(2)
+#define	N_CAN		(4)
 
 /* max number of customer-id stored in the vt3 project */
 #define NLicense    (4)

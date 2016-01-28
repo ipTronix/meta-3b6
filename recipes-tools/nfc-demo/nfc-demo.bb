@@ -12,7 +12,7 @@ SRC_URI = "file://main.c \
 S = "${WORKDIR}"
 
 do_compile() {
-	${CC} main.c tools.c -o nfc-demo
+	${CC} main.c tools.c -lpthread -o nfc-demo
 }
 
 do_install() {

@@ -1,0 +1,69 @@
+Index: git/drivers/regulator/ltc3676.c
+===================================================================
+--- git.orig/drivers/regulator/ltc3676.c	2015-10-23 17:20:00.008507930 +0200
++++ git/drivers/regulator/ltc3676.c	2015-10-26 11:34:19.045586987 +0100
+@@ -151,7 +151,7 @@
+ 			.min_uV = (dvba_reg) ? 412500 : 0,             \
+ 			.uV_step = (dvba_reg) ? 12500 : 0,             \
+ 			.ramp_delay = (dvba_reg) ? 800 : 0,            \
+-			.fixed_uV = (dvb_mask) ? 0 : 725000,           \
++/*M			.fixed_uV = (dvb_mask) ? 0 : 725000,       */    \
+ 			.ops = &ltc3676_ ## _ops ## _regulator_ops,    \
+ 			.type = REGULATOR_VOLTAGE,                     \
+ 			.id = LTC3676_ ## _name,                       \
+@@ -221,8 +221,8 @@
+ 		u32 vdiv[2];
+ 
+ 		rdesc->np = ltc3676_matches[i].of_node;
+-		if (i == LTC3676_LDO3 || !rdesc->np)
+-			continue;
++/*M		if (i == LTC3676_LDO3 || !rdesc->np)
++			continue;*/
+ 		ret = of_property_read_u32_array(np, "lltc,fb-voltage-divider",
+ 						 vdiv, 2);
+ 		if (ret) {
+@@ -398,7 +398,7 @@
+ 
+ 	desc->min_uV = ltc3676_scale(desc->min_uV, rdesc->r1, rdesc->r2);
+ 	desc->uV_step = ltc3676_scale(desc->uV_step, rdesc->r1, rdesc->r2);
+-	desc->fixed_uV = ltc3676_scale(desc->fixed_uV, rdesc->r1, rdesc->r2);
++/*M	desc->fixed_uV = ltc3676_scale(desc->fixed_uV, rdesc->r1, rdesc->r2);*/
+ }
+ 
+ static int ltc3676_regulator_probe(struct i2c_client *client,
+@@ -418,7 +418,8 @@
+ 
+ 	descs = ltc3676->regulator_descs;
+ 	memcpy(descs, ltc3676_regulators, sizeof(ltc3676_regulators));
+-	descs[LTC3676_LDO3].desc.fixed_uV = 1800000;
++/*M	descs[LTC3676_LDO3].desc.fixed_uV = 1800000;*/
++	descs[LTC3676_LDO3].desc.min_uV = 1800000;
+ 
+ 	ltc3676->regmap = devm_regmap_init_i2c(client, &ltc3676_regmap_config);
+ 	if (IS_ERR(ltc3676->regmap)) {
+@@ -442,7 +443,7 @@
+ 		if (!rdesc->np)
+ 			continue;
+ 
+-		if (i != LTC3676_LDO3) {
++/*M		if (i != LTC3676_LDO3)*/ {
+ 			/* skip unused (defined by r1=r2=0) */
+ 			if (rdesc->r1 == 0 && rdesc->r2 == 0)
+ 				continue;
+@@ -464,6 +465,7 @@
+ 	}
+ 
+ 	regmap_write(ltc3676->regmap, LTC3676_CLIRQ, 0);
++/*M
+ 	ret = devm_request_threaded_irq(dev, client->irq, NULL, ltc3676_isr,
+ 					IRQF_TRIGGER_LOW | IRQF_ONESHOT,
+ 					client->name, ltc3676);
+@@ -471,7 +473,7 @@
+ 		dev_err(dev, "Failed to request IRQ: %d\n", ret);
+ 		return ret;
+ 	}
+-
++*/
+ 	return 0;
+ }
+ 

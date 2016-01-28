@@ -28,6 +28,23 @@ void hal_switch_on_canbus(void)
 		"echo 40 > /sys/class/gpio/export",
 		"echo out > /sys/class/gpio/gpio40/direction",
 		"echo 0 > /sys/class/gpio/gpio40/value",
+    
+    "echo 43 > /sys/class/gpio/export",
+    "echo out > /sys/class/gpio/gpio43/direction",
+    "echo 0 > /sys/class/gpio/gpio43/value",
+
+    "echo 47 > /sys/class/gpio/export",
+    "echo out > /sys/class/gpio/gpio47/direction",
+    "echo 1 > /sys/class/gpio/gpio47/value",
+
+    "echo 45 > /sys/class/gpio/export",
+    "echo out > /sys/class/gpio/gpio45/direction",
+    "echo 1 > /sys/class/gpio/gpio45/value",
+   
+    "echo 37 > /sys/class/gpio/export",
+    "echo out > /sys/class/gpio/gpio37/direction",
+    "echo 0 > /sys/class/gpio/gpio37/value",
+    
 		NULL
 	};
 	int i;

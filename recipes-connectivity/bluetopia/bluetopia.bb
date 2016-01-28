@@ -9,9 +9,13 @@ SRC_URI = "file://bluetopia.tar.gz \
 S = "${WORKDIR}"
 
 FILES_${PN} = "BluetopiaPM"
+INHIBIT_PACKAGE_DEBUG_SPLIT = "1"
+INHIBIT_PACKAGE_STRIP = "1"
+
 INSANE_SKIP_${PN} = "ldflags"
 
 do_install () {
+
 	cd ${S}
 	install -d BluetopiaPM
 
@@ -22,7 +26,7 @@ do_install () {
 	
 	find BluetopiaPM -type f -name '*' ! -name '*.debug*' ! -name '*.a' ! -name '*.c' ! -name '*.h' ! -name '*.mak' | while read f
 	do
-		install $f ${D}/${f}
+		install ${f} ${D}/${f}
 	done
 }
 

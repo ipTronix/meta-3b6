@@ -10,37 +10,63 @@
 #include <sys/ioctl.h>
 #include <linux/serial.h>
 
+#define LPC_CMD_OFF "o 1"
+#define LPC_CMD_RST "r"
   
 int uartOpen(char* device);
 int uartClose(int uart);
-int lpccomReset(int uartfd);
+int lpcCmdSend(int uartfd, char* cmd);
 
 /**
  */
 int main(int argc, char** argv)
 {
   int lpc_uart;
-
+	char cmd[32];
+	
+	printf("lpc-com Ver:0.0 "__DATE__" "__TIME__"\n");
+	cmd[0] = 0;
+	if(argc>1){
+		int i;
+		int l;
+		l = sprintf(cmd, "%s", argv[1]);
+		for(i=2; i<argc; i++){
+			l += sprintf(cmd+l, " %s", argv[i]);
+		}
+	}
   lpc_uart = uartOpen("/dev/ttymxc4");
   if(lpc_uart<0){
     return -1;
   }
-
-  lpccomReset(lpc_uart);
-
+	if(cmd[0]){
+		printf("Send command [%%%s$] to LPC\n", cmd);
+		lpcCmdSend(lpc_uart, cmd);
+	}else{
+//  lpcCmdSend(lpc_uart, LPC_CMD_OFF);
+		lpcCmdSend(lpc_uart, LPC_CMD_RST);
+	}
   uartClose(lpc_uart);
   return 0;
 }
 
 /**
  */
-int lpccomReset(int uartfd)
+int lpcCmdSend(int uartfd, char* cmd)
 {
   int wb;
-  wb = write(uartfd, "%r$", 3);
-  if(wb!=3){
-    return -1;
-  }
+  int lc;
+
+  lc = strlen(cmd);
+
+  wb = write(uartfd, "%", 1);
+  if(wb!=1){ return -1; }
+
+  wb = write(uartfd, cmd, lc);
+  if(wb!=lc){ return -1; }
+
+  wb = write(uartfd, "$", 1);
+  if(wb!=1){ return -1; }
+
   return 0;
 }
 

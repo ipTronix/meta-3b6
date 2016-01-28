@@ -29,6 +29,7 @@
 
 #include "run_eoloader.h"
 
+#define DEBUG
 
 /* struct: version_only_for_check_by_script
  * used to check lib version from executable file
@@ -732,6 +733,14 @@ static int process_multipacket_message(unsigned char CanN, unsigned int Pf, cons
 	// check if sequence is correct
 	if (rx->data[0] != Rx_MPacket[CanN].PacketRx)
 	{
+    /*{
+      int fd;
+      fd = open("/sys/class/gpio/gpio37/value", O_RDWR);
+      if(fd>=0){
+        write(fd, "1\n", 2);
+        close(fd);
+      }
+    }*/
 		// Send Nack Error Message
 		printf("multipacket out of sequence error: received %02X, expected %02X\n", rx->data[0], Rx_MPacket[CanN].PacketRx);
 		send_nack(CanN, Da_master,  Pf, ERR_MP_SEQ, rx->data[0], Rx_MPacket[CanN].PacketRx);
@@ -862,7 +871,7 @@ static int open_canport(const char * canport)
 
     addr.can_ifindex = ifr.ifr_ifindex;
 
-    fcntl(soc, F_SETFL, O_NONBLOCK);
+//    fcntl(soc, F_SETFL, O_NONBLOCK);
 
     if (bind(soc, (struct sockaddr *)&addr, sizeof(addr)) < 0)
     {
@@ -1565,88 +1574,78 @@ static void check_for_commands(void)
 */
 static void candaemon_loop(void)
 {
-    
-	int		i, k;
-	int  	CanActive = 0;
+  //int   i, k;
+  int   CanActive = 0;
 
-	const int 	Elapsed_Sleep = 1;		//	Elapsed clock time secs.
-	const int	Sleep_Time	  = 50;	 	//  Time of Sleep in ms
-	struct timespec  now, sub_time, end_time;
+//  const int Elapsed_Sleep = 1;		//	Elapsed clock time secs.
+  const int Sleep_Time    = 50;	 	//  Time of Sleep in ms
+  //struct timespec  now, sub_time, end_time;
+  int ret;
+  int maxs;
+  int i;
+  
+  int tout_sec  = 1;//Sleep_Time*1000LL / 1000000;
+  int tout_usec = 0;//Sleep_Time*1000LL % 1000000;
+  struct timeval timeout = {tout_sec, tout_usec};
+  fd_set readSet;
+  fd_set rs;
+  canmsg_t rx;
 
-	//  Enabe the vt3 application watchdog
-	vt3_app_watchdog_state = VT3_APP_WATCHDOG_ENABLE;
+  printf("candaemon_loop\n", maxs, rs);
 
-	// Check-in can0
-	if (bitrate_Slave[CanActive] == 0)
-	{
-		CanActive ++;
-		// Check-in can1
-		if (bitrate_Slave[CanActive] == 0)
-		{
-			printf("Can not open!");
-			return;
-		}
-	}
-
-	// forever
-	while(1)
-	{
-		/* trigger Freescale internal watchdog */
-		//@todo ripristinare
-		//trigger_watchdog();
-
-		/* check eoloader scripts in USB */
-		//@todo ripristinare
-		//run_eoloader(wdg_fd);
-
-		/* make sure vt3_app is alive */
-		//@todo ripristinare
-		//vt3_app_watchdog();
-
-		/* check for VT3 command requests */
-		//@todo ripristinare
-		//check_for_commands();
-
-		// try to recover from busoff at intervals
-		if ( Can_BUSOFF[CanActive] )
-        {
-			printf("Bus OFF!!!\n");
-            reset_busoff(CanActive);
+  //  Enabe the vt3 application watchdog
+  vt3_app_watchdog_state = VT3_APP_WATCHDOG_ENABLE;
+  
+  FD_ZERO(&readSet);
+  for(CanActive=0; CanActive<N_CAN; CanActive++){
+    if(bitrate_Slave[CanActive]){
+      printf("add CAN%d socket %d to rdfs\n", CanActive, CanSoc[CanActive]);
+      FD_SET(CanSoc[CanActive], &readSet);
+      if(CanSoc[CanActive]>maxs){
+        maxs = CanSoc[CanActive];
+      }
+    }
+  }
+  printf("maxs = %d  rdfs = %08X\n", maxs, readSet);
+  
+  // forever
+  while(1){
+    rs = readSet;
+    timeout.tv_sec  = tout_sec;
+    timeout.tv_usec = tout_usec;
+    ret = select(maxs+1, &rs, NULL, NULL, &timeout);
+    if(ret>0){
+      for(CanActive=0; CanActive<N_CAN; CanActive++){
+        if(FD_ISSET(CanSoc[CanActive], &rs)){
+          ret = read(CanSoc[CanActive], &rx, sizeof(canmsg_t));
+          if(ret>0){
+#ifdef DEBUG
+            printf("rx %08X : ", rx.can_id);
+            for(i=0; i<rx.can_dlc; i++){
+              printf("%02X ", rx.data[i]);
+            }
+            printf("\n");
+#endif
+            // busoff error frame
+            if( (rx.can_id & 0x20000040) == 0x20000040 ){
+              printf("BUSOFF on CAN#%d! \n", CanActive);
+              Can_BUSOFF[CanActive] = true;
+              clock_gettime(CLOCK_MONOTONIC, &busoff_recovery_timer[CanActive]);
+            }
+            // debugger message
+            if( (rx.can_id & 0x1B000000) == 0x1B000000 ){
+              if(Debug){
+                printf("MSG RX\n");
+              }
+              Can_BUSOFF[CanActive] = false;
+              // Decode the can message
+              process_debugger_message(CanActive, &rx);
+            }
+          }
         }
-
-		// get as many messages as possible
-        canmsg_t rx;
-        unsigned const rx_count = read_can_msg(CanSoc[CanActive],Sleep_Time*1000LL, &rx);
-        if ( rx_count )
-        {
-		    // busoff error frame
-	        if ( (rx.can_id & 0x20000040) == 0x20000040 )
-	        {
-
-	            printf("BUSOFF on CAN#%d! \n", CanActive);
-	            Can_BUSOFF[CanActive] = true;
-	            clock_gettime(CLOCK_MONOTONIC, &busoff_recovery_timer[CanActive]);
-	        }
-
-	        // debugger message
-	        if ( (rx.can_id & 0x1B000000) == 0x1B000000 )
-	        {
-	            if (Debug)
-	                printf("MSG RX\n");
-
-	            Can_BUSOFF[CanActive] = false;
-	            // Decode the can message
-	            process_debugger_message(CanActive, &rx);
-	        }
-	    }
-	    else 
-		{
-			// alternate CAN line
-			CanActive ++;
-			if (CanActive > (N_CAN - 1))
-				CanActive = 0;
-		}
-	}
+      }
+    }
+  }
 }
 
 
@@ -1798,18 +1797,23 @@ int main(int argc, char *argv[])
 		printf("Error setting default path: %s\n", Vt3_Path);
 	 */
 
+  printf("Load Configuration file\n");
 	// Load Configuration file
 	load_config_file();
 
+  printf("Open the Can-port\n");
 	// Open the Can-port
 	open_can_devices();
 
+  printf("Init the shared Memory\n");
 	// Init the shared Memory
 	init_shared_memory();
 
+  printf("Init watchdog\n");
 	// init watchdog
 	init_watchdog();
 
+  printf("Run loop\n");
 	// run loop
 	candaemon_loop();
 
