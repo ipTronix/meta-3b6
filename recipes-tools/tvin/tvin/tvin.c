@@ -9,19 +9,15 @@
  * http://www.gnu.org/copyleft/gpl.html
  *
  * 
- * @file mxc_v4l2_tvin.c
+ * @file tvin.c
  *
- * @brief Mxc TVIN For Linux 2 driver test application
+ * @brief TeraHE TVIN driver test application
  *
  */
 
-#ifdef __cplusplus
-extern "C"{
-#endif
-
-/*============================================================================
-                                INCLUDE FILES
-============================================================================*/
+/**
+ * INCLUDE FILES
+ */
 #include <stdio.h>
 #include <stdlib.h>
 #include <errno.h>
@@ -46,7 +42,9 @@ extern "C"{
 #include "capture.h"
 #include "output.h"
 
-/**/
+/**
+ * ring queue definition
+ */
 #define RNG_SIZE 4
 typedef struct {
   int         idxi;
@@ -55,6 +53,8 @@ typedef struct {
   int         item[RNG_SIZE];
 }sRng, *psRng;
 
+/**
+ */
 int rngPut(psRng pRng, int item)
 {
   //if(((pRng->idxi+1)%pRng->size)==pRng->idxo){
@@ -66,6 +66,8 @@ int rngPut(psRng pRng, int item)
   return 0;
 }
 
+/**
+ */
 int rngGet(psRng pRng, int* item)
 {
   if(pRng->idxo==pRng->idxi){
@@ -82,12 +84,10 @@ int rngGet(psRng pRng, int* item)
   return 0;//(pRng->idxi - pRng->idxo + pRng->size) % pRng->size;
 }
 
-/**/
-
-#define TFAIL -1
-#define TPASS 0
-
+/** TODO elinimare
+ */
 //v4l2_std_id g_current_std = V4L2_STD_PAL;
+//int process_cmdline(int argc, char **argv);
 
 typedef struct {
   pthread_t   tid;
@@ -102,7 +102,6 @@ sCapDev   capture[TVIN_CAP_TOT];
 sOutDev   output;
 psOutDev  pOut = &output;
 
-
 sRng rng[TVIN_CAP_TOT] =
 {
   {.idxi=0, .idxo=0, .size=RNG_SIZE},
@@ -114,13 +113,11 @@ sRng rng[TVIN_CAP_TOT] =
 void* tv_task_mst(void* arg);
 void* tv_task_slv(void* arg);
 
-int process_cmdline(int argc, char **argv);
-
-/**
+#if 0
+/** TODO elinimare
  */
 int tv_stdCheck()
 {
-#if 0
 //TODO gestione cambio standard
 {
 v4l2_std_id         std;
@@ -184,9 +181,9 @@ char* stdname;
     capture_start(pCap);
   }
 }
-#endif
   return 0;
 }
+#endif
 
 /**
  */
@@ -243,7 +240,7 @@ void* tv_task_mst(void* arg)
     }
     // set output buffer address
     op = pOut->buf[output_buf.index].start;
-    // copy main thread capture buffer
+    // copy main thread capture buffer to output buffer
     ip = pCap->buf[capture_buf.index].start;
     for(j=0; j<pCap->height; j++){
       memcpy(op, ip, pCap->bpl);
@@ -259,7 +256,7 @@ void* tv_task_mst(void* arg)
 //        printf( "thread mst: ring[%d] return index %d\n", i, capBufIdx[i]);
         flag[i] |= 0x00000001;
       }
-      // copy other threads capture buffer
+      // copy other threads capture buffer to output buffer
       if(capBufIdx[i]>=0 && capBufIdx[i]<pCap->nbuf){
         ip = capture[i].buf[capBufIdx[i]].start;
         op = pOut->buf[output_buf.index].start;
@@ -344,6 +341,7 @@ void* tv_task_slv(void* arg)
       return NULL;
     }
 
+    // put buffer to ring queue
 //    printf( "thread slv #%d: rngPut index %d\n",
 //            pTask->capIdx, capture_buf.index);
     ret = rngPut(&rng[pTask->capIdx], capture_buf.index);
@@ -355,6 +353,8 @@ void* tv_task_slv(void* arg)
   return NULL;
 }
 
+/**
+ */
 #define MXCFB_SET_GBL_ALPHA _IOW('F', 0x21, struct mxcfb_gbl_alpha)
 struct mxcfb_gbl_alpha {
   int enable;
@@ -401,11 +401,11 @@ int main(int argc, char **argv)
   char               *out_device;
 
   printf("%s "__DATE__" "__TIME__"\n", argv[0]);
-
+/* TODO elinimare
   if (process_cmdline(argc, argv) < 0) {
-    return TFAIL;
+    return -1;
   }
-
+*/
   cap_device[0] = "/dev/video0";
   cap_device[1] = "/dev/video1";
   cap_device[2] = "/dev/video2";
@@ -414,18 +414,18 @@ int main(int argc, char **argv)
     printf("Try to open capture device %s\n", cap_device[i]);
     if(capture_open(cap_device[i], &capture[i])){
       printf("Unable to open %s\n", cap_device[i]);
-      return TFAIL;
+      return -1;
     }
     if(capture_setup(&capture[i])){
       printf("Setup v4l capture failed.\n");
-      return TFAIL;
+      return -1;
     }
   }
 
   out_device = "/dev/video17";
   if(output_open(out_device, pOut)){
     printf("Unable to open %s\n", cap_device[i]);
-    return TFAIL;
+    return -1;
   }
 
   pOut->fmt = V4L2_PIX_FMT_UYVY;
@@ -439,20 +439,19 @@ int main(int argc, char **argv)
   if(output_setup(pOut)<0){
     printf("Setup v4l output failed.\n");
     close(capture[0].fd);
-    return TFAIL;
+    return -1;
   }
   if(output_prepare(pOut)<0){
     printf("output_prepare failed\n");
-    return TFAIL;
+    return -1;
   }
 
   overlay_set();
 
   if(output_start(pOut) < 0){
     printf("Could not start output stream\n");
-    return TFAIL;
+    return -1;
   }
-
 
   printf("pthread_create master\n");
   i = 0;
@@ -489,7 +488,9 @@ exit:
   return 0;
 }
 
+#if 0
 /**
+ * TODO elinimare
  */
 int process_cmdline(int argc, char **argv)
 {
@@ -543,14 +544,15 @@ int process_cmdline(int argc, char **argv)
           " -tb top field first, bottom field first-default\n"
           " -f <format, only YU12, YUYV, UYVY and NV12 are supported> \n"
           " -d <device> \n");
-      return TFAIL;
+      return -1;
     }
   }
   /*
   if ((g_display_width == 0) || (g_display_height == 0)) {
     printf("Zero display width or height\n");
-    return TFAIL;
+    return -1;
   }
   */
   return 0;
 }
+#endif

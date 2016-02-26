@@ -144,9 +144,9 @@ int output_setup(psOutDev pOut)
     return -1;
   }
 /*
-  if (g_vdi_enable) {//TODO
+  if (g_vdi_enable) {
     ctrl.id = V4L2_CID_MXC_MOTION;
-    ctrl.value = g_vdi_motion; //TODO
+    ctrl.value = g_vdi_motion;
     if (ioctl(fd_output_v4l, VIDIOC_S_CTRL, &ctrl) < 0) {
       printf("set ctrl motion failed\n");
       close(fd_output_v4l);

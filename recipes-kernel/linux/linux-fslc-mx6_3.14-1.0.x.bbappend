@@ -12,8 +12,8 @@ SRC_URI_append_tera-he = " \
    file://0004-advancedsilicon_multitouch.patch \
    file://0005-backported-new-isl29018-driver.patch \
    file://0006-Bluetooth-Add-tty-HCI-driver.patch \
-   file://0007-st_kim-do-not-use-debugfs-functions-if-not-enabled.patch \
-   file://0008-st_kim-allow-suspend-if-callback-is-not-registered.patch \
+   file://0007-st-kim-do-not-use-debugfs-if-disble-allow-suspend-for-unregister-callback.patch \
+   file://0008-mcp251x-spi-patch-to-reduce-latency.patch \
    file://0009-btwilink-add-minimal-device-tree-support.patch \
    file://0010-ti-st-add-device-tree-support.patch \
    file://0011-Add-SDIO-function-devicetree-subnode-parsing.patch \
@@ -23,6 +23,7 @@ SRC_URI_append_tera-he = " \
    file://0015-splashlogo.patch \
    file://0016-Flexcan-fix-fifo-overrun.patch \
    file://0017-DTB_added_rev2_gpio-Audio_fixed_for_kernel.patch \
+   file://0019-usb-capture-update.patch \
    file://defconfig \
 "
 

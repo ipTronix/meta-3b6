@@ -1,0 +1,44 @@
+Index: git/drivers/misc/ti-st/st_kim.c
+===================================================================
+--- git.orig/drivers/misc/ti-st/st_kim.c	2016-02-26 14:42:02.388867615 +0100
++++ git/drivers/misc/ti-st/st_kim.c	2016-02-26 14:49:59.384876842 +0100
+@@ -832,6 +832,7 @@
+ 	kim_gdata->baud_rate = pdata->baud_rate;
+ 	pr_info("sysfs entries created\n");
+ 
++#ifdef CONFIG_DEBUG_FS
+ 	kim_debugfs_dir = debugfs_create_dir("ti-st", NULL);
+ 	if (IS_ERR(kim_debugfs_dir)) {
+ 		pr_err(" debugfs entries creation failed ");
+@@ -844,10 +845,13 @@
+ 	debugfs_create_file("protocols", S_IRUGO, kim_debugfs_dir,
+ 				kim_gdata, &list_debugfs_fops);
+ 	pr_info(" debugfs entries created ");
++#endif
+ 	return 0;
+ 
++#ifdef CONFIG_DEBUG_FS
+ err_debugfs_dir:
+ 	sysfs_remove_group(&pdev->dev.kobj, &uim_attr_grp);
++#endif
+ 
+ err_sysfs_group:
+ 	st_core_exit(kim_gdata->core_data);
+@@ -908,7 +912,7 @@
+ 	if (pdata->suspend)
+ 		return pdata->suspend(pdev, state);
+ 
+-	return -EOPNOTSUPP;
++	return 0;
+ }
+ 
+ static int kim_resume(struct platform_device *pdev)
+@@ -925,7 +929,7 @@
+ 	if (pdata->resume)
+ 		return pdata->resume(pdev);
+ 
+-	return -EOPNOTSUPP;
++	return 0;
+ }
+ 
+ /**********************************************************************/

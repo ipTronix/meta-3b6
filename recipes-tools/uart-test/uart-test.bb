@@ -3,19 +3,19 @@ SECTION = "examples"
 LICENSE = "MIT"
 LIC_FILES_CHKSUM = "file://${COMMON_LICENSE_DIR}/MIT;md5=0835ade698e0bcf8506ecda2f7b4f302"
 
-SRC_URI = "file://gps-test.c \
-           file://gpio.c \
-           file://gpio.h \
+SRC_URI = "file://main.c \
+           file://uart.c \
+           file://uart.h \
           "
 
 S = "${WORKDIR}"
 
 do_compile() {
-	${CC} gps-test.c gpio.c -o gps-test
+	${CC} main.c uart.c -o uart-test
 }
 
 do_install() {
 	install -d ${D}${bindir}
-	install -m 0755 gps-test ${D}${bindir}
-	install -m 0755 gps-test /tftpboot
+	install -m 0755 uart-test ${D}${bindir}
+	install -m 0755 uart-test /tftpboot
 }

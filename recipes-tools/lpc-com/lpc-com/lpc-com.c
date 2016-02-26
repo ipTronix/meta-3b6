@@ -10,9 +10,6 @@
 #include <sys/ioctl.h>
 #include <linux/serial.h>
 
-#define LPC_CMD_OFF "o 1"
-#define LPC_CMD_RST "r"
-  
 int uartOpen(char* device);
 int uartClose(int uart);
 int lpcCmdSend(int uartfd, char* cmd);
@@ -23,6 +20,9 @@ int main(int argc, char** argv)
 {
   int lpc_uart;
 	char cmd[32];
+	char rxbuff[64];
+	char c;
+	int rxidx = 0;
 	
 	printf("lpc-com Ver:0.0 "__DATE__" "__TIME__"\n");
 	cmd[0] = 0;
@@ -41,10 +41,29 @@ int main(int argc, char** argv)
 	if(cmd[0]){
 		printf("Send command [%%%s$] to LPC\n", cmd);
 		lpcCmdSend(lpc_uart, cmd);
-	}else{
-//  lpcCmdSend(lpc_uart, LPC_CMD_OFF);
-		lpcCmdSend(lpc_uart, LPC_CMD_RST);
 	}
+
+  do{
+    if (read(lpc_uart, &c, 1) > 0)
+    {
+      if (c == '%')
+      {
+        rxidx = 0;
+      }
+      else if (c != '$')
+      {
+        rxbuff[rxidx] = c;
+        if (rxidx<63)
+          rxidx++;
+      }
+      else
+      {
+        rxbuff[rxidx] = 0;
+        printf("%s\n", rxbuff);
+      }
+    }
+  }while(1);
+
   uartClose(lpc_uart);
   return 0;
 }

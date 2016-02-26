@@ -65,7 +65,7 @@ int capture_setup(psCapDev pCap)
 /*
   if (ioctl(pCap->fd, VIDIOC_DBG_G_CHIP_IDENT, &chip)) {
     printf("VIDIOC_DBG_G_CHIP_IDENT failed.\n");
-    close(pCap->fd);//TODO devo fare un v4l_captur_close
+    close(pCap->fd);
     return -1;
   }
   printf("TV decoder chip is %s\n", chip.match.name);
@@ -167,7 +167,7 @@ int capture_setup(psCapDev pCap)
       return -1;
     }
   }
-  if(req.count<2){ // TODO
+  if(req.count<2){
     fprintf(stderr, "Insufficient buffer memory on %s\n", pCap->name);
     return -1;
   }
@@ -187,7 +187,6 @@ int capture_start(psCapDev pCap)
   struct v4l2_buffer  buf;
   enum v4l2_buf_type  type;
 
-//TODO andrebbe spostato
   for(i=0; i<pCap->nbuf; i++) {
     if(pCap->buf[i].start){
       munmap(pCap->buf[i].start, pCap->buf[i].length);

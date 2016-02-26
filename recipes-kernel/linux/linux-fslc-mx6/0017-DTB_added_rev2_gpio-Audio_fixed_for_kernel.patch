@@ -1,7 +1,16 @@
 Index: git/arch/arm/boot/dts/imx6q-tera-he-iomux.dtsi
 ===================================================================
---- git.orig/arch/arm/boot/dts/imx6q-tera-he-iomux.dtsi	2016-01-22 09:23:38.000000000 +0100
-+++ git/arch/arm/boot/dts/imx6q-tera-he-iomux.dtsi	2016-01-22 09:36:38.285563229 +0100
+--- git.orig/arch/arm/boot/dts/imx6q-tera-he-iomux.dtsi	2016-01-27 10:28:48.575219603 +0100
++++ git/arch/arm/boot/dts/imx6q-tera-he-iomux.dtsi	2016-02-09 15:20:42.044498989 +0100
+@@ -28,7 +28,7 @@
+ 				MX6QDL_PAD_DISP0_DAT10__GPIO4_IO31   0x80000000		/* L-OUT1_ACTIVE_H      */
+ 				MX6QDL_PAD_GPIO_6__GPIO1_IO06        0x80000000		/* L-OUT1_ACTIVE_L      */
+ //				MX6QDL_PAD_DISP0_DAT7__GPIO4_IO28    0x80000000		/* NFC_I2C_IRQ          */
+-				MX6QDL_PAD_DISP0_DAT9__GPIO4_IO30    0x80000000		/* WDOG_B               */
++//				MX6QDL_PAD_DISP0_DAT9__GPIO4_IO30    0x80000000		/* WDOG_B               */
+ 				MX6QDL_PAD_DISP0_DAT11__GPIO5_IO05   0x80000000		/* WL_IRQ               */
+ 				MX6QDL_PAD_DISP0_DAT12__GPIO5_IO06   0x80000000		/* GPS_PW R_EN          */
+ 				MX6QDL_PAD_DISP0_DAT13__GPIO5_IO07   0x80000000		/* BT_EN                */
 @@ -46,7 +46,7 @@
  				MX6QDL_PAD_NANDF_D4__GPIO2_IO04      0x80000000		/* LVDS_SCAN_DIRECTION  */
  				MX6QDL_PAD_NANDF_D5__GPIO2_IO05      0x80000000		/* GPS_RESET_B          */
@@ -30,22 +39,47 @@ Index: git/arch/arm/boot/dts/imx6q-tera-he-iomux.dtsi
  			>;
  		};
  
+@@ -394,5 +406,11 @@
+ 				MX6QDL_PAD_SD3_RST__SD3_RESET    0x170f9
+ 			>;
+ 		};
++
++		pinctrl_wdog2: wdog2grp {
++			fsl,pins = <
++				MX6QDL_PAD_DISP0_DAT9__WDOG2_B   0x1b0b1
++			>;
++		};
+ 	};
+ };
 Index: git/arch/arm/boot/dts/imx6q-tera-he.dts
 ===================================================================
---- git.orig/arch/arm/boot/dts/imx6q-tera-he.dts	2016-01-22 09:23:38.000000000 +0100
-+++ git/arch/arm/boot/dts/imx6q-tera-he.dts	2016-01-19 09:25:03.000000000 +0100
-@@ -232,6 +232,6 @@
+--- git.orig/arch/arm/boot/dts/imx6q-tera-he.dts	2016-01-27 10:28:48.571219603 +0100
++++ git/arch/arm/boot/dts/imx6q-tera-he.dts	2016-02-09 15:20:37.392498899 +0100
+@@ -231,7 +231,18 @@
+ 	status = "okay";
  };
  
-  &ssi1 {
+- &ssi1 {
 -	fsl,mode = "i2s-slave";
++&ssi1 {
 +	fsl,mode = "i2s-master";
  	status = "okay";
  };
++
++&wdog1 {
++	status = "disabled";
++};
++
++&wdog2 {
++	pinctrl-names = "default";
++	pinctrl-0 = <&pinctrl_wdog2>;
++	status = "okay";
++};
++
 Index: git/arch/arm/boot/dts/imx6q-tera-he.dtsi
 ===================================================================
---- git.orig/arch/arm/boot/dts/imx6q-tera-he.dtsi	2016-01-22 09:23:38.000000000 +0100
-+++ git/arch/arm/boot/dts/imx6q-tera-he.dtsi	2016-01-19 10:01:31.000000000 +0100
+--- git.orig/arch/arm/boot/dts/imx6q-tera-he.dtsi	2016-01-27 10:28:48.575219603 +0100
++++ git/arch/arm/boot/dts/imx6q-tera-he.dtsi	2016-01-27 10:28:49.603219617 +0100
 @@ -301,9 +301,9 @@
  
  	//sound-fm {

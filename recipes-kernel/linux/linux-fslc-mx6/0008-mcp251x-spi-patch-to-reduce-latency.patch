@@ -1,0 +1,212 @@
+Index: git/drivers/net/can/mcp251x.c
+===================================================================
+--- git.orig/drivers/net/can/mcp251x.c	2016-02-26 14:41:59.576867560 +0100
++++ git/drivers/net/can/mcp251x.c	2016-02-26 14:57:12.604885222 +0100
+@@ -77,6 +77,39 @@
+ #include <linux/uaccess.h>
+ #include <linux/regulator/consumer.h>
+ 
++
++/////////////////////
++#include <linux/gpio.h>
++
++#define GPIO4_BASE  0x020A8000
++#define GPIO_PIN0   (1<<26)
++#define GPIO_PIN1   (1<<25)
++
++#define GPIO_DBG  ((4-1)*32+26)
++#define GPIO_DBG1 ((4-1)*32+25)
++
++#define GPIO_DIR_IN   1
++#define GPIO_DIR_OUT  0
++unsigned long * gpio_base;
++#define GPIO_INIT(gpio, dir, value, label) { \
++                                          gpio_request(gpio, label); \
++                                          if(dir){ \
++                                            gpio_direction_input(gpio); \
++                                          }else{ \
++                                            gpio_direction_output(gpio, value); \
++                                          } \
++                                          gpio_base = ioremap(GPIO4_BASE, 0x20); \
++                                        }
++
++//#define GPIO_DBG_SET(value) gpio_set_value(GPIO_DBG, value)
++//#define GPIO_DBG1_SET(value) gpio_set_value(GPIO_DBG1, value)
++#define GPIO_DBG_SET(val)  { if(val) *gpio_base |=  GPIO_PIN0; \
++                                  else *gpio_base &= ~GPIO_PIN0; }
++#define GPIO_DBG1_SET(val) { if(val) *gpio_base |=  GPIO_PIN1; \
++                                  else *gpio_base &= ~GPIO_PIN1; }
++////////////////////////
++
++
+ /* SPI interface instruction set */
+ #define INSTRUCTION_WRITE	0x02
+ #define INSTRUCTION_READ	0x03
+@@ -306,6 +339,8 @@
+  * conversation with the chip and to avoid doing really nasty things
+  * (like injecting bogus packets in the network stack).
+  */
++extern int spiTransferMessage(struct spi_device *spi, struct spi_message *msg);
++
+ static int mcp251x_spi_trans(struct spi_device *spi, int len)
+ {
+ 	struct mcp251x_priv *priv = spi_get_drvdata(spi);
+@@ -314,12 +349,15 @@
+ 		.rx_buf = priv->spi_rx_buf,
+ 		.len = len,
+ 		.cs_change = 0,
++		.bits_per_word = spi->bits_per_word,
++		.speed_hz = spi->max_speed_hz,
++		.tx_nbits = SPI_NBITS_SINGLE,
++		.rx_nbits = SPI_NBITS_SINGLE,
+ 	};
+ 	struct spi_message m;
+ 	int ret;
+ 
+ 	spi_message_init(&m);
+-
+ 	if (mcp251x_enable_dma) {
+ 		t.tx_dma = priv->spi_tx_dma;
+ 		t.rx_dma = priv->spi_rx_dma;
+@@ -328,7 +366,10 @@
+ 
+ 	spi_message_add_tail(&t, &m);
+ 
+-	ret = spi_sync(spi, &m);
++GPIO_DBG1_SET(1);
++	ret = spiTransferMessage(spi, &m);
++GPIO_DBG1_SET(0);
++
+ 	if (ret)
+ 		dev_err(&spi->dev, "spi transfer failed: ret = %d\n", ret);
+ 	return ret;
+@@ -344,7 +385,6 @@
+ 
+ 	mcp251x_spi_trans(spi, 3);
+ 	val = priv->spi_rx_buf[2];
+-
+ 	return val;
+ }
+ 
+@@ -652,7 +692,7 @@
+ static int mcp251x_hw_probe(struct spi_device *spi)
+ {
+ 	int st1, st2;
+-
++printk("mcp251x_hw_probe:==========TEST===============\n");
+ 	mcp251x_hw_reset(spi);
+ 
+ 	/*
+@@ -808,6 +848,7 @@
+ 	struct mcp251x_priv *priv = dev_id;
+ 	struct spi_device *spi = priv->spi;
+ 	struct net_device *net = priv->net;
++GPIO_DBG_SET(1);
+ 
+ 	mutex_lock(&priv->mcp_lock);
+ 	while (!priv->force_quit) {
+@@ -931,6 +972,7 @@
+ 
+ 	}
+ 	mutex_unlock(&priv->mcp_lock);
++GPIO_DBG_SET(0);
+ 	return IRQ_HANDLED;
+ }
+ 
+@@ -1034,6 +1076,10 @@
+ 	int freq, ret = -ENODEV;
+ 	struct clk *clk;
+ 
++printk("mcp251x_can_probe: GPIO debug init\n");
++GPIO_INIT(GPIO_DBG, GPIO_DIR_OUT, 0, "SPI kthread debug");
++GPIO_INIT(GPIO_DBG1, GPIO_DIR_OUT, 0, "SPI kthread debug");
++
+ 	clk = devm_clk_get(&spi->dev, NULL);
+ 	if (IS_ERR(clk)) {
+ 		if (pdata)
+Index: git/drivers/spi/spi.c
+===================================================================
+--- git.orig/drivers/spi/spi.c	2016-02-26 14:42:00.240867573 +0100
++++ git/drivers/spi/spi.c	2016-02-26 14:58:54.040887185 +0100
+@@ -970,6 +970,81 @@
+ 	}
+ }
+ 
++int spiTransferMessage(struct spi_device *spi, struct spi_message *msg)
++{
++	struct spi_master *master = spi->master;
++	//unsigned long flags;
++	int ret;
++	bool was_busy = false;
++	struct spi_transfer *xfer;
++
++	msg->spi = spi;
++	msg->complete = NULL;
++
++	if (list_empty(&msg->transfers))
++		return -EINVAL;
++
++	list_for_each_entry(xfer, &msg->transfers, transfer_list) {
++		msg->frame_length += xfer->len;
++	}
++	msg->status = -EINPROGRESS;
++
++	if (!master->running) {
++		//printk("spiTransferMessage: master not running\n");
++		return -1;
++	}
++	/* Make sure we are not already running a message */
++	if (master->cur_msg) {
++		//printk("spiTransferMessage: we are not already running a message\n");
++		return -1;
++	}
++	/* Extract head of queue */
++	master->cur_msg = msg;
++
++	if (master->busy)
++		was_busy = true;
++	else
++		master->busy = true;
++
++	if (!was_busy && master->prepare_transfer_hardware) {
++		ret = master->prepare_transfer_hardware(master);
++		if (ret) {
++			dev_err(&master->dev, "failed to prepare transfer hardware\n");
++			//if (master->auto_runtime_pm)
++			//  pm_runtime_put(master->dev.parent);
++			return -1;
++		}
++	}
++
++	if (master->prepare_message) {
++		ret = master->prepare_message(master, master->cur_msg);
++		if (ret) {
++			dev_err(&master->dev, "failed to prepare message: %d\n", ret);
++			master->cur_msg->status = ret;
++			spi_finalize_current_message(master);
++			return -1;
++		}
++		master->cur_msg_prepared = true;
++	}
++
++	ret = spi_map_msg(master, master->cur_msg);
++	if (ret) {
++		dev_err(&master->dev, "spi_map_msg fail\n");
++		master->cur_msg->status = ret;
++		spi_finalize_current_message(master);
++		return-1;
++	}
++
++	ret = master->transfer_one_message(master, master->cur_msg);
++	if (ret) {
++		dev_err(&master->dev, "failed to transfer one message from queue\n");
++		return-1;
++	}
++
++	return 0;
++}
++EXPORT_SYMBOL_GPL(spiTransferMessage);
++
+ static int spi_init_queue(struct spi_master *master)
+ {
+ 	struct sched_param param = { .sched_priority = MAX_RT_PRIO - 1 };

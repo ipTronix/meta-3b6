@@ -1,0 +1,75 @@
+Index: 1_5.2-r0/imx-test-5.2/test/mxc_v4l2_test/mxc_v4l2_tvin.c
+===================================================================
+--- imx-test-5.2/test/mxc_v4l2_test/mxc_v4l2_tvin.c	2016-02-26 13:40:37.024796322 +0100
++++ imx-test-5.2/test/mxc_v4l2_test/mxc_v4l2_tvin.c	2016-02-26 13:43:03.076799148 +0100
+@@ -75,6 +75,9 @@
+ int g_display_left = 0;
+ int g_frame_size;
+ int g_frame_period = 33333;
++int g_capture_width  = 720;
++int g_capture_height = 574;
++
+ v4l2_std_id g_current_std = V4L2_STD_NTSC;
+ 
+ struct testbuffer
+@@ -200,7 +203,7 @@
+ 			v4l_capture_dev);
+ 		return TFAIL;
+ 	}
+-
++/*
+ 	if (ioctl(fd_capture_v4l, VIDIOC_DBG_G_CHIP_IDENT, &chip))
+ 	{
+ 		printf("VIDIOC_DBG_G_CHIP_IDENT failed.\n");
+@@ -208,7 +211,7 @@
+ 		return TFAIL;
+ 	}
+ 	printf("TV decoder chip is %s\n", chip.match.name);
+-
++*/
+ 	if (ioctl(fd_capture_v4l, VIDIOC_S_INPUT, &g_input) < 0)
+ 	{
+ 		printf("VIDIOC_S_INPUT failed\n");
+@@ -271,8 +274,8 @@
+ 	memset(&fmt, 0, sizeof(fmt));
+ 
+ 	fmt.type                = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+-	fmt.fmt.pix.width       = 0;
+-	fmt.fmt.pix.height      = 0;
++	fmt.fmt.pix.width       = g_capture_width;
++	fmt.fmt.pix.height      = g_capture_height;
+ 	fmt.fmt.pix.pixelformat = g_fmt;
+ 	fmt.fmt.pix.field       = V4L2_FIELD_INTERLACED;
+ 
+@@ -617,6 +620,15 @@
+ 		else if (strcmp(argv[i], "-oh") == 0) {
+ 			g_display_height = atoi(argv[++i]);
+ 		}
++		else if (strcmp(argv[i], "-cw") == 0) {
++			g_capture_width = atoi(argv[++i]);
++		}
++		else if (strcmp(argv[i], "-ch") == 0) {
++			g_capture_height = atoi(argv[++i]);
++		}
++		else if (strcmp(argv[i], "-ci") == 0) {
++			g_input = atoi(argv[++i]);
++		}
+ 		else if (strcmp(argv[i], "-ot") == 0) {
+ 			g_display_top = atoi(argv[++i]);
+ 		}
+@@ -649,11 +661,14 @@
+ 		else if (strcmp(argv[i], "-help") == 0) {
+ 			printf("MXC Video4Linux TVin Test\n\n" \
+ 				   "Syntax: mxc_v4l2_tvin.out\n" \
++				   " -cw <capture width>\n" \
++				   " -ch <capture height>\n" \
++				   " -ci <capture input>\n" \
+ 				   " -ow <capture display width>\n" \
+ 				   " -oh <capture display height>\n" \
+ 				   " -ot <display top>\n" \
+ 				   " -ol <display left>\n" \
+-							   " -r <rotation> -c <capture counter> \n"
++				   " -r <rotation> -c <capture counter> \n"
+ 				   " -m <motion> 0:medium 1:low 2:high, 0-default\n"
+ 				   " -tb top field first, bottom field first-default\n"
+ 				   " -f <format, only YU12, YUYV, UYVY and NV12 are supported> \n"
