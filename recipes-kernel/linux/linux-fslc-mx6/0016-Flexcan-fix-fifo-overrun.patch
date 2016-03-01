@@ -1184,13 +1184,14 @@ index 8de484b..949c7a9 100644
  	reg = flexcan_read(&regs->ctrl);
  	reg &= ~(FLEXCAN_CTRL_PRESDIV(0xff) |
  		 FLEXCAN_CTRL_RJW(0x3) |
-@@ -842,7 +1294,7 @@ static int flexcan_chip_start(struct net_device *dev)
+@@ -842,8 +1294,8 @@ static int flexcan_chip_start(struct net_device *dev)
  {
  	struct flexcan_priv *priv = netdev_priv(dev);
  	struct flexcan_regs __iomem *regs = priv->base;
- 	int err, i;
+-	int err;
 -	u32 reg_mcr, reg_ctrl;
 +	u32 reg_mcr, reg_ctrl, reg_ctrl2, reg_mecr;
++	int err, i;
  
  	/* enable module */
  	err = flexcan_chip_enable(priv);

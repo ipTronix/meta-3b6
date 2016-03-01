@@ -28,3 +28,5 @@ SRC_URI_append_tera-he = " \
 "
 
 KERNEL_IMAGE_BASE_NAME ?= "${KERNEL_IMAGETYPE}-${PKGE}-${PKGV}-${PKGR}"
+
+

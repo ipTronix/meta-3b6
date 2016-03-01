@@ -967,10 +967,10 @@ Index: git/arch/arm/boot/dts/Makefile
 ===================================================================
 --- git.orig/arch/arm/boot/dts/Makefile	2015-12-09 15:25:56.205818625 +0100
 +++ git/arch/arm/boot/dts/Makefile	2015-12-09 15:26:22.389818432 +0100
-@@ -188,6 +188,7 @@
- 	imx6q-sabresd-enetirq.dtb \
- 	imx6q-sabresd-ldo.dtb \
+@@ -179,6 +179,7 @@
+ 	imx6q-sabresd-uart.dtb \
  	imx6q-sabresd-hdcp.dtb \
+ 	imx6q-sabresd-ldo.dtb \
 +	imx6q-tera-he.dtb \
  	imx6q-sbc6x.dtb \
  	imx6q-udoo.dtb \

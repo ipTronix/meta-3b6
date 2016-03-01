@@ -3143,10 +3143,10 @@ Index: git/drivers/input/misc/Makefile
 ===================================================================
 --- git.orig/drivers/input/misc/Makefile	2015-10-22 18:00:43.490848727 +0200
 +++ git/drivers/input/misc/Makefile	2015-10-23 14:48:29.272574997 +0200
-@@ -66,3 +66,7 @@
+@@ -64,3 +64,7 @@
+ obj-$(CONFIG_INPUT_YEALINK)		+= yealink.o
+ obj-$(CONFIG_INPUT_IDEAPAD_SLIDEBAR)	+= ideapad_slidebar.o
  obj-$(CONFIG_INPUT_ISL29023)            += isl29023.o
- obj-$(CONFIG_INPUT_MPL3115)		+= mpl3115.o
- obj-$(CONFIG_SENSOR_FXLS8471)       	+= fxls8471.o fxls8471_i2c.o
 +
 +
 +obj-$(CONFIG_INPUT_LSM330_ACC)          += lsm330_acc.o
