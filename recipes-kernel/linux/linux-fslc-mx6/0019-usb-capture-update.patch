@@ -18,3 +18,16 @@ index 4d97a76..885ad52 100644
  			.amux     = EM28XX_AUDIO_SRC_LINE,
  			.gpio     = terratec_av350_unmute_gpio,
  		} },
+diff --git a/drivers/media/usb/em28xx/em28xx-video.c b/drivers/media/usb/em28xx/em28xx-video.c
+index c3c9289..69519d4 100644
+--- a/drivers/media/usb/em28xx/em28xx-video.c
++++ b/drivers/media/usb/em28xx/em28xx-video.c
+@@ -321,7 +321,7 @@ static int em28xx_resolution_set(struct em28xx *dev)
+ 	   get the pixelformatting associated with that area.  So by cropping
+ 	   it out, we end up with the same format as the rest of the VBI
+ 	   region */
+-	if (em28xx_vbi_supported(dev) == 1)
++	if (0)/*(em28xx_vbi_supported(dev) == 1)*/
+ 		em28xx_capture_area_set(dev, 0, 2, width, height);
+ 	else
+ 		em28xx_capture_area_set(dev, 0, 0, width, height);
