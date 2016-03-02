@@ -16,5 +16,4 @@ do_compile() {
 do_install() {
 	install -d ${D}${bindir}
 	install -m 0755 wdt-test ${D}${bindir}
-	install -m 0755 wdt-test /tftpboot
 }

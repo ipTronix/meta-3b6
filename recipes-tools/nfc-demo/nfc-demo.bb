@@ -18,5 +18,4 @@ do_compile() {
 do_install() {
 	install -d ${D}${bindir}
 	install -m 0755 nfc-demo ${D}${bindir}
-	install -m 0755 nfc-demo /tftpboot
 }

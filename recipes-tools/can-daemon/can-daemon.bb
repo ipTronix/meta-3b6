@@ -23,5 +23,4 @@ do_compile() {
 do_install() {
 	install -d ${D}${bindir}
 	install -m 0755 can-daemon ${D}${bindir}
-	install -m 0755 can-daemon /tftpboot
 }

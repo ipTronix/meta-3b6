@@ -17,5 +17,4 @@ do_compile() {
 do_install() {
 	install -d ${D}${bindir}
 	install -m 0755 can-test ${D}${bindir}
-	install -m 0755 can-test /tftpboot
 }

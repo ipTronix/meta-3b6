@@ -17,5 +17,4 @@ do_compile() {
 do_install() {
 	install -d ${D}${bindir}
 	install -m 0755 gps-test ${D}${bindir}
-	install -m 0755 gps-test /tftpboot
 }

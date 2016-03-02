@@ -18,46 +18,40 @@ int lpcCmdSend(int uartfd, char* cmd);
  */
 int main(int argc, char** argv)
 {
-  int lpc_uart;
-	char cmd[32];
-	char rxbuff[64];
-	char c;
-	int rxidx = 0;
-	
-	printf("lpc-com Ver:0.0 "__DATE__" "__TIME__"\n");
-	cmd[0] = 0;
-	if(argc>1){
-		int i;
-		int l;
-		l = sprintf(cmd, "%s", argv[1]);
-		for(i=2; i<argc; i++){
-			l += sprintf(cmd+l, " %s", argv[i]);
-		}
-	}
+  int  lpc_uart;
+  char cmd[32];
+  char rxbuff[64];
+  char c;
+  int  rxidx = 0;
+
+  printf("lpc-com Ver:0.0 "__DATE__" "__TIME__"\n");
+  cmd[0] = 0;
+  if(argc>1){
+    int i;
+    int l;
+    l = sprintf(cmd, "%s", argv[1]);
+    for(i=2; i<argc; i++){
+      l += sprintf(cmd+l, " %s", argv[i]);
+    }
+  }
   lpc_uart = uartOpen("/dev/ttymxc4");
   if(lpc_uart<0){
     return -1;
   }
-	if(cmd[0]){
-		printf("Send command [%%%s$] to LPC\n", cmd);
-		lpcCmdSend(lpc_uart, cmd);
-	}
+  if(cmd[0]){
+    printf("Send command [%%%s$] to LPC\n", cmd);
+    lpcCmdSend(lpc_uart, cmd);
+  }
 
   do{
-    if (read(lpc_uart, &c, 1) > 0)
-    {
-      if (c == '%')
-      {
+    if(read(lpc_uart, &c, 1)>0){
+      if(c == '%'){
         rxidx = 0;
-      }
-      else if (c != '$')
-      {
+      }else if(c != '$'){
         rxbuff[rxidx] = c;
         if (rxidx<63)
           rxidx++;
-      }
-      else
-      {
+      }else{
         rxbuff[rxidx] = 0;
         printf("%s\n", rxbuff);
       }

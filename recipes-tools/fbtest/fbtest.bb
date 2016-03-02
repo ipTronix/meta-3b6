@@ -18,6 +18,4 @@ do_compile() {
 do_install() {
 	install -d ${D}${bindir}
 	install -m 0755 fb_test ${D}${bindir}
-	install -m 0755 fb_test /tftpboot/3b6
-	install -m 0755 capture-example /tftpboot/3b6
 }
