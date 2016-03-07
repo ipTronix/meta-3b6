@@ -1,0 +1,1012 @@
+Index: git/drivers/media/platform/mxc/capture/Makefile
+===================================================================
+--- git.orig/drivers/media/platform/mxc/capture/Makefile	2016-03-07 17:35:58.551660913 +0100
++++ git/drivers/media/platform/mxc/capture/Makefile	2016-03-07 11:35:53.000000000 +0100
+@@ -26,5 +26,5 @@
+ tvp5150_tvin-objs := mxc_tvp5150.o
+ obj-$(CONFIG_MXC_TVIN_TVP5150) += mxc_tvp5150.o
+ 
+-altera_cvifw-objs := altera-cvifw.o altera-cvifw-hw.o
++altera_cvifw-objs := altera-cvifw.o altera-cvifw-hw.o altera-cvidi-hw.o
+ obj-$(CONFIG_ALTERA_CVIFW) += altera_cvifw.o
+Index: git/drivers/media/platform/mxc/capture/altera-cvidi-hw.c
+===================================================================
+--- /dev/null	1970-01-01 00:00:00.000000000 +0000
++++ git/drivers/media/platform/mxc/capture/altera-cvidi-hw.c	2016-03-07 11:35:09.000000000 +0100
+@@ -0,0 +1,169 @@
++/**
++ * Altera CVI Decoder and Deinterlacer hardware specific functions
++ */
++
++#include <linux/io.h>
++#include <linux/mm.h>
++
++#if 1 
++#define DBG_PRINT(fmt, ...)   printk("%s:%s:"fmt, "cvidihw", __func__, ##__VA_ARGS__);
++#define DBG_ERROR(fmt, ...)   printk("%s:%s:ERROR:"fmt, "cvidihw", __func__, ##__VA_ARGS__);
++#else
++#define DBG_PRINT(fmt, ...)
++#define DBG_ERROR(fmt, ...)
++#endif
++
++/* FPGA Decoder registers definition */
++#define DC_CONTROL    0x00000000
++#define DC_CTRL_GO        0x00000001  // RW 1: Capture enabled; 0: Capture disabled.
++                                      // Disable is effective at end of current write operation
++#define DC_CTRL_D_BUFFER  0x00000002  // RW 1: Enable double buffering.
++                                      // If enabled buffers are automatically toggled
++#define DC_CTRL_INT_EN    0x00000004  // RW 1: enable interrupt at start of frame
++
++#define DC_STATUS     0x00000004      // Reading this register resets DC_STS_AVS_INT if active
++#define DC_STS_UPDATE     0x00000001  // RO 0: no pending operations; 1: register update pending
++#define DC_STS_BUFFER_SEL 0x00000002  // RO Current buffer being used
++#define DC_STS_AVS_INT    0x00000004  // RO Interrupt request status.
++
++#define DC_V_CROP     0x00000008      // WO 7:0 Number of rows to crop on the top of the incoming image
++#define DC_H_CROP     0x0000000C      // WO 7:0 Number of columns to crop from the left side of the picture. The effective pixel number is double the value set
++#define DC_BURSTSIZE  0x00000020      // WO --  Memory burst size. Number of bits depends on parameter set in megawizard
++#define DC_BASE0      0x00000024      // WO 7:0 Bits 23:16 of the memory buffer 0. All other bits are set to 0
++#define DC_BASE1      0x00000028      // WO 7:0 Bits 23:16 of the memory buffer 1. All other bits are set to 0
++#define DC_UPDATE     0x0000002C      // WO 0:0 Update request. Must be set on register change to request peripheral to update its running registers
++#define DC_HRES       0x00000030      // RO 10:0 Detected horizontal resolution of last received field
++#define DC_VRES       0x00000034      // RO 10:0 Detected vertical resolution of last received field
++
++
++/* FPGA Deinterlacer registers definition */
++#define DI_CONTROL    0x00000000
++#define DI_CTRL_GO              0x00000001
++#define DI_CTRL_DEINT_EN        0x00000002
++#define DI_CTRL_DOUBLE_BUFFER   0x00000004
++#define DI_CTRL_INT_EN          0x00000008
++
++#define DI_STATUS     0x00000004
++#define DI_WORD_LEN   0x0000000C
++#define DI_HRES       0x00000010
++#define DI_VRES       0x00000014
++#define DI_STRIDE     0x00000018
++#define DI_BURSTSZ    0x00000020
++#define DI_BASE0      0x00000024
++#define DI_BASE1      0x00000028
++#define DI_UPDATE     0x0000002C
++
++/**
++ */
++void altera_dcdi_hw_init(void *dc_reg, void *di_reg,
++                         unsigned short hres,
++                         unsigned short vres,
++                         unsigned long  base0,
++                         unsigned long  base1)
++{
++  unsigned long ctrl;
++  unsigned long hcrop;
++  unsigned long vcrop;
++  unsigned long burst;
++  unsigned long wlen;
++  unsigned long stride;
++
++  ctrl  = DC_CTRL_D_BUFFER;
++  hcrop = 0;
++  vcrop = 0;
++  burst = 4;
++DBG_PRINT("decoder @ %p init\n"
++          " ctrl : %08X\n"
++          " hcrop: %08X\n"
++          " vcrop: %08X\n"
++          " burst: %08X\n"
++          " base0: %08X\n"
++          " base1: %08X\n",
++          dc_reg,
++          ctrl, hcrop, vcrop, burst, base0, base1);
++
++  __raw_writel(ctrl , dc_reg + DC_CONTROL  );
++  __raw_writel(hcrop, dc_reg + DC_V_CROP   );
++  __raw_writel(vcrop, dc_reg + DC_H_CROP   );
++  __raw_writel(burst, dc_reg + DC_BURSTSIZE);
++  __raw_writel(base0, dc_reg + DC_BASE0    ); 
++  __raw_writel(base1, dc_reg + DC_BASE1    ); 
++  
++  // update
++  __raw_writel(1, dc_reg + DC_UPDATE); 
++
++  ctrl   = DI_CTRL_DEINT_EN | DI_CTRL_DOUBLE_BUFFER;
++  wlen   = hres / 4;
++  stride = (1024 - hres + burst*4)*2;
++DBG_PRINT("deinterlacer @ %p init\n"
++          " ctrl  : %08X\n"
++          " wlen  : %08X\n"
++          " hres  : %08X\n"
++          " vres  : %08X\n"
++          " stride: %08X\n"
++          " burst : %08X\n"
++          " base0 : %08X\n"
++          " base1 : %08X\n",
++          di_reg,
++          ctrl, wlen, hres, vres, stride, burst, base0, base1);
++
++  __raw_writel(ctrl  , di_reg + DI_CONTROL );
++  __raw_writel(wlen  , di_reg + DI_WORD_LEN);
++  __raw_writel(hres  , di_reg + DI_HRES    );
++  __raw_writel(vres  , di_reg + DI_VRES    );
++  __raw_writel(stride, di_reg + DI_STRIDE  );
++  __raw_writel(burst , di_reg + DI_BURSTSZ );
++  __raw_writel(base0 , di_reg + DI_BASE0   ); 
++  __raw_writel(base1 , di_reg + DI_BASE1   ); 
++
++  // update
++  __raw_writel(1, di_reg + DI_UPDATE); 
++}
++
++/**
++ */
++void altera_dcdi_hw_stop(void *dc_reg, void *di_reg)
++{
++  unsigned long reg;
++
++DBG_PRINT("decoder @ %p stop\n", dc_reg);
++  reg = __raw_readl(dc_reg + DC_CONTROL);
++  reg &= ~( DC_CTRL_GO | DC_CTRL_INT_EN );
++  __raw_writel(reg, dc_reg + DC_CONTROL);
++  
++DBG_PRINT("deinterlacer @ %p stop\n", di_reg);
++  reg = __raw_readl(di_reg + DI_CONTROL);
++  reg &= ~( DI_CTRL_GO | DI_CTRL_INT_EN );
++  __raw_writel(reg, di_reg + DI_CONTROL);
++}
++
++/**
++ */
++void altera_dcdi_hw_start(void *dc_reg, void *di_reg)
++{
++  unsigned long reg;
++
++DBG_PRINT("decoder @ %p start \n", dc_reg);
++  reg = __raw_readl(dc_reg + DC_CONTROL);
++  reg |= DC_CTRL_GO;
++  __raw_writel(reg, dc_reg + DC_CONTROL);
++
++DBG_PRINT("deinterlacer @ %p start\n", di_reg);
++  reg = __raw_readl(di_reg + DI_CONTROL);
++  reg |= DI_CTRL_GO;
++  __raw_writel(reg, di_reg + DI_CONTROL);
++}
++
++/**
++ * @brief get detected resolution
++ * @return resolution VRES <<16 | HRES
++ */
++unsigned long altera_dc_hw_res_get(void *dc_reg)
++{
++  unsigned long reg;
++
++  reg  = __raw_readl(dc_reg + DC_HRES);
++  reg |= __raw_readl(dc_reg + DC_VRES) << 16;
++DBG_PRINT("decoder @ %p, resolution %08X\n", dc_reg, reg);
++  return reg;
++}
+Index: git/drivers/media/platform/mxc/capture/altera-cvifw-hw.c
+===================================================================
+--- git.orig/drivers/media/platform/mxc/capture/altera-cvifw-hw.c	2016-03-07 17:35:58.551660913 +0100
++++ git/drivers/media/platform/mxc/capture/altera-cvifw-hw.c	2016-03-07 11:34:58.000000000 +0100
+@@ -5,13 +5,15 @@
+ #include <linux/io.h>
+ #include <linux/mm.h>
+ #include <linux/videodev2.h>
+-#if 0
++
++#if 1
+ #define DBG_PRINT(fmt, ...)   printk("%s:%s:"fmt, "cvifwhw", __func__, ##__VA_ARGS__);
+ #define DBG_ERROR(fmt, ...)   printk("%s:%s:ERROR:"fmt, "cvifwhw", __func__, ##__VA_ARGS__);
+ #else
+ #define DBG_PRINT(fmt, ...)
+ #define DBG_ERROR(fmt, ...)
+ #endif
++
+ /* FPGA Frame Writer registers definition */
+ #define FW_CTRL_OFS         0x0000
+ #define FW_CTRL_GO            0x00000001
+@@ -110,6 +112,7 @@
+   unsigned long stride;
+   unsigned long res;
+   unsigned long bpp;
++  unsigned long ppw;
+ 
+   ctrl = 0;
+   if (dbuf) {
+@@ -131,7 +134,8 @@
+   case V4L2_PIX_FMT_UYVY   : pack = FW_PACKER_YCBCR8  ; bpp = 2; break;
+   }*/
+ bpp = 2;
+-wlen   = hres / bpp;
++ppw = 4;
++wlen   = hres / ppw;
+ pack   = FW_PACKER_YCBCR8;
+ stride = hres * bpp;
+ res    = ((vres)<<16) | (hres);
+@@ -147,13 +151,13 @@
+           wlen  ,
+           pack  ,
+           stride,
+-          8     ,
++          4     ,
+           res   );
+   __raw_writel(ctrl  , regb + FW_CTRL_OFS      );
+   __raw_writel(wlen  , regb + FW_WORD_LEN_OFS  );
+   __raw_writel(pack  , regb + FW_PACKER_OFS    );
+   __raw_writel(stride, regb + FW_STRIDE_OFS    );
+-  __raw_writel(8     , regb + FW_BURST_SIZE_OFS);
++  __raw_writel(4     , regb + FW_BURST_SIZE_OFS);
+   __raw_writel(res   , regb + FW_IMG_SIZE_OFS  );
+ }
+ 
+@@ -181,6 +185,7 @@
+ }
+ 
+ /**
++ * Read frame writer status register and clear int
+  */
+ unsigned long altera_fw_hw_clearint(void *regb)
+ {
+Index: git/drivers/media/platform/mxc/capture/altera-cvifw.c
+===================================================================
+--- git.orig/drivers/media/platform/mxc/capture/altera-cvifw.c	2016-03-07 17:35:58.551660913 +0100
++++ git/drivers/media/platform/mxc/capture/altera-cvifw.c	2016-03-07 17:05:36.000000000 +0100
+@@ -1,6 +1,6 @@
+-/** **************************************************************************
+- * Altera Clocked Video Input and Frame Writer PCIe driver
+- ****************************************************************************/
++/** ***************************************************************************
++ *       Altera Clocked Video Input and Frame Writer PCIe driver              *
++ **************************************************************************** */
+ 
+ #include <linux/module.h>
+ #include <linux/ioctl.h>
+@@ -25,7 +25,7 @@
+ #include "v4l2-int-device.h"
+ #include "mxc_v4l2_capture.h"
+ 
+-#if 0
++#if 1
+   #define DEBUG
+   //#define DEBUG_TIMESTAMP
+   #ifndef DEBUG_TIMESTAMP
+@@ -59,16 +59,24 @@
+ #define PCI_VENDOR_ID_ALTERA          0x1172
+ #define PCI_DEVICE_ID_ALTERA_CVIFW    0x0004
+ 
++/**
++ * defines of device minor id and csi association
++ */
+ #define CVIFW0_MINOR    2
+ #define CVIFW0_CSI      2
+ #define CVIFW1_MINOR    3
+ #define CVIFW1_CSI      3
+ 
+-//#define BAR0_CVI0_OFS   0x4080
+-//#define BAR0_CVI1_OFS   0x4000
+-#define BAR0_FW0_OFS    0x4100
+-#define BAR0_FW1_OFS    0x4200
+-#define BAR0_CTRL_OFS   0x4800 ///< SYS_ID [0x0000] = 0x1B8F0001
++#define BAR0_DC0_OFS  0x4440    // decoder 0
++#define BAR0_DI0_OFS  0x4100    // deinterlacer 0
++#define BAR0_FW0_OFS  0x4300    // frame writer 0
++
++#define BAR0_DC1_OFS  0x4400    // decoder 1
++#define BAR0_DI1_OFS  0x4000    // deinterlacer 1
++#define BAR0_FW1_OFS  0x4200    // frame writer 1
++
++#define BAR0_CTRL_OFS 0x4800    ///< SYS_ID [0x0000] = 0x1B8F0001
++
+ 
+ //#define FLG_DEVICE_IN_USE    0x00000001
+ //#define FLG_STREAM_ON        0x00000002
+@@ -81,23 +89,21 @@
+ #define FLAG_DO_UPDATE          0x00000010
+ //#define FLAG_DEINTERLACE        0x00000020
+ #define FLAG_STREAM_ON          0x00000040
+-#define FLAG_FIRST_FRAME        0x00000080
++//#define FLAG_FIRST_FRAME        0x00000080
+ 
+ #define FLAG_SET(f)     (dev->flags |= (f))
+ #define FLAG_CLR(f)     (dev->flags &=~(f))
+ #define FLAG_ISSET(f)   (dev->flags & (f))
+ #define FLAG_ISCLR(f)   (~(dev->flags & (f)))
+ 
+-#define MAX_DMA_FRAMEBUFFERS 4
+-
+-
+ #define FW_STS_BUSY           0x00000002
+ #define FW_STS_BUFFER         0x00000004
+ #define FW_STS_INT_E          0x00000010
+ #define FW_STS_INT_S          0x00000020
+ 
+ 
+-/*! List of TV input video formats supported. The video formats is corresponding
++/**
++ * List of TV input video formats supported. The video formats is corresponding
+  * to the v4l2_id in video_fmt_t.
+  * Currently, only PAL and NTSC is supported. Needs to be expanded in the
+  * future.
+@@ -203,32 +209,40 @@
+ 
+   struct pci_dev           *pci_dev;
+   struct device            *dev;
+-  struct v4l2_device        v4l2_dev;   /* Main v4l2_device struct */
+-  struct v4l2_ctrl_handler  hdl;        /* v4l2 controls */
+-  struct video_device       video_dev;  /* video device parameters */
+-  int                       video_nr;   /* Video device number */
++  struct v4l2_device        v4l2_dev;   // Main v4l2_device struct
++  struct v4l2_ctrl_handler  hdl;        // v4l2 controls
++  struct video_device       video_dev;  // video device parameters
++  int                       video_nr;   // Video device number
+   int                       csi_id;
+ 
+-  sIoRes                    fw_res;
+   int                       irq;
+   struct mutex              fops_lock;
+   spinlock_t                queue_lock;
+   wait_queue_head_t         wait;
+   unsigned long             flags;
+ 
+-  video_fmt_idx             video_idx; /// Standard index of TV.
++  video_fmt_idx             video_idx; // Standard index of TV.
+ 
+   struct v4l2_standard      standard;
+   struct v4l2_mxc_offset    offset;
+   struct v4l2_framebuffer   v4l2_fb;
+   struct v4l2_format        v2f;
+-  struct v4l2_window        win;  /* overlay */
++  struct v4l2_window        win;  // overlay
+   bool                      std_auto;
+   bool                      overlay_on;
+   int                       overlay_pid;
+   bool                      capture_on;
+   int                       capture_pid;
+ 
++  void                     *dc_regs;  // decoder register base address 
++  void                     *di_regs;  // deinterlacer register base address 
++  void                     *fw_regs;  // framewriter register base address 
++  
++  void                     *dcdi_buf0_v;
++  phys_addr_t               dcdi_buf0_p;
++  void                     *dcdi_buf1_v;
++  phys_addr_t               dcdi_buf1_p;
++  
+   struct altera_frame      *frame;
+   unsigned int              frame_buf_size;
+   unsigned int              frames_num;
+@@ -242,13 +256,22 @@
+  */
+ struct cvifw_dev {
+   struct pci_dev           *pci_dev;
++  sIoRes                    pci_res;
+   struct cvifw_vdev         vdev[2];
+-  sIoRes                    ctrl_res;
+ };
+ 
+-/** **************************************************************************
+- * altera cvifw function prototypes
+- ****************************************************************************/
++/** ***************************************************************************
++ *                   altera cvidi cvifw function prototypes                   *
++ **************************************************************************** */
++void altera_dcdi_hw_init(void *dc_reg, void *di_reg,
++                         unsigned short hres,
++                         unsigned short vres,
++                         unsigned long  base0,
++                         unsigned long  base1);
++void altera_dcdi_hw_stop(void *dc_reg, void *di_reg);
++void altera_dcdi_hw_start(void *dc_reg, void *di_reg);
++unsigned long altera_dc_hw_res_get(void *dc_reg);
++
+ void altera_fw_hw_init(void *regb,
+                        int dbuf,
+                        int sync_type,
+@@ -267,13 +290,13 @@
+ 
+ 
+ /**
+- *
++ * device structure
+  */
+ static struct cvifw_dev *cvifwDevice;
+ 
+-/** **************************************************************************
+- *
+- ****************************************************************************/
++/** ***************************************************************************
++ *  memory I/O remap and unmap fuction                                        *
++ **************************************************************************** */
+ 
+ /**
+  *
+@@ -281,6 +304,7 @@
+ int remap(psIoRes pIor)
+ {
+   struct resource *res;
++
+   res = request_mem_region(pIor->phys, pIor->size, pIor->des);
+   if (!res) {
+     DBG_ERROR("%s:Couldn't request memory region at 0x%08lX\n",
+@@ -295,7 +319,7 @@
+   }
+ 
+   if(pIor->dir!=DMA_NONE){
+-    pIor->dma = dma_map_single(cvifwDevice->vdev[0].dev,//NULL, // TODO va bene senza rif a dev ???? pDrv->dev,
++    pIor->dma = dma_map_single(cvifwDevice->vdev[0].dev,
+                                pIor->virt,
+                                pIor->size,
+                                pIor->dir);
+@@ -319,19 +343,16 @@
+ int unmap(psIoRes pIor)
+ {
+   if(pIor->dir!=DMA_NONE){
+-    dma_unmap_page(NULL,
+-    pIor->phys,
+-    pIor->size,
+-    pIor->dir);
++    dma_unmap_page(NULL, pIor->phys, pIor->size, pIor->dir);
+   }
+   iounmap(pIor->virt);
+   release_mem_region(pIor->phys, pIor->size);
+   return 0;
+ }
+ 
+-/** **************************************************************************
++/** ***************************************************************************
+  *
+- ****************************************************************************/
++ **************************************************************************** */
+ 
+ /**
+  * Get resources from PCI
+@@ -350,37 +371,19 @@
+     return -EINVAL;
+   }
+ 
+-  dev->vdev[0].fw_res.phys = pci_bar_adr + BAR0_FW0_OFS;
+-  dev->vdev[0].fw_res.size = 0x100;
+-  dev->vdev[0].fw_res.des  = "cvifw_fw0";
+-  dev->vdev[0].fw_res.dir  = DMA_NONE;
+-  dev->vdev[0].irq = pdev->irq;
+-
+-  dev->vdev[1].fw_res.phys = pci_bar_adr + BAR0_FW1_OFS;
+-  dev->vdev[1].fw_res.size = 0x100;
+-  dev->vdev[1].fw_res.des  = "cvifw_fw1";
+-  dev->vdev[1].fw_res.dir  = DMA_NONE;
+-  dev->vdev[1].irq = pdev->irq;
+-
+-	dev->ctrl_res.phys = pci_bar_adr + BAR0_CTRL_OFS;
+-  dev->ctrl_res.size = 0x100;
+-  dev->ctrl_res.des  = "cvifw_ctrl";
+-  dev->ctrl_res.dir  = DMA_NONE;
+-
+-  DBG_PRINT("PCIe get resources:\n"
+-            "   vdev 0 fw: %p, irq %d\n"
+-            "   vdev 1 fw: %p, irq %d\n"
+-            "   ctrl: %p\n",
+-            dev->vdev[0].fw_res.phys, dev->vdev[0].irq,
+-            dev->vdev[1].fw_res.phys, dev->vdev[1].irq,
+-            dev->ctrl_res.phys);
++  dev->pci_res.phys = pci_bar_adr;
++  dev->pci_res.size = pci_bar_len;
++  dev->pci_res.des  = "cvifw";
++  dev->pci_res.dir  = DMA_NONE;
++
++  //DBG_PRINT("PCIe resource: %p, size: %08X\n", dev->pci_res.phys);
+ 
+   return 0;
+ }
+ 
+-/** **************************************************************************
+- *                             buffer handling
+- ****************************************************************************/
++/** ***************************************************************************
++ *                             buffer handling                                *
++ **************************************************************************** */
+ 
+ /**
+  * Empty framequeues
+@@ -433,6 +436,7 @@
+   int i;
+   if(dev->frame){
+     for (i = dev->frames_num-1; i >= 0; i--){
++      DBG_PRINT("release buffer %d\n", i);
+       dma_unmap_page(NULL,
+                      dev->frame[i].buf_phys,
+                      dev->frame_buf_size,
+@@ -455,11 +459,8 @@
+   int i;
+ 
+   release_buffers(dev);
+-  DBG_PRINT("request %d buffer\n", count);
+-  if (count > MAX_DMA_FRAMEBUFFERS) {
+-    DBG_PRINT("Buffer count too big, set it to %d\n", MAX_DMA_FRAMEBUFFERS);
+-    count = MAX_DMA_FRAMEBUFFERS;
+-  }
++  DBG_PRINT("request %d buffers\n", count);
++
+   dev->frame = kzalloc((sizeof(struct altera_frame) * count), GFP_KERNEL);
+   if (dev->frame == NULL) {
+     DBG_ERROR("Memory error on frame struct allocate\n");
+@@ -492,7 +493,7 @@
+               dev->frame[i].buf_phys,
+               dev->frame[i].buf_virt,
+               dev->frame_buf_size);
+-
++//TODO è il caso di mettere un adma????
+     dma_map_single(NULL,
+                   dev->frame[i].buf_virt,
+                   dev->frame_buf_size,
+@@ -540,9 +541,9 @@
+   return -ENOMEM;
+ }
+ 
+-/** **************************************************************************
+- *                             Video IOCTLs
+- ************************************************************************** */
++/** ***************************************************************************
++ *                             Video IOCTLs                                   *
++ **************************************************************************** */
+ 
+ static int g_chip_ident(struct file *file, void *priv,
+                         struct v4l2_dbg_chip_ident *chip)
+@@ -638,8 +639,12 @@
+       return -EINVAL;
+     }
+ 
++    f->fmt.pix.width  = video_fmts[dev->video_idx].active_width;
++    f->fmt.pix.height = video_fmts[dev->video_idx].active_height;
++/*TODO togliere
+     f->fmt.pix.width  = dev->v2f.fmt.pix.width;
+     f->fmt.pix.height = dev->v2f.fmt.pix.height;
++*/
+ 
+     switch (f->fmt.pix.pixelformat) {
+     case V4L2_PIX_FMT_RGB565:
+@@ -808,7 +813,7 @@
+ {
+   struct cvifw_vdev    *dev = video_drvdata(file);
+ 
+-  DBG_PRINT("index %d\n", b->index);
++//  DBG_PRINT("index %d\n", b->index);
+   if (!(dev->flags & FLAG_BUFFERS_AVAILABLE)) {
+     DBG_ERROR("NO BUFFERS_AVAILABLE\n");
+     return -ENOMEM;
+@@ -835,7 +840,7 @@
+   spin_lock(&dev->queue_lock);
+   list_add_tail(&dev->frame[b->index].frame, &dev->inqueue);
+   spin_unlock(&dev->queue_lock);
+-
++//DBG_PRINT("dev @%p index %d\n", (void*)dev, b->index);
+   return 0;
+ }
+ 
+@@ -845,7 +850,7 @@
+   struct altera_frame  *frame;
+   int                   ret = 0;
+ 
+-  DBG_PRINT("index %d\n", b->index);
++//  DBG_PRINT("index %d\n", b->index);
+ 
+   if (!(dev->flags & FLAG_BUFFERS_AVAILABLE)) {
+     return -ENOMEM;
+@@ -860,19 +865,19 @@
+       if (file->f_flags & O_NONBLOCK) {
+         return -EAGAIN;
+       }
+-      DBG_PRINT("wait_event outqueue\n");
++//      DBG_PRINT("wait_event outqueue\n");
+       ret = wait_event_timeout(dev->wait, !list_empty(&dev->outqueue), HZ);
+     } else {
+-      DBG_PRINT("wait_event BUFFER_IN_SYNC\n");
++//      DBG_PRINT("wait_event BUFFER_IN_SYNC\n");
+       ret = wait_event_timeout(dev->wait,
+                               (dev->flags & FLAG_BUFFER_IN_SYNC), HZ);
+     }
+     if (ret == 0) {
+-      DBG_ERROR("Timeout expired\n");
++      DBG_ERROR("dev @%p Timeout expired\n", (void*)dev);
+       return -ETIMEDOUT;
+     }
+     if (ret < 0) {
+-      DBG_ERROR("Wait event\n");
++      DBG_ERROR("dev @%p Wait event\n", (void*)dev);
+       return ret;
+     }
+   }
+@@ -889,11 +894,13 @@
+ 
+   frame->state = F_UNUSED;
+   memcpy(b, &frame->buf, sizeof(*b));
+-  if (frame->vma_use_count)
++  if (frame->vma_use_count) {
+     b->flags |= V4L2_BUF_FLAG_MAPPED;
++  }
+   //b->field = V4L2_FIELD_INTERLACED;
+-  DBG_PRINT("index %d pa %p\n", b->index, frame->buf_phys);
++  //DBG_PRINT("index %d pa %p\n", b->index, frame->buf_phys);
+ 
++//DBG_PRINT("dev @%p index %d\n", (void*)dev, b->index);
+   return 0;
+ }
+ 
+@@ -904,12 +911,14 @@
+ 
+   dev_dbg(dev->v4l2_dev.dev, "%s()\n", __func__);
+ 
+-  if (type != V4L2_BUF_TYPE_VIDEO_CAPTURE)
++  if (type != V4L2_BUF_TYPE_VIDEO_CAPTURE){
++    DBG_ERROR("type != V4L2_BUF_TYPE_VIDEO_CAPTURE\n");
+     return -EINVAL;
+-
+-  if (!(dev->flags & FLAG_BUFFERS_AVAILABLE))
++  }
++  if (!(dev->flags & FLAG_BUFFERS_AVAILABLE)){
++    DBG_ERROR("FLAG_BUFFERS_AVAILABLE)\n");
+     return -ENOMEM;
+-
++  }
+   if ( FLAG_ISSET(FLAG_STREAM_ON) ) {
+     return 0;
+   }
+@@ -924,7 +933,10 @@
+     spin_unlock(&dev->queue_lock);
+   }
+ 
+-  altera_fw_hw_init(dev->fw_res.virt,               // device regs base address
++  altera_dcdi_hw_init(dev->dc_regs, dev->di_regs,
++                      720, 576, dev->dcdi_buf0_p, dev->dcdi_buf1_p);
++  
++  altera_fw_hw_init(dev->fw_regs,                   // device regs base address
+                     0,                              // double buffer
+                     0,                              // sync type
+                     dev->v2f.fmt.pix.width,         // hres
+@@ -940,8 +952,7 @@
+   list_move_tail(&frame->frame, &dev->dmaqueue);
+   spin_unlock(&dev->queue_lock);
+ DBG_PRINT("write base0 %p size %08X\n", frame->buf_phys, dev->frame_buf_size);
+-  altera_fw_hw_addr0(dev->fw_res.virt, frame->buf_phys, dev->frame_buf_size);
+-
++  altera_fw_hw_addr0(dev->fw_regs, frame->buf_phys, dev->frame_buf_size);
+   
+   dev->capture_pid = current->pid;
+   dev->capture_on  = true;
+@@ -949,29 +960,42 @@
+   /* start acquisition */
+   FLAG_SET(FLAG_STREAM_ON);
+   FLAG_SET(FLAG_BUFFER_IN_SYNC);
+-  FLAG_SET(FLAG_FIRST_FRAME);
+-  altera_fw_hw_start(dev->fw_res.virt);
++//  FLAG_SET(FLAG_FIRST_FRAME);
++  
++DBG_PRINT("Start decoder and deinterlacer\n");
++  altera_dcdi_hw_start(dev->dc_regs, dev->di_regs);
++DBG_PRINT("Start frame writer\n");
++  altera_fw_hw_start(dev->fw_regs);
+ 
+   {
+-#define CVIFW_TIMEOUT  10000
++#define CVIFW_TIMEOUT  100000
+     int i;
+     unsigned long reg;
+     for (i=0; i<CVIFW_TIMEOUT; i++) {
+-      reg = altera_fw_hw_clearint(dev->fw_res.virt);
++      reg = altera_fw_hw_clearint(dev->fw_regs);
+       if (reg & FW_STS_BUSY ) {
+         break;
+       }
+     }
+     if (i>=CVIFW_TIMEOUT) {
++      DBG_ERROR("frame writer first buffer loading timeout\n");
+       return -1;
+     }
+   }
++  
++  {
++    unsigned long res;
++    res = altera_dc_hw_res_get(dev->dc_regs);
++    DBG_PRINT("decoded resolution %d x %d\n", (res & 0xFFFF), (res >> 16));
++  }
++  
++  
+   spin_lock(&dev->queue_lock);
+   frame = list_entry(dev->inqueue.next, struct altera_frame, frame);
+   list_move_tail(&frame->frame, &dev->dmaqueue);
+   spin_unlock(&dev->queue_lock);
+ DBG_PRINT("write base0 %p size %08X\n", frame->buf_phys, dev->frame_buf_size);
+-  altera_fw_hw_addr0(dev->fw_res.virt, frame->buf_phys, dev->frame_buf_size);
++  altera_fw_hw_addr0(dev->fw_regs, frame->buf_phys, dev->frame_buf_size);
+ 
+   return 0;
+ }
+@@ -987,7 +1011,9 @@
+ 
+   if (FLAG_ISSET(FLAG_STREAM_ON)) {
+     /* stop acquisition */
+-    altera_fw_hw_stop(dev->fw_res.virt);
++    altera_fw_hw_stop(dev->fw_regs);
++    altera_dcdi_hw_stop(dev->dc_regs, dev->di_regs);
++
+     FLAG_CLR(FLAG_STREAM_ON);
+     FLAG_CLR(FLAG_BUFFER_IN_SYNC);
+     wake_up(&dev->wait);
+@@ -1158,6 +1184,7 @@
+ #endif
+ 
+   /* This will change any camera settings needed. */
++DBG_PRINT("This will change any camera settings needed. Call sensor s_parm\n");
+   err = vidioc_int_s_parm(dev->sensor, parm);
+   if (err) {
+     DBG_ERROR("vidioc_int_s_parm returned an error %d\n", err);
+@@ -1292,9 +1319,9 @@
+ */
+ };
+ 
+-/** **************************************************************************
++/** ***************************************************************************
+  * v4l2 functions
+- ****************************************************************************/
++ **************************************************************************** */
+ /*
+ static int s_ctrl(struct v4l2_ctrl *ctrl)
+ {
+@@ -1325,60 +1352,62 @@
+ */
+ 
+ 
+-/** **************************************************************************
+- *                         Interrupt handling
+- ************************************************************************** */
++/** ***************************************************************************
++ *                         Interrupt handling                                 *
++ **************************************************************************** */
+ static irqreturn_t cvifw_isr(int irq, void *pdev)
+ {
+-  struct cvifw_vdev    *dev = (struct cvifw_vdev *)pdev;
++  struct cvifw_vdev    *dev;// = (struct cvifw_vdev *)pdev;
+   unsigned long         reg;
+   struct altera_frame  *frame;
++  int                   i;
+ 
+-  reg = altera_fw_hw_clearint(dev->fw_res.virt);
+-DBG_IRQ_PRINT("dev [%p] FIRST_FRAME %d sts %08X\n",
+-          dev, FLAG_ISSET(FLAG_FIRST_FRAME)?1:0, reg);
+-  if (reg & FW_STS_INT_S) {
+-    if (FLAG_ISSET(FLAG_BUFFER_IN_SYNC)) {
+-      if (!list_empty(&dev->inqueue)) {
+-        spin_lock(&dev->queue_lock);
+-        frame = list_entry(dev->inqueue.next, struct altera_frame, frame);
+-        list_move_tail(&frame->frame, &dev->dmaqueue);
+-        spin_unlock(&dev->queue_lock);
+-        altera_fw_hw_addr0(dev->fw_res.virt, frame->buf_phys, dev->frame_buf_size);
++  for(i=0; i<2; i++){
++    dev = &cvifwDevice->vdev[i];
++    reg = altera_fw_hw_clearint(dev->fw_regs);
++//DBG_PRINT("dev[%d] @ %p sts %08X\n", i, dev, reg);
++    if (reg & FW_STS_INT_S) {
++      if (FLAG_ISSET(FLAG_BUFFER_IN_SYNC)) {
++        if (!list_empty(&dev->inqueue)) {
++          spin_lock(&dev->queue_lock);
++          frame = list_entry(dev->inqueue.next, struct altera_frame, frame);
++          list_move_tail(&frame->frame, &dev->dmaqueue);
++          spin_unlock(&dev->queue_lock);
++          altera_fw_hw_addr0(dev->fw_regs, frame->buf_phys, dev->frame_buf_size);
+ DBG_IRQ_PRINT("altera_fw_hw_addr0 index %d %p\n", frame->buf.index, frame->buf_phys);
+-      } else {
+-        // input queue is empty go in out of sync
+-DBG_IRQ_PRINT("input queue is empty go in out of sync\n");
+-//printk("altera_cvifw irq %d:input queue is empty go in out of sync\n", irq);
+-        FLAG_CLR(FLAG_BUFFER_IN_SYNC);
+-      }
+-      if (!list_empty(&dev->dmaqueue)) {
+-        spin_lock(&dev->queue_lock);
+-        frame = list_entry(dev->dmaqueue.next, struct altera_frame, frame);
+-        do_gettimeofday(&frame->buf.timestamp);
+-        frame->buf.sequence++;
+-        frame->state = F_DONE;
+-        frame->buf.bytesused = frame->buf.length;
+-        // remove the entry from the dmaqueue and put it in the outqueue
+-        list_move_tail(&frame->frame, &dev->outqueue);
+-        spin_unlock(&dev->queue_lock);
+-        wake_up(&dev->wait);
++        } else {
++          // input queue is empty go in out of sync
++//DBG_PRINT("dev[%d] input queue is empty go in out of sync\n", i);
++          FLAG_CLR(FLAG_BUFFER_IN_SYNC);
++        }
++        if (!list_empty(&dev->dmaqueue)) {
++          spin_lock(&dev->queue_lock);
++          frame = list_entry(dev->dmaqueue.next, struct altera_frame, frame);
++          do_gettimeofday(&frame->buf.timestamp);
++          frame->buf.sequence++;
++          frame->state = F_DONE;
++          frame->buf.bytesused = frame->buf.length;
++          // remove the entry from the dmaqueue and put it in the outqueue
++          list_move_tail(&frame->frame, &dev->outqueue);
++          spin_unlock(&dev->queue_lock);
++          wake_up(&dev->wait);
+ DBG_IRQ_PRINT("wake_up dev->wait frame index %d\n", frame->buf.index);
+-      }
+-    } else {
+-      // out of sync
+-      if (!list_empty(&dev->inqueue)) {
+-DBG_IRQ_PRINT("resync\n");
+-        FLAG_SET(FLAG_BUFFER_IN_SYNC);
++        }
++      } else {
++        // out of sync
++        if (!list_empty(&dev->inqueue)) {
++//DBG_PRINT("dev[%d] resync\n", i);
++          FLAG_SET(FLAG_BUFFER_IN_SYNC);
++        }
+       }
+     }
+   }
+   return IRQ_HANDLED;
+ }
+ 
+-/** **************************************************************************
+- *                      video4linux integration
+- ************************************************************************** */
++/** ***************************************************************************
++ *                      video4linux integration                               *
++ **************************************************************************** */
+ 
+ static int cvifw_open(struct file *file)
+ {
+@@ -1467,7 +1496,7 @@
+   struct cvifw_vdev   *dev = video_drvdata(file);
+   mutex_lock(&dev->fops_lock);
+ 
+-  altera_fw_hw_stop(dev->fw_res.virt);
++  altera_fw_hw_stop(dev->fw_regs);
+ 
+   dev->flags &= ~FLAG_DEVICE_IN_USE;
+   if (dev->flags & FLAG_BUFFERS_AVAILABLE)
+@@ -1585,14 +1614,13 @@
+   .poll           = cvifw_poll,
+ };
+ 
+-
+-
+-/** **************************************************************************
+- ************************************************************************** */
++/** ***************************************************************************
++ *                  V4L2 device functions                                     *
++ **************************************************************************** */
+ static int v4l2_master_attach(struct v4l2_int_device *slave)
+ {
+   struct cvifw_vdev  *vdev  = slave->u.slave->master->priv;
+-//  struct sensor_data *sdata = slave->priv;
++  struct sensor_data *sdata = slave->priv;
+   struct v4l2_format  slv_fmt;
+ 
+ 
+@@ -1652,14 +1680,34 @@
+   mutex_init(&dev->fops_lock);
+   spin_lock_init(&dev->queue_lock);
+   init_waitqueue_head(&dev->wait);
+-
++/*
+   ret = remap(&dev->fw_res);
+   if(ret){
+     //pci_disable_device(pdmgDevice->pci_dev);
+     DBG_ERROR("fw remap failed\n" );
+     //return -ENODEV;
+   }
+-
++ */
++  // allocate buffers for decoder/deinterlacer
++  ret = 1024*625*2; //1024*576*2;
++  dev->dcdi_buf0_v = kmalloc(ret, GFP_KERNEL);
++  if(!dev->dcdi_buf0_v){
++    DBG_ERROR("allocate buffer0 for decoder/deinterlacer failed\n");
++    //return -ENOMEM;
++  }
++  dev->dcdi_buf0_p = virt_to_phys(dev->dcdi_buf0_v);
++  DBG_PRINT("buffer0 for decoder/deinterlacer @ v: %p, p: %p\n",
++            dev->dcdi_buf0_v, dev->dcdi_buf0_p );
++
++  dev->dcdi_buf1_v = kmalloc(ret, GFP_KERNEL);
++  if(!dev->dcdi_buf1_v){
++    DBG_ERROR("allocate buffer1 for decoder/deinterlacer failed\n");
++    //return -ENOMEM;
++  }
++  dev->dcdi_buf1_p = virt_to_phys(dev->dcdi_buf1_v);
++  DBG_PRINT("buffer1 for decoder/deinterlacer @ v: %p, p: %p\n",
++            dev->dcdi_buf1_v, dev->dcdi_buf1_p );
++  
+   ret = v4l2_device_register(&dev->pci_dev->dev, v4l2_dev);
+   if (ret < 0) {
+     v4l2_err(v4l2_dev, "Could not register v4l2_device\n");
+@@ -1836,9 +1884,9 @@
+   return 0;
+ }
+ 
+-/** **************************************************************************
+- *
+- ****************************************************************************/
++/** ***************************************************************************
++ *                                                                            *
++ **************************************************************************** */
+ 
+ /**
+  * probe
+@@ -1868,26 +1916,25 @@
+   cvifwDevice->pci_dev = pdev;
+ //  cvifwDevice->dev_info = &directly_mappable_cdev_bdi;
+ 
+-  DBG_PRINT("pdmg_getresources\n");
++  DBG_PRINT("Get PCIe resources\n");
+   err = cvifw_getresources(pdev);
+   if(err){
+-    //TODO
++    DBG_ERROR("unable to get PCIe resources\n" );
++    return -EINVAL;
+   }
+-
+-  DBG_PRINT("remap PCIe CTRL iomem\n");
+-  err = remap(&cvifwDevice->ctrl_res);
++  DBG_PRINT("remap PCIe BAR0 to iomem\n");
++  err = remap(&cvifwDevice->pci_res);
+   if (err) {
+-    DBG_PRINT("ctrl remap failed\n" );
+-    // TODO return -ENODEV;
++    DBG_ERROR("PCIe BAR0 remap failed\n" );
++    return -ENODEV;
+   }
+-
+-//TODO, mettere l'int request in dev reg APPENA FUNZIONA
+-  DBG_PRINT("pci_dev bus %p, bus->msi %p, dev->msi_cap %p current_state %08X\n",
++//TODO, mettere l'int request in v4l2_dev_reg
++/*  DBG_PRINT("pci_dev bus %p, bus->msi %p, dev->msi_cap %p current_state %08X\n",
+             pdev->bus, pdev->bus->msi, pdev->msi_cap,
+-            pdev->current_state);
++            pdev->current_state);*/
+   pci_set_master(pdev);
+   err = pci_enable_msi_range(pdev, 0, 2);
+-  DBG_PRINT("pci_enable_msi_range(%p, 0, 2) return %d\n", pdev, err);
++//  DBG_PRINT("pci_enable_msi_range(%p, 0, 2) return %d\n", pdev, err);
+   if (err<0) {
+     DBG_ERROR("pci_enable_msi_range(%p, 0, 2) return %d\n", pdev, err);
+     //TODO
+@@ -1899,7 +1946,11 @@
+   cvifwDevice->vdev[0].pci_dev   = pdev;
+   cvifwDevice->vdev[0].dev       = &pdev->dev;
+   cvifwDevice->vdev[0].video_idx = TV_NOT_LOCKED;
++  cvifwDevice->vdev[0].dc_regs   = cvifwDevice->pci_res.virt + BAR0_DC0_OFS;
++  cvifwDevice->vdev[0].di_regs   = cvifwDevice->pci_res.virt + BAR0_DI0_OFS;
++  cvifwDevice->vdev[0].fw_regs   = cvifwDevice->pci_res.virt + BAR0_FW0_OFS;
+   cvifwDevice->vdev[0].irq       = pdev->irq;
++
+   DBG_PRINT("Call v4l2_dev_reg(%p)\n", &cvifwDevice->vdev[0]);
+   err = v4l2_dev_reg(&cvifwDevice->vdev[0]);
+   if(err){
+@@ -1918,7 +1969,11 @@
+   cvifwDevice->vdev[1].pci_dev   = pdev;
+   cvifwDevice->vdev[1].dev       = &pdev->dev;
+   cvifwDevice->vdev[1].video_idx = TV_NOT_LOCKED;
++  cvifwDevice->vdev[1].dc_regs   = cvifwDevice->pci_res.virt + BAR0_DC1_OFS;
++  cvifwDevice->vdev[1].di_regs   = cvifwDevice->pci_res.virt + BAR0_DI1_OFS;
++  cvifwDevice->vdev[1].fw_regs   = cvifwDevice->pci_res.virt + BAR0_FW1_OFS;
+   cvifwDevice->vdev[1].irq       = pdev->irq;
++
+   DBG_PRINT("Call v4l2_dev_reg(%p)\n", &cvifwDevice->vdev[1]);
+   err = v4l2_dev_reg(&cvifwDevice->vdev[1]);
+   if(err){
+@@ -1932,7 +1987,6 @@
+     //TODO
+   }
+ 
+-
+   DBG_PRINT("done\n");
+   return 0;
+ }
+@@ -1991,7 +2045,6 @@
+   DBG_PRINT("PCIe:PDMg: pci_unregister_driver\n");
+   pci_unregister_driver(&cvifw_driver);
+ 
+-
+   v4l2_dev_unreg(&cvifwDevice->vdev[0]);
+   v4l2_dev_unreg(&cvifwDevice->vdev[1]);
+ 

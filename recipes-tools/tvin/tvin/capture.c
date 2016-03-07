@@ -26,6 +26,7 @@ int capture_open(char* name, psCapDev pCap)
   pCap->nbuf  = CAP_NUM_BUF;
   pCap->std   = V4L2_STD_PAL;
   pCap->fmt   = V4L2_PIX_FMT_UYVY;
+  //pCap->fmt   = V4L2_PIX_FMT_VYUY;
   pCap->input = 1;
   printf("capture_open:Device %s opened fd is %d\n", name, pCap->fd);
   return 0;
@@ -253,13 +254,6 @@ int capture_stop(psCapDev pCap)
       pCap->buf[i].start = 0;
     }
   }
-/*
-  type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
-  if(ioctl(pCap->fd, VIDIOC_STREAMON, &type) < 0){
-    printf("VIDIOC_STREAMON error\n");
-    return -1;
-  }
-*/
   return 0;
 }
 

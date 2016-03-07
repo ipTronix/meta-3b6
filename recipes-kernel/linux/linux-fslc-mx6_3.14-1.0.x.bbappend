@@ -25,6 +25,7 @@ SRC_URI_append_tera-he = " \
    file://0017-DTB_added_rev2_gpio-Audio_fixed_for_kernel.patch \
    file://0019-usb-capture-update.patch \
    file://0020-can2-3-inverted.patch \
+   file://0021-fixed-altera-cvifw.patch \
    file://defconfig \
 "
 
