@@ -1,0 +1,22 @@
+Index: git/arch/arm/boot/dts/imx6q-tera-he.dts
+===================================================================
+--- git.orig/arch/arm/boot/dts/imx6q-tera-he.dts	2016-03-07 10:38:06.111347533 +0100
++++ git/arch/arm/boot/dts/imx6q-tera-he.dts	2016-03-07 10:39:47.523348801 +0100
+@@ -195,7 +195,7 @@
+ 	};
+ };
+ 
+-&ecspi2 {
++&ecspi3 {
+ 	status = "okay";
+ 
+ 	can4: can@4 {
+@@ -209,7 +209,7 @@
+ 	};
+ };
+ 
+-&ecspi3 {
++&ecspi2 {
+ 	status = "okay";
+ 
+ 	can3: can@3 {
