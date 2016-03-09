@@ -3,7 +3,7 @@
 #ifndef __CAPTURE_H
 #define __CAPTURE_H
 
-#define CAP_NUM_BUF 5
+#define CAP_NUM_BUF 4
 
 /**
  */
