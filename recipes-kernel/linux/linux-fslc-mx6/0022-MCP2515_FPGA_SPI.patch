@@ -1,7 +1,7 @@
 Index: git/drivers/net/can/Kconfig
 ===================================================================
---- git.orig/drivers/net/can/Kconfig	2016-04-06 09:46:29.822880286 +0200
-+++ git/drivers/net/can/Kconfig	2016-04-06 09:46:33.082880349 +0200
+--- git.orig/drivers/net/can/Kconfig	2016-04-06 09:59:05.046894895 +0200
++++ git/drivers/net/can/Kconfig	2016-04-06 09:59:08.378894960 +0200
 @@ -83,6 +83,13 @@
  	---help---
  	  Driver for the Microchip MCP251x SPI CAN controllers.
@@ -18,8 +18,8 @@ Index: git/drivers/net/can/Kconfig
  	tristate "Analog Devices Blackfin on-chip CAN"
 Index: git/drivers/net/can/Makefile
 ===================================================================
---- git.orig/drivers/net/can/Makefile	2016-04-06 09:46:29.822880286 +0200
-+++ git/drivers/net/can/Makefile	2016-04-06 09:46:33.082880349 +0200
+--- git.orig/drivers/net/can/Makefile	2016-04-06 09:59:05.046894895 +0200
++++ git/drivers/net/can/Makefile	2016-04-06 09:59:08.378894960 +0200
 @@ -26,5 +26,6 @@
  obj-$(CONFIG_CAN_FLEXCAN)	+= flexcan.o
  obj-$(CONFIG_PCH_CAN)		+= pch_can.o
@@ -30,8 +30,8 @@ Index: git/drivers/net/can/Makefile
 Index: git/drivers/net/can/mcp2515.c
 ===================================================================
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ git/drivers/net/can/mcp2515.c	2016-04-06 09:52:45.062887545 +0200
-@@ -0,0 +1,1271 @@
++++ git/drivers/net/can/mcp2515.c	2016-04-06 11:28:05.606998207 +0200
+@@ -0,0 +1,1265 @@
 +/**
 + * CAN bus driver for Microchip 251% CAN Controller with SPI Interface
 + * connected on Tera HE Altera FPGA.
@@ -346,7 +346,7 @@ Index: git/drivers/net/can/mcp2515.c
 +	void __iomem* base;
 +	/* Attach interrupt hook  */
 +	base = cvifw_device_attach(mcp2515_isr_hook, &mcp2515_drv);
-+	if ( !base ){
++	if ( !base ) {
 +		return NULL;
 +	}
 +	/* Enable ALTERA SPI MCP2515 mailbox interrupt mask */
@@ -1049,6 +1049,31 @@ Index: git/drivers/net/can/mcp2515.c
 +	priv->tx_len = 0;
 +
 +	// set interrupt hook on PCIe isr manager
++
++	priv->spi_mcp2515_base = irq_detach();
++	if (!priv->spi_mcp2515_base) {
++		DBG_ERROR("failed to set callback function\n");
++		close_candev(net);
++		goto open_unlock;
++	}
++
++	mcp2515_drv.mbrx_base = priv->spi_mcp2515_base + SPI_MCP2515_MB_RX_BASE;
++	mcp2515_drv.mbtx_base = priv->spi_mcp2515_base + SPI_MCP2515_MB_TX_BASE;
++	DBG_PRINT("Mailbox Rx address %p Tx address %p\n",
++						mcp2515_drv.mbrx_base, mcp2515_drv.mbtx_base);
++	// empty tx mailbox
++	__raw_readl(mcp2515_drv.mbrx_base + SPI_MCP2515_CMD_REG);
++	if (priv->index == 0) {
++		priv->spi_mcp2515_base += SPI_MCP2515_0_BASE;
++	} else {
++		priv->spi_mcp2515_base += SPI_MCP2515_1_BASE;
++	}
++	DBG_PRINT("device %d:net device %p:SPI MCP2515 address %p\n",
++	          priv->index,
++	          (void*)net,
++	          priv->spi_mcp2515_base);
++
++	/* Attach interrupt hook  */
 +	ret = (int)irq_attach();
 +	if (!ret) {
 +		DBG_ERROR("failed to set callback function\n");
@@ -1056,9 +1081,15 @@ Index: git/drivers/net/can/mcp2515.c
 +		goto open_unlock;
 +	}
 +
-+	/* Enable ALTERA SPI MCP2515 mailbox interrupt mask */
-+	__raw_writel(SPI_MCP2515_IMR_PENDING,
-+	             mcp2515_drv.mbrx_base + SPI_MCP2515_IMR_REG);
++	/* Here is OK to not lock the MCP, no one knows about it yet */
++	DBG_PRINT("device %d:net device %p:mcp2515_hw_probe\n", priv->index, (void*)net);
++	if (!mcp2515_hw_probe(priv)) {
++		DBG_ERROR("device %d:net device %p:fail on mcp2515_hw_probe\n", priv->index, (void*)net);
++		ret = -ENODEV;
++		close_candev(net);
++		goto open_unlock;
++	}
++	mcp2515_hw_sleep(priv);
 +
 +	priv->wq = create_freezable_workqueue("mcp2515_wq");
 +	INIT_WORK(&priv->tx_work, mcp2515_tx_work_handler);
@@ -1108,7 +1139,7 @@ Index: git/drivers/net/can/mcp2515.c
 +	int                     freq;
 +	int                     ret = -ENODEV;
 +
-+	DBG_PRINT("device %d: alloc_candev\n", index);
++	DBG_PRINT("device %d:alloc_candev\n", index);
 +
 +	/* Allocate can/net device */
 +	net = alloc_candev(sizeof(struct mcp2515_device), TX_ECHO_SKB_MAX);
@@ -1122,7 +1153,7 @@ Index: git/drivers/net/can/mcp2515.c
 +	net->flags |= IFF_ECHO;
 +
 +	priv = netdev_priv(net);
-+	DBG_PRINT("device %d: net @ %p; priv @ %p\n", index, (void*)net, (void*)priv);
++	DBG_PRINT("device %d:net @ %p; priv @ %p\n", index, (void*)net, (void*)priv);
 +
 +	freq = 24*1000*1000;
 +	priv->can.bittiming_const    = &mcp2515_bittiming_const;
@@ -1169,42 +1200,7 @@ Index: git/drivers/net/can/mcp2515.c
 +			goto error_probe;
 +		}
 +	}
-+
-+	/* Configure the ALTERA SPI MCP2515 device base address */
 +	priv->index = index;
-+	priv->spi_mcp2515_base = irq_detach();
-+	if ( index == 0 ) {
-+		mcp2515_drv.mbrx_base = priv->spi_mcp2515_base + SPI_MCP2515_MB_RX_BASE;
-+		mcp2515_drv.mbtx_base = priv->spi_mcp2515_base + SPI_MCP2515_MB_TX_BASE;
-+		// empty tx mailbox serve????
-+		__raw_readl(mcp2515_drv.mbrx_base + SPI_MCP2515_CMD_REG);
-+		DBG_PRINT("Mailbox Rx address %p Tx address %p\n",
-+		          mcp2515_drv.mbrx_base, mcp2515_drv.mbtx_base);
-+
-+		priv->spi_mcp2515_base += SPI_MCP2515_0_BASE;
-+	} else {
-+		priv->spi_mcp2515_base += SPI_MCP2515_1_BASE;
-+	}
-+	DBG_PRINT("device %d:net device %p:SPI MCP2515 address %p\n",
-+	          index,
-+	          (void*)net,
-+	          priv->spi_mcp2515_base);
-+
-+	/* Attach interrupt hook  */
-+	irq_attach();
-+
-+	/* Enable ALTERA SPI MCP2515 mailbox interrupt mask */
-+	__raw_writel(SPI_MCP2515_IMR_PENDING,
-+	             mcp2515_drv.mbrx_base + SPI_MCP2515_IMR_REG);
-+
-+	/* Here is OK to not lock the MCP, no one knows about it yet */
-+	DBG_PRINT("device %d:net device %p:mcp2515_hw_probe\n", index, (void*)net);
-+	if (!mcp2515_hw_probe(priv)) {
-+		DBG_ERROR("device %d:net device %p:fail on mcp2515_hw_probe\n", index, (void*)net);
-+		ret = -ENODEV;
-+		goto error_probe;
-+	}
-+	mcp2515_hw_sleep(priv);
 +
 +	ret = register_candev(net);
 +	if (ret) {
@@ -1214,7 +1210,6 @@ Index: git/drivers/net/can/mcp2515.c
 +	devm_can_led_init(net);
 +
 +	DBG_PRINT("device %d:net device %s %p:created\n", index, net->name, (void*)net);
-+	irq_detach();
 +
 +	return net;
 +
@@ -1281,7 +1276,6 @@ Index: git/drivers/net/can/mcp2515.c
 +		DBG_PRINT("MCP2515 net device %s #%d @ %p created\n",
 +							mcp2515_drv.net[i]->name, i, (void*)mcp2515_drv.net[i]);
 +	}
-+	irq_detach();
 +	return 0;
 +}
 +
@@ -1305,8 +1299,8 @@ Index: git/drivers/net/can/mcp2515.c
 +MODULE_LICENSE("GPL v2");
 Index: git/drivers/net/can/mcp251x.c
 ===================================================================
---- git.orig/drivers/net/can/mcp251x.c	2016-04-06 09:46:32.390880335 +0200
-+++ git/drivers/net/can/mcp251x.c	2016-04-06 09:46:33.086880349 +0200
+--- git.orig/drivers/net/can/mcp251x.c	2016-04-06 09:59:07.610894945 +0200
++++ git/drivers/net/can/mcp251x.c	2016-04-06 09:59:08.378894960 +0200
 @@ -77,39 +77,6 @@
  #include <linux/uaccess.h>
  #include <linux/regulator/consumer.h>
@@ -1395,8 +1389,8 @@ Index: git/drivers/net/can/mcp251x.c
  		if (pdata)
 Index: git/drivers/media/platform/mxc/capture/altera-cvifw.c
 ===================================================================
---- git.orig/drivers/media/platform/mxc/capture/altera-cvifw.c	2016-04-06 09:46:33.042880348 +0200
-+++ git/drivers/media/platform/mxc/capture/altera-cvifw.c	2016-04-06 09:46:33.086880349 +0200
+--- git.orig/drivers/media/platform/mxc/capture/altera-cvifw.c	2016-04-06 09:59:08.330894959 +0200
++++ git/drivers/media/platform/mxc/capture/altera-cvifw.c	2016-04-06 09:59:08.382894960 +0200
 @@ -67,6 +67,9 @@
  #define CVIFW1_MINOR    3
  #define CVIFW1_CSI      3
@@ -1480,8 +1474,8 @@ Index: git/drivers/media/platform/mxc/capture/altera-cvifw.c
  /**
 Index: git/arch/arm/boot/dts/imx6q-tera-he-iomux.dtsi
 ===================================================================
---- git.orig/arch/arm/boot/dts/imx6q-tera-he-iomux.dtsi	2016-04-06 09:46:32.866880345 +0200
-+++ git/arch/arm/boot/dts/imx6q-tera-he-iomux.dtsi	2016-04-06 09:46:33.086880349 +0200
+--- git.orig/arch/arm/boot/dts/imx6q-tera-he-iomux.dtsi	2016-04-06 09:59:08.178894956 +0200
++++ git/arch/arm/boot/dts/imx6q-tera-he-iomux.dtsi	2016-04-06 09:59:08.382894960 +0200
 @@ -68,6 +68,17 @@
  
  				MX6QDL_PAD_NANDF_RB0__GPIO6_IO10     0x80000000  /* BUZZER_EXT */
@@ -1502,8 +1496,8 @@ Index: git/arch/arm/boot/dts/imx6q-tera-he-iomux.dtsi
  
 Index: git/arch/arm/boot/dts/imx6q-tera-he.dts
 ===================================================================
---- git.orig/arch/arm/boot/dts/imx6q-tera-he.dts	2016-04-06 09:46:32.978880347 +0200
-+++ git/arch/arm/boot/dts/imx6q-tera-he.dts	2016-04-06 09:46:33.086880349 +0200
+--- git.orig/arch/arm/boot/dts/imx6q-tera-he.dts	2016-04-06 09:59:08.278894958 +0200
++++ git/arch/arm/boot/dts/imx6q-tera-he.dts	2016-04-06 09:59:08.382894960 +0200
 @@ -194,7 +194,7 @@
  		csi_id = <3>;
  	};
@@ -1531,8 +1525,8 @@ Index: git/arch/arm/boot/dts/imx6q-tera-he.dts
  	status = "okay";
 Index: git/arch/arm/boot/dts/imx6q-tera-he.dtsi
 ===================================================================
---- git.orig/arch/arm/boot/dts/imx6q-tera-he.dtsi	2016-04-06 09:46:32.866880345 +0200
-+++ git/arch/arm/boot/dts/imx6q-tera-he.dtsi	2016-04-06 09:46:33.086880349 +0200
+--- git.orig/arch/arm/boot/dts/imx6q-tera-he.dtsi	2016-04-06 09:59:08.178894956 +0200
++++ git/arch/arm/boot/dts/imx6q-tera-he.dtsi	2016-04-06 09:59:08.382894960 +0200
 @@ -369,7 +369,7 @@
  	pinctrl-0 = <&pinctrl_ecspi1 &pinctrl_ecspi1_cs>;
  	status = "disabled";
