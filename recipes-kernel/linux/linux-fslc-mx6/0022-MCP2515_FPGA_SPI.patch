@@ -1,7 +1,7 @@
 Index: git/drivers/net/can/Kconfig
 ===================================================================
---- git.orig/drivers/net/can/Kconfig	2016-03-24 13:08:58.577568724 +0100
-+++ git/drivers/net/can/Kconfig	2016-03-24 13:09:01.953568658 +0100
+--- git.orig/drivers/net/can/Kconfig	2016-04-06 09:46:29.822880286 +0200
++++ git/drivers/net/can/Kconfig	2016-04-06 09:46:33.082880349 +0200
 @@ -83,6 +83,13 @@
  	---help---
  	  Driver for the Microchip MCP251x SPI CAN controllers.
@@ -18,8 +18,8 @@ Index: git/drivers/net/can/Kconfig
  	tristate "Analog Devices Blackfin on-chip CAN"
 Index: git/drivers/net/can/Makefile
 ===================================================================
---- git.orig/drivers/net/can/Makefile	2016-03-24 13:08:58.577568724 +0100
-+++ git/drivers/net/can/Makefile	2016-03-24 13:09:01.953568658 +0100
+--- git.orig/drivers/net/can/Makefile	2016-04-06 09:46:29.822880286 +0200
++++ git/drivers/net/can/Makefile	2016-04-06 09:46:33.082880349 +0200
 @@ -26,5 +26,6 @@
  obj-$(CONFIG_CAN_FLEXCAN)	+= flexcan.o
  obj-$(CONFIG_PCH_CAN)		+= pch_can.o
@@ -30,7 +30,7 @@ Index: git/drivers/net/can/Makefile
 Index: git/drivers/net/can/mcp2515.c
 ===================================================================
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ git/drivers/net/can/mcp2515.c	2016-03-24 13:09:01.953568658 +0100
++++ git/drivers/net/can/mcp2515.c	2016-04-06 09:52:45.062887545 +0200
 @@ -0,0 +1,1271 @@
 +/**
 + * CAN bus driver for Microchip 251% CAN Controller with SPI Interface
@@ -230,14 +230,14 @@ Index: git/drivers/net/can/mcp2515.c
 +
 +/**
 + * Altera Avalon Mailbox
-+ * 
++ *
 + * A write to the command register by the sender processor indicates a pending
 + * message in the Mailbox and an interrupt will be issued to the receiver
 + * processor.
 + * Upon retrieval of the message by the receiver processor via a read
 + * transaction, the message is consumed, Mailbox is empty.
 + * The status register (0x2) is used to indicate if the Mailbox is full or empty.
-+ * 
++ *
 + * Interrupt Masking Register (0x3) is writable by the Avalon-MM interface to
 + * mask its dedicated interrupt output.
 + */
@@ -441,7 +441,7 @@ Index: git/drivers/net/can/mcp2515.c
 +#define RXB0_VALID      0x01
 +#define RXB1_VALID      0x02
 +
-+ * prende il messaggio dalla coda      
++ * prende il messaggio dalla coda
 + * verifica se è un messaggio CAN ricevuto (bit x byte y)
 + * oppure se è una notifica di terrupt
 + * estrae eflag e intf dal messaggio ed esegue i controlli seguenti
@@ -449,9 +449,9 @@ Index: git/drivers/net/can/mcp2515.c
 + * byte  0 flags
 + *         RXB0_VALID      0x01
 + *         RXB1_VALID      0x02
-+ * byte  1 eflag 
++ * byte  1 eflag
 + *         cfr MCP2515 datasheet
-+ * byte  2 iflag 
++ * byte  2 iflag
 + *         cfr MCP2515 datasheet
 + * byte  3 CAN Messagge Buffer 0
 + * byte 17 CAN Messagge Buffer 1
@@ -463,7 +463,7 @@ Index: git/drivers/net/can/mcp2515.c
 +
 +static void mcp2515_isr_hook(void* arg)
 +{
-+	struct mcp2515_driver  *drv = (struct mcp2515_drv*)arg;
++	struct mcp2515_driver  *drv = (struct mcp2515_driver*)arg;
 +	struct net_device      *net;
 +	struct mcp2515_device  *dev;
 +	u32                     sts;
@@ -1173,7 +1173,7 @@ Index: git/drivers/net/can/mcp2515.c
 +	/* Configure the ALTERA SPI MCP2515 device base address */
 +	priv->index = index;
 +	priv->spi_mcp2515_base = irq_detach();
-+	if ( index == 0 ) { 
++	if ( index == 0 ) {
 +		mcp2515_drv.mbrx_base = priv->spi_mcp2515_base + SPI_MCP2515_MB_RX_BASE;
 +		mcp2515_drv.mbtx_base = priv->spi_mcp2515_base + SPI_MCP2515_MB_TX_BASE;
 +		// empty tx mailbox serve????
@@ -1305,8 +1305,8 @@ Index: git/drivers/net/can/mcp2515.c
 +MODULE_LICENSE("GPL v2");
 Index: git/drivers/net/can/mcp251x.c
 ===================================================================
---- git.orig/drivers/net/can/mcp251x.c	2016-03-24 13:09:01.149568674 +0100
-+++ git/drivers/net/can/mcp251x.c	2016-03-24 13:09:01.957568658 +0100
+--- git.orig/drivers/net/can/mcp251x.c	2016-04-06 09:46:32.390880335 +0200
++++ git/drivers/net/can/mcp251x.c	2016-04-06 09:46:33.086880349 +0200
 @@ -77,39 +77,6 @@
  #include <linux/uaccess.h>
  #include <linux/regulator/consumer.h>
@@ -1395,8 +1395,8 @@ Index: git/drivers/net/can/mcp251x.c
  		if (pdata)
 Index: git/drivers/media/platform/mxc/capture/altera-cvifw.c
 ===================================================================
---- git.orig/drivers/media/platform/mxc/capture/altera-cvifw.c	2016-03-24 13:09:01.905568659 +0100
-+++ git/drivers/media/platform/mxc/capture/altera-cvifw.c	2016-03-24 13:16:44.701559722 +0100
+--- git.orig/drivers/media/platform/mxc/capture/altera-cvifw.c	2016-04-06 09:46:33.042880348 +0200
++++ git/drivers/media/platform/mxc/capture/altera-cvifw.c	2016-04-06 09:46:33.086880349 +0200
 @@ -67,6 +67,9 @@
  #define CVIFW1_MINOR    3
  #define CVIFW1_CSI      3
@@ -1480,8 +1480,8 @@ Index: git/drivers/media/platform/mxc/capture/altera-cvifw.c
  /**
 Index: git/arch/arm/boot/dts/imx6q-tera-he-iomux.dtsi
 ===================================================================
---- git.orig/arch/arm/boot/dts/imx6q-tera-he-iomux.dtsi	2016-03-24 13:09:01.721568663 +0100
-+++ git/arch/arm/boot/dts/imx6q-tera-he-iomux.dtsi	2016-03-24 13:18:07.041558131 +0100
+--- git.orig/arch/arm/boot/dts/imx6q-tera-he-iomux.dtsi	2016-04-06 09:46:32.866880345 +0200
++++ git/arch/arm/boot/dts/imx6q-tera-he-iomux.dtsi	2016-04-06 09:46:33.086880349 +0200
 @@ -68,6 +68,17 @@
  
  				MX6QDL_PAD_NANDF_RB0__GPIO6_IO10     0x80000000  /* BUZZER_EXT */
@@ -1502,8 +1502,8 @@ Index: git/arch/arm/boot/dts/imx6q-tera-he-iomux.dtsi
  
 Index: git/arch/arm/boot/dts/imx6q-tera-he.dts
 ===================================================================
---- git.orig/arch/arm/boot/dts/imx6q-tera-he.dts	2016-03-24 13:09:01.845568661 +0100
-+++ git/arch/arm/boot/dts/imx6q-tera-he.dts	2016-03-24 13:18:20.713557867 +0100
+--- git.orig/arch/arm/boot/dts/imx6q-tera-he.dts	2016-04-06 09:46:32.978880347 +0200
++++ git/arch/arm/boot/dts/imx6q-tera-he.dts	2016-04-06 09:46:33.086880349 +0200
 @@ -194,7 +194,7 @@
  		csi_id = <3>;
  	};
@@ -1531,8 +1531,8 @@ Index: git/arch/arm/boot/dts/imx6q-tera-he.dts
  	status = "okay";
 Index: git/arch/arm/boot/dts/imx6q-tera-he.dtsi
 ===================================================================
---- git.orig/arch/arm/boot/dts/imx6q-tera-he.dtsi	2016-03-24 13:09:01.725568663 +0100
-+++ git/arch/arm/boot/dts/imx6q-tera-he.dtsi	2016-03-24 13:18:36.917557554 +0100
+--- git.orig/arch/arm/boot/dts/imx6q-tera-he.dtsi	2016-04-06 09:46:32.866880345 +0200
++++ git/arch/arm/boot/dts/imx6q-tera-he.dtsi	2016-04-06 09:46:33.086880349 +0200
 @@ -369,7 +369,7 @@
  	pinctrl-0 = <&pinctrl_ecspi1 &pinctrl_ecspi1_cs>;
  	status = "disabled";
