@@ -1,7 +1,7 @@
 Index: git/drivers/net/can/Kconfig
 ===================================================================
---- git.orig/drivers/net/can/Kconfig	2016-04-06 09:59:05.046894895 +0200
-+++ git/drivers/net/can/Kconfig	2016-04-06 09:59:08.378894960 +0200
+--- git.orig/drivers/net/can/Kconfig	2016-04-06 12:05:10.863041254 +0200
++++ git/drivers/net/can/Kconfig	2016-04-06 12:05:14.343041321 +0200
 @@ -83,6 +83,13 @@
  	---help---
  	  Driver for the Microchip MCP251x SPI CAN controllers.
@@ -18,8 +18,8 @@ Index: git/drivers/net/can/Kconfig
  	tristate "Analog Devices Blackfin on-chip CAN"
 Index: git/drivers/net/can/Makefile
 ===================================================================
---- git.orig/drivers/net/can/Makefile	2016-04-06 09:59:05.046894895 +0200
-+++ git/drivers/net/can/Makefile	2016-04-06 09:59:08.378894960 +0200
+--- git.orig/drivers/net/can/Makefile	2016-04-06 12:05:10.863041254 +0200
++++ git/drivers/net/can/Makefile	2016-04-06 12:05:14.343041321 +0200
 @@ -26,5 +26,6 @@
  obj-$(CONFIG_CAN_FLEXCAN)	+= flexcan.o
  obj-$(CONFIG_PCH_CAN)		+= pch_can.o
@@ -30,8 +30,8 @@ Index: git/drivers/net/can/Makefile
 Index: git/drivers/net/can/mcp2515.c
 ===================================================================
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ git/drivers/net/can/mcp2515.c	2016-04-06 11:28:05.606998207 +0200
-@@ -0,0 +1,1265 @@
++++ git/drivers/net/can/mcp2515.c	2016-04-12 15:00:29.205273022 +0200
+@@ -0,0 +1,1357 @@
 +/**
 + * CAN bus driver for Microchip 251% CAN Controller with SPI Interface
 + * connected on Tera HE Altera FPGA.
@@ -62,8 +62,8 @@ Index: git/drivers/net/can/mcp2515.c
 +#include <linux/regulator/consumer.h>
 +
 +/* DEBUG HANDLING */
-+#if 1
-+  #define DEBUG
++//#define DEBUG
++#ifdef DEBUG
 +  #define DBG_PRINT(fmt, ...)   printk("%s:%s:"fmt, DEVICE_NAME, __func__, ##__VA_ARGS__);
 +  #define DBG_ERROR(fmt, ...)   printk("%s:%s:ERROR:"fmt, DEVICE_NAME, __func__, ##__VA_ARGS__);
 +  #define DBG_IRQ_PRINT(x...) DBG_PRINT(x)
@@ -242,7 +242,6 @@ Index: git/drivers/net/can/mcp2515.c
 + * mask its dedicated interrupt output.
 + */
 +
-+
 +#define SPI_MCP2515_CMD_REG   0x0000  // R/W for sender, RO for receiver
 +#define SPI_MCP2515_PTR_REG   0x0004  // R/W for sender, RO for receiver
 +#define SPI_MCP2515_STS_REG   0x0008  // RO
@@ -255,6 +254,13 @@ Index: git/drivers/net/can/mcp2515.c
 +#define SPI_MCP2515_IMR_PENDING 0x00000001  // Message pending mask
 +#define SPI_MCP2515_IMR_FULL    0x00000002  // Mailbox space mask
 +
++
++#define MB_CMD_READ(b)    __raw_readl(b + SPI_MCP2515_CMD_REG)
++#define MB_PTR_READ(b)    __raw_readl(b + SPI_MCP2515_PTR_REG)
++#define MB_STS_READ(b)    __raw_readl(b + SPI_MCP2515_STS_REG)
++
++#define MB_INT_ENABLE(b)  __raw_writel(SPI_MCP2515_IMR_PENDING, b + SPI_MCP2515_IMR_REG)
++#define MB_INT_DISABLE(b) __raw_writel(0, b + SPI_MCP2515_IMR_REG)
 +
 +/**
 + * module parameters definition
@@ -311,6 +317,9 @@ Index: git/drivers/net/can/mcp2515.c
 +	char                     *spi_mcp2515_base;
 +	wait_queue_head_t         spi_wait;
 +	int                       spi_done;
++
++#define FLG_HW_PROBE_DONE   0x00000001
++	u32                       flags;
 +};
 +
 +#define MCP2515_NUM_DEV 2
@@ -320,10 +329,10 @@ Index: git/drivers/net/can/mcp2515.c
 + */
 +struct mcp2515_driver {
 +	struct net_device        *net[MCP2515_NUM_DEV];
++	void __iomem             *pcie_bar0;
 +	char                     *mbrx_base;
 +	char                     *mbtx_base;
 +	struct mutex              spi_lock; /* SPI transfer device lock */
-+
 +};
 +
 +struct mcp2515_driver   mcp2515_drv;
@@ -331,27 +340,26 @@ Index: git/drivers/net/can/mcp2515.c
 +static void mcp2515_hw_rx(struct mcp2515_device *dev, u8* buf);
 +static void mcp2515_error_skb(struct net_device *net, int can_id, int data1);
 +static void mcp2515_hw_sleep(struct mcp2515_device *dev);
-+static void mcp2515_isr_hook(void* arg);
-+
++static int  mcp2515_isr_hook(void* arg);
 +
 +/**
 + * routine to attach to cvifw PCIe isr, return BAR0 address
 + */
-+extern void __iomem* cvifw_device_attach(void (*hook)(void*), void* arg);
++extern void __iomem* cvifw_device_attach(int (*hook)(void*), void* arg);
 +
 +/**
 + */
 +void __iomem* irq_attach(void)
 +{
 +	void __iomem* base;
++	DBG_PRINT("\n");
 +	/* Attach interrupt hook  */
 +	base = cvifw_device_attach(mcp2515_isr_hook, &mcp2515_drv);
 +	if ( !base ) {
 +		return NULL;
 +	}
 +	/* Enable ALTERA SPI MCP2515 mailbox interrupt mask */
-+	__raw_writel(SPI_MCP2515_IMR_PENDING,
-+	             mcp2515_drv.mbrx_base + SPI_MCP2515_IMR_REG);
++	MB_INT_ENABLE(mcp2515_drv.mbrx_base);
 +	return base;
 +}
 +
@@ -359,10 +367,12 @@ Index: git/drivers/net/can/mcp2515.c
 + */
 +void __iomem* irq_detach(void)
 +{
-+	void __iomem* base;
++	void __iomem *base;
++
++	DBG_PRINT("\n");
 +	/* Disable ALTERA SPI MCP2515 mailbox interrupt mask */
 +	if (mcp2515_drv.mbrx_base) {
-+		__raw_writel(0, mcp2515_drv.mbrx_base + SPI_MCP2515_IMR_REG);
++		MB_INT_DISABLE(mcp2515_drv.mbrx_base);
 +	}
 +	/* Detach interrupt hook  */
 +	base = cvifw_device_attach(NULL, NULL);
@@ -397,7 +407,7 @@ Index: git/drivers/net/can/mcp2515.c
 +	dev->spi_done = 0;
 +	/* wait for Mailbox */
 +	for (i=0; i<10000; i++) {
-+		ret = __raw_readl(mcp2515_drv.mbtx_base + SPI_MCP2515_STS_REG);
++		ret = MB_STS_READ(mcp2515_drv.mbtx_base);
 +		if ( !(ret & SPI_MCP2515_STS_FULL) ) {
 +			break;
 +		}
@@ -442,75 +452,88 @@ Index: git/drivers/net/can/mcp2515.c
 +#define RXB1_VALID      0x02
 +
 + * prende il messaggio dalla coda
-+ * verifica se è un messaggio CAN ricevuto (bit x byte y)
-+ * oppure se è una notifica di terrupt
-+ * estrae eflag e intf dal messaggio ed esegue i controlli seguenti
-+ * struttura messaggio
-+ * byte  0 flags
-+ *         RXB0_VALID      0x01
-+ *         RXB1_VALID      0x02
-+ * byte  1 eflag
-+ *         cfr MCP2515 datasheet
-+ * byte  2 iflag
-+ *         cfr MCP2515 datasheet
-+ * byte  3 CAN Messagge Buffer 0
-+ * byte 17 CAN Messagge Buffer 1
++ * verifica se è una notifica di fine transazione SPI
++ *  sblocca la routine di trasferimento SPI
++ * oppure se è un messaggio CAN ricevuto
++ *  estrae eflag e intf dal messaggio ed esegue i controlli seguenti
++ *  struttura messaggio
++ *  byte  0 flags
++ *          RXB0_VALID      0x01
++ *          RXB1_VALID      0x02
++ *  byte  1 eflag
++ *          cfr MCP2515 datasheet
++ *  byte  2 iflag
++ *          cfr MCP2515 datasheet
++ *  byte  3 CAN Messagge Buffer 0
++ *  byte 17 CAN Messagge Buffer 1
 + *
 + */
 +
 +#define RXB0_VALID  0x01
 +#define RXB1_VALID  0x02
 +
-+static void mcp2515_isr_hook(void* arg)
++#ifdef DEBUG
++static int int_cnt_spi = 0;
++static int int_cnt_msg = 0;
++#endif
++
++static int mcp2515_isr_hook(void* arg)
 +{
 +	struct mcp2515_driver  *drv = (struct mcp2515_driver*)arg;
 +	struct net_device      *net;
 +	struct mcp2515_device  *dev;
 +	u32                     sts;
-+	u32                     cmd;
 +	u32                     ptr;
 +	int                     index;
 +
 +	/* mailbox check */
-+	sts = __raw_readl(drv->mbrx_base + SPI_MCP2515_STS_REG);
++	sts = MB_STS_READ(drv->mbrx_base);
 +	if ( !( sts & SPI_MCP2515_STS_PENDING ) ) {
-+		return;
++		DBG_IRQ_PRINT("-\n");
++		return 0;
 +	}
 +
-+	ptr = __raw_readl(drv->mbrx_base + SPI_MCP2515_PTR_REG);
++	/* get pointer from mailbox */
++	ptr = MB_PTR_READ(drv->mbrx_base);
 +	index = ptr & 0x00000001;
 +
 +	if(drv->net[index]==NULL){
 +		DBG_ERROR("drv->net is NULL\n");
-+		return;
++		MB_CMD_READ(drv->mbrx_base);
++		return 1;
 +	}
 +	net = drv->net[index];
 +	dev = netdev_priv(net);
 +
 +	/* spi transfer completed. */
 +	if ( (ptr & 0x80000000) == 0x00000000 ) {
-+		cmd = __raw_readl(drv->mbrx_base + SPI_MCP2515_CMD_REG);
++#ifdef DEBUG
++		int_cnt_spi++;
++		DBG_IRQ_PRINT("index %d:spi transfer completed %d\n", index, int_cnt_spi);
++#endif
++		MB_CMD_READ(drv->mbrx_base);
 +		dev->spi_done = 1;
 +		wake_up(&dev->spi_wait);
-+		return;
++		return 1;
 +	}
 +
-+	/** Interrupt message from MCP2515 Mailbox.
++	/** Interrupt message from MCP2515.
 +	 *  Can be incoming CAN message, tx completion or error.
 +	 */
 +	if ( (ptr & 0x80000000) == 0x80000000 ) {
-+		int idx = (ptr >> 1) & 0x1F; // indice del buffer da leggere
-+		int cnt = (ptr >> 6) & 0x1F; // numero di buffer da leggere
-+		//int num = (ptr >> 11) & 0x1F; // numero totale di buffer nella coda dell'FPGA
-+		int i;
-+		u8  eflag;
-+		u8  intf ;
-+		u8  buf[32];//SPI_TRANSFER_BUF_LEN];
++		int             idx = (ptr >> 1) & 0x1F; // indice del buffer da leggere
++		int             cnt = (ptr >> 6) & 0x1F; // numero di buffer da leggere
++		//int             num = (ptr >> 11) & 0x1F; // numero totale di buffer nella coda dell'FPGA
++		int             i;
++		u8              eflag;
++		u8              intf ;
++		u8              buf[32];//SPI_TRANSFER_BUF_LEN];
 +    enum can_state  new_state;
 +		canid_t         can_id = 0;
 +		u8              data1  = 0;
 +
 +		for (i=0; i<cnt; i++) {
++			/* get message form SPI_MCP2515_BUF queue */
 +			{
 +				u8   *a;
 +				int   b;
@@ -615,8 +638,15 @@ Index: git/drivers/net/can/mcp2515.c
 +			idx++;
 +			idx %= SPI_MCP2515_BUF_NUM;
 +		}
-+		cmd = __raw_readl(drv->mbrx_base + SPI_MCP2515_CMD_REG);
++#ifdef DEBUG
++		int_cnt_msg++;
++		DBG_IRQ_PRINT("index %d:Interrupt message from MCP2515 Mailbox %d\n",
++		              index, int_cnt_msg);
++#endif
++		MB_CMD_READ(drv->mbrx_base);
++		return 1;
 +	}
++	return 0;
 +}
 +
 +static u8 mcp2515_read_reg(struct mcp2515_device *dev, uint8_t reg)
@@ -847,8 +877,7 @@ Index: git/drivers/net/can/mcp2515.c
 +	return 0;
 +}
 +
-+static int mcp2515_setup(struct net_device *net, struct mcp2515_device *priv,
-+			 struct mcp2515_device *dev)
++static int mcp2515_setup(struct net_device *net, struct mcp2515_device *dev)
 +{
 +	mcp2515_do_set_bittiming(net);
 +
@@ -862,11 +891,10 @@ Index: git/drivers/net/can/mcp2515.c
 +
 +static int mcp2515_hw_reset(struct mcp2515_device *dev)
 +{
-+	struct mcp2515_device  *priv = dev;
 +	int                     ret;
 +	unsigned long           timeout;
 +
-+	priv->spi_tx_buf[0] = INSTRUCTION_RESET;
++	dev->spi_tx_buf[0] = INSTRUCTION_RESET;
 +	ret = mcp2515_spi_trans(dev, 1);
 +	if (ret) {
 +		DBG_ERROR("reset failed: ret = %d\n", ret);
@@ -905,12 +933,42 @@ Index: git/drivers/net/can/mcp2515.c
 +	return (st1 == 0x80 && st2 == 0x07) ? 1 : 0;
 +}
 +
++/**
++ * clear interrupt hook on PCIe isr manager.
++ * check if all devices are stopped
++ */
 +static void mcp2515_open_clean(struct net_device *net)
 +{
 +	struct mcp2515_device *priv = netdev_priv(net);
++	int i;
++	int cs;
 +
-+	/* clear interrupt hook on PCIe isr manager */
-+	irq_detach();
++DBG_PRINT("\n");
++	for(i=0; i<MCP2515_NUM_DEV; i++){
++		cs = ((struct mcp2515_device *)netdev_priv(mcp2515_drv.net[i]))->can.state;
++#ifdef DEBUG
++		{
++		char*des;
++		switch(cs){
++		case CAN_STATE_ERROR_ACTIVE     : des = "CAN controller is error active"; break;
++		case CAN_STATE_ERROR_WARNING    : des = "CAN controller is error active, warning level is reached"; break;
++		case CAN_STATE_ERROR_PASSIVE    : des = "CAN controller is error passive"; break;
++		case CAN_STATE_BUS_OFF          : des = "CAN controller went into Bus Off"; break;
++		case CAN_STATE_STOPPED          : des = "CAN controller is in stopped mode"; break;
++		case CAN_STATE_SLEEPING         : des = "CAN controller is in Sleep mode"; break;
++		default                         : des = "CAN controller is unknown state"; break;
++		}
++		DBG_PRINT("device %d:CAN State: %d %s\n", i, cs, des);
++		}
++#endif
++		if (cs != CAN_STATE_STOPPED) {
++			break;
++		}
++	}
++	if (i>=MCP2515_NUM_DEV) {
++		DBG_PRINT("Detach irq from altera_cvi driver\n");
++		irq_detach();
++	}
 +
 +	mcp2515_hw_sleep(priv);
 +	close_candev(net);
@@ -919,6 +977,7 @@ Index: git/drivers/net/can/mcp2515.c
 +static int mcp2515_stop(struct net_device *net)
 +{
 +	struct mcp2515_device *priv = netdev_priv(net);
++	DBG_PRINT("\n");
 +
 +	close_candev(net);
 +
@@ -942,8 +1001,37 @@ Index: git/drivers/net/can/mcp2515.c
 +
 +	mutex_unlock(&priv->mcp_lock);
 +
-+	/* clear interrupt hook on PCIe isr manager */
-+	//irq_detach();
++	/* clear interrupt hook on PCIe isr manager.
++	 * check if all devices are stopped    */
++	{
++		int i;
++		int cs;
++		for(i=0; i<MCP2515_NUM_DEV; i++){
++			cs = ((struct mcp2515_device *)netdev_priv(mcp2515_drv.net[i]))->can.state;
++#ifdef DEBUG
++			{
++			char*des;
++			switch(cs){
++			case CAN_STATE_ERROR_ACTIVE     : des = "CAN controller is error active"; break;
++			case CAN_STATE_ERROR_WARNING    : des = "CAN controller is error active, warning level is reached"; break;
++			case CAN_STATE_ERROR_PASSIVE    : des = "CAN controller is error passive"; break;
++			case CAN_STATE_BUS_OFF          : des = "CAN controller went into Bus Off"; break;
++			case CAN_STATE_STOPPED          : des = "CAN controller is in stopped mode"; break;
++			case CAN_STATE_SLEEPING         : des = "CAN controller is in Sleep mode"; break;
++			default                         : des = "CAN controller is unknown state"; break;
++			}
++			DBG_PRINT("device %d:CAN State:%d %s\n", i, cs, des);
++			}
++#endif
++			if (cs != CAN_STATE_STOPPED) {
++				break;
++			}
++		}
++		if (i>=MCP2515_NUM_DEV) {
++			DBG_PRINT("Detach irq from altera_cvi driver\n");
++			irq_detach();
++		}
++	}
 +
 +	can_led_event(net, CAN_LED_EVENT_STOP);
 +
@@ -1005,7 +1093,7 @@ Index: git/drivers/net/can/mcp2515.c
 +	if (priv->after_suspend) {
 +		mdelay(10);
 +		mcp2515_hw_reset(priv);
-+		mcp2515_setup(net, priv, priv);
++		mcp2515_setup(net, priv);
 +		if (priv->after_suspend & AFTER_SUSPEND_RESTART) {
 +			mcp2515_set_normal_mode(priv);
 +		} else if (priv->after_suspend & AFTER_SUSPEND_UP) {
@@ -1048,32 +1136,33 @@ Index: git/drivers/net/can/mcp2515.c
 +	priv->tx_skb = NULL;
 +	priv->tx_len = 0;
 +
-+	// set interrupt hook on PCIe isr manager
-+
-+	priv->spi_mcp2515_base = irq_detach();
-+	if (!priv->spi_mcp2515_base) {
-+		DBG_ERROR("failed to set callback function\n");
-+		close_candev(net);
-+		goto open_unlock;
++	/* set mailbox Tx, Rx address */
++	if(!mcp2515_drv.pcie_bar0){
++		mcp2515_drv.pcie_bar0 = irq_detach();
++		if (!mcp2515_drv.pcie_bar0) {
++			DBG_ERROR("failed to set callback function\n");
++			close_candev(net);
++			goto open_unlock;
++		}
++		mcp2515_drv.mbrx_base = mcp2515_drv.pcie_bar0 + SPI_MCP2515_MB_RX_BASE;
++		mcp2515_drv.mbtx_base = mcp2515_drv.pcie_bar0 + SPI_MCP2515_MB_TX_BASE;
++		DBG_PRINT("Mailbox Rx address %p Tx address %p\n",
++							mcp2515_drv.mbrx_base, mcp2515_drv.mbtx_base);
++		/* empty tx mailbox */
++		MB_CMD_READ(mcp2515_drv.mbrx_base);
 +	}
-+
-+	mcp2515_drv.mbrx_base = priv->spi_mcp2515_base + SPI_MCP2515_MB_RX_BASE;
-+	mcp2515_drv.mbtx_base = priv->spi_mcp2515_base + SPI_MCP2515_MB_TX_BASE;
-+	DBG_PRINT("Mailbox Rx address %p Tx address %p\n",
-+						mcp2515_drv.mbrx_base, mcp2515_drv.mbtx_base);
-+	// empty tx mailbox
-+	__raw_readl(mcp2515_drv.mbrx_base + SPI_MCP2515_CMD_REG);
++	/* set device SPI register base address */
 +	if (priv->index == 0) {
-+		priv->spi_mcp2515_base += SPI_MCP2515_0_BASE;
++		priv->spi_mcp2515_base = mcp2515_drv.pcie_bar0 + SPI_MCP2515_0_BASE;
 +	} else {
-+		priv->spi_mcp2515_base += SPI_MCP2515_1_BASE;
++		priv->spi_mcp2515_base = mcp2515_drv.pcie_bar0 + SPI_MCP2515_1_BASE;
 +	}
 +	DBG_PRINT("device %d:net device %p:SPI MCP2515 address %p\n",
 +	          priv->index,
 +	          (void*)net,
 +	          priv->spi_mcp2515_base);
 +
-+	/* Attach interrupt hook  */
++	/* Attach interrupt hook */
 +	ret = (int)irq_attach();
 +	if (!ret) {
 +		DBG_ERROR("failed to set callback function\n");
@@ -1081,39 +1170,44 @@ Index: git/drivers/net/can/mcp2515.c
 +		goto open_unlock;
 +	}
 +
-+	/* Here is OK to not lock the MCP, no one knows about it yet */
-+	DBG_PRINT("device %d:net device %p:mcp2515_hw_probe\n", priv->index, (void*)net);
-+	if (!mcp2515_hw_probe(priv)) {
-+		DBG_ERROR("device %d:net device %p:fail on mcp2515_hw_probe\n", priv->index, (void*)net);
-+		ret = -ENODEV;
-+		close_candev(net);
-+		goto open_unlock;
++	if ( !(priv->flags & FLG_HW_PROBE_DONE) ) {
++		/* Here is OK to not lock the MCP, no one knows about it yet */
++		DBG_PRINT("device %d:net device %p:mcp2515_hw_probe\n",
++		          priv->index, (void*)net);
++		if (!mcp2515_hw_probe(priv)) {
++			DBG_ERROR("device %d:net device %p:fail on mcp2515_hw_probe\n",
++			          priv->index, (void*)net);
++			ret = -ENODEV;
++			close_candev(net);
++			goto open_unlock;
++		}
++		mcp2515_hw_sleep(priv);
++		priv->flags |= FLG_HW_PROBE_DONE;
 +	}
-+	mcp2515_hw_sleep(priv);
 +
 +	priv->wq = create_freezable_workqueue("mcp2515_wq");
 +	INIT_WORK(&priv->tx_work, mcp2515_tx_work_handler);
 +	INIT_WORK(&priv->restart_work, mcp2515_restart_work_handler);
 +
-+	DBG_PRINT("call reset\n");
++	DBG_PRINT("device %d:call reset\n", priv->index);
 +	ret = mcp2515_hw_reset(priv);
 +	if (ret) {
 +		mcp2515_open_clean(net);
-+		DBG_ERROR("failed to reset hw\n");
++		DBG_ERROR("device %d:failed to reset hw\n", priv->index);
 +		goto open_unlock;
 +	}
-+	DBG_PRINT("call setup\n");
-+	ret = mcp2515_setup(net, priv, priv);
++	DBG_PRINT("device %d:call setup\n", priv->index);
++	ret = mcp2515_setup(net, priv);
 +	if (ret) {
 +		mcp2515_open_clean(net);
-+		DBG_ERROR("failed to setup\n");
++		DBG_ERROR("device %d:failed to setup\n", priv->index);
 +		goto open_unlock;
 +	}
-+	DBG_PRINT("call set normal mode\n");
++	DBG_PRINT("device %d:call set normal mode\n", priv->index);
 +	ret = mcp2515_set_normal_mode(priv);
 +	if (ret) {
 +		mcp2515_open_clean(net);
-+		DBG_ERROR("failed to set normal mode\n");
++		DBG_ERROR("device %d:failed to set normal mode\n", priv->index);
 +		goto open_unlock;
 +	}
 +
@@ -1166,7 +1260,7 @@ Index: git/drivers/net/can/mcp2515.c
 +
 +	DBG_PRINT("device %d:net device %p:mutex_init\n", index, (void*)net);
 +	mutex_init(&priv->mcp_lock);
-+  init_waitqueue_head(&priv->spi_wait);
++	init_waitqueue_head(&priv->spi_wait);
 +
 +	/* If requested, allocate DMA buffers */
 +	if (mcp2515_enable_dma) {
@@ -1214,8 +1308,6 @@ Index: git/drivers/net/can/mcp2515.c
 +	return net;
 +
 +error_probe:
-+	DBG_PRINT("unregister isr hook\n");
-+	irq_detach();
 +	if (mcp2515_enable_dma){
 +		DBG_ERROR("free dma buffers\n");
 +		dma_free_coherent(NULL,
@@ -1299,8 +1391,8 @@ Index: git/drivers/net/can/mcp2515.c
 +MODULE_LICENSE("GPL v2");
 Index: git/drivers/net/can/mcp251x.c
 ===================================================================
---- git.orig/drivers/net/can/mcp251x.c	2016-04-06 09:59:07.610894945 +0200
-+++ git/drivers/net/can/mcp251x.c	2016-04-06 09:59:08.378894960 +0200
+--- git.orig/drivers/net/can/mcp251x.c	2016-04-06 12:05:13.555041306 +0200
++++ git/drivers/net/can/mcp251x.c	2016-04-06 12:05:14.343041321 +0200
 @@ -77,39 +77,6 @@
  #include <linux/uaccess.h>
  #include <linux/regulator/consumer.h>
@@ -1389,8 +1481,8 @@ Index: git/drivers/net/can/mcp251x.c
  		if (pdata)
 Index: git/drivers/media/platform/mxc/capture/altera-cvifw.c
 ===================================================================
---- git.orig/drivers/media/platform/mxc/capture/altera-cvifw.c	2016-04-06 09:59:08.330894959 +0200
-+++ git/drivers/media/platform/mxc/capture/altera-cvifw.c	2016-04-06 09:59:08.382894960 +0200
+--- git.orig/drivers/media/platform/mxc/capture/altera-cvifw.c	2016-04-06 12:05:14.307041320 +0200
++++ git/drivers/media/platform/mxc/capture/altera-cvifw.c	2016-04-12 11:27:56.729026329 +0200
 @@ -67,6 +67,9 @@
  #define CVIFW1_MINOR    3
  #define CVIFW1_CSI      3
@@ -1409,15 +1501,90 @@ Index: git/drivers/media/platform/mxc/capture/altera-cvifw.c
  //#define FLG_DEVICE_IN_USE    0x00000001
  //#define FLG_STREAM_ON        0x00000002
  //#define FLG_STREAM_STOP      0x00000004
+@@ -235,15 +239,15 @@
+   bool                      capture_on;
+   int                       capture_pid;
+ 
+-  void                     *dc_regs;  // decoder register base address 
+-  void                     *di_regs;  // deinterlacer register base address 
+-  void                     *fw_regs;  // framewriter register base address 
+-  
++  void                     *dc_regs;  // decoder register base address
++  void                     *di_regs;  // deinterlacer register base address
++  void                     *fw_regs;  // framewriter register base address
++
+   void                     *dcdi_buf0_v;
+   phys_addr_t               dcdi_buf0_p;
+   void                     *dcdi_buf1_v;
+   phys_addr_t               dcdi_buf1_p;
+-  
++
+   struct altera_frame      *frame;
+   unsigned int              frame_buf_size;
+   unsigned int              frames_num;
 @@ -259,6 +263,8 @@
    struct pci_dev           *pci_dev;
    sIoRes                    pci_res;
    struct cvifw_vdev         vdev[2];
-+  void                    (*isrHook)(void*);
++  int                     (*isrHook)(void*);
 +  void                     *isrArg;
  };
  
  /** ***************************************************************************
+@@ -953,7 +959,7 @@
+ 
+   altera_dcdi_hw_init(dev->dc_regs, dev->di_regs,
+                       720, 576, dev->dcdi_buf0_p, dev->dcdi_buf1_p);
+-  
++
+   altera_fw_hw_init(dev->fw_regs,                   // device regs base address
+                     0,                              // double buffer
+                     0,                              // sync type
+@@ -971,7 +977,7 @@
+   spin_unlock(&dev->queue_lock);
+ DBG_PRINT("write base0 %p size %08X\n", frame->buf_phys, dev->frame_buf_size);
+   altera_fw_hw_addr0(dev->fw_regs, frame->buf_phys, dev->frame_buf_size);
+-  
++
+   dev->capture_pid = current->pid;
+   dev->capture_on  = true;
+ 
+@@ -979,7 +985,7 @@
+   FLAG_SET(FLAG_STREAM_ON);
+   FLAG_SET(FLAG_BUFFER_IN_SYNC);
+ //  FLAG_SET(FLAG_FIRST_FRAME);
+-  
++
+ DBG_PRINT("Start decoder and deinterlacer\n");
+   altera_dcdi_hw_start(dev->dc_regs, dev->di_regs);
+ DBG_PRINT("Start frame writer\n");
+@@ -1000,14 +1006,14 @@
+       return -1;
+     }
+   }
+-  
++
+   {
+     unsigned long res;
+     res = altera_dc_hw_res_get(dev->dc_regs);
+     DBG_PRINT("decoded resolution %d x %d\n", (res & 0xFFFF), (res >> 16));
+   }
+-  
+-  
++
++
+   spin_lock(&dev->queue_lock);
+   frame = list_entry(dev->inqueue.next, struct altera_frame, frame);
+   list_move_tail(&frame->frame, &dev->dmaqueue);
+@@ -1285,7 +1291,7 @@
+ static const struct v4l2_ioctl_ops cvifw_ioctl_ops = {
+ 
+   .vidioc_g_chip_ident      = g_chip_ident,
+-  
++
+   .vidioc_querycap          = querycap,
+ 
+   .vidioc_enum_fmt_vid_cap  = enum_fmt,
 @@ -1420,6 +1426,11 @@
        }
      }
@@ -1430,29 +1597,39 @@ Index: git/drivers/media/platform/mxc/capture/altera-cvifw.c
    return IRQ_HANDLED;
  }
  
-@@ -1878,7 +1889,10 @@
+@@ -1725,7 +1736,7 @@
+   dev->dcdi_buf1_p = virt_to_phys(dev->dcdi_buf1_v);
+   DBG_PRINT("buffer1 for decoder/deinterlacer @ v: %p, p: %p\n",
+             dev->dcdi_buf1_v, dev->dcdi_buf1_p );
+-  
++
+   ret = v4l2_device_register(&dev->pci_dev->dev, v4l2_dev);
+   if (ret < 0) {
+     v4l2_err(v4l2_dev, "Could not register v4l2_device\n");
+@@ -1878,7 +1889,14 @@
    DBG_PRINT("MSI Interrupt is %d.\n", dev->irq);
  #endif
  
 -  err = request_irq(dev->irq, cvifw_isr, IRQF_SHARED, "cvifw", dev);
 +//  err = request_irq(dev->irq, cvifw_isr, IRQF_SHARED, "cvifw", dev);
++
++  //err = request_irq(dev->irq, cvifw_isr,
++  //                  IRQF_TRIGGER_HIGH | IRQF_SHARED,
++  //                  "cvifw", dev);
 +  err = request_irq(dev->irq, cvifw_isr,
-+                    IRQF_TRIGGER_HIGH | IRQF_SHARED,
++                    IRQF_TRIGGER_RISING | IRQF_SHARED,
 +                    "cvifw", dev);
    if (err) {
      DBG_ERROR("Failed request IRQ #%d\n", dev->irq);
      pci_disable_msi(dev->pci_dev);
-@@ -1904,6 +1918,29 @@
+@@ -1907,6 +1925,29 @@
+  **************************************************************************** */
  
- /** ***************************************************************************
-  *                                                                            *
-+ **************************************************************************** */
-+
-+/**
+ /**
 + */
-+void __iomem* cvifw_device_attach(void (*hook)(void*), void* arg)
++void __iomem* cvifw_device_attach(int (*hook)(void*), void* arg)
 +{
-+  cvifwDevice->isrHook = hook; 
++  cvifwDevice->isrHook = hook;
 +  cvifwDevice->isrArg  = arg;
 +  return cvifwDevice->pci_res.virt;
 +}
@@ -1469,13 +1646,32 @@ Index: git/drivers/media/platform/mxc/capture/altera-cvifw.c
 +
 +/** ***************************************************************************
 + *                                                                            *
-  **************************************************************************** */
- 
- /**
++ **************************************************************************** */
++
++/**
+  * probe
+  */
+ static int cvifw_probe(struct pci_dev *pdev, const struct pci_device_id *ent)
+@@ -1998,13 +2039,14 @@
+     DBG_ERROR("v4l2_dev_reg vdev 1 ret %d\n", err);
+     //TODO
+   }
++/*
+   DBG_PRINT("Call v4l2_int_reg(%p)\n", &cvifwDevice->vdev[1]);
+   err = v4l2_int_reg(&cvifwDevice->vdev[1]);
+   if(err){
+     DBG_ERROR("v4l2_int_reg vdev 1 ret %d\n", err);
+     //TODO
+   }
+-
++*/
+   DBG_PRINT("done\n");
+   return 0;
+ }
 Index: git/arch/arm/boot/dts/imx6q-tera-he-iomux.dtsi
 ===================================================================
---- git.orig/arch/arm/boot/dts/imx6q-tera-he-iomux.dtsi	2016-04-06 09:59:08.178894956 +0200
-+++ git/arch/arm/boot/dts/imx6q-tera-he-iomux.dtsi	2016-04-06 09:59:08.382894960 +0200
+--- git.orig/arch/arm/boot/dts/imx6q-tera-he-iomux.dtsi	2016-04-06 12:05:14.135041317 +0200
++++ git/arch/arm/boot/dts/imx6q-tera-he-iomux.dtsi	2016-04-06 12:05:14.343041321 +0200
 @@ -68,6 +68,17 @@
  
  				MX6QDL_PAD_NANDF_RB0__GPIO6_IO10     0x80000000  /* BUZZER_EXT */
@@ -1496,8 +1692,8 @@ Index: git/arch/arm/boot/dts/imx6q-tera-he-iomux.dtsi
  
 Index: git/arch/arm/boot/dts/imx6q-tera-he.dts
 ===================================================================
---- git.orig/arch/arm/boot/dts/imx6q-tera-he.dts	2016-04-06 09:59:08.278894958 +0200
-+++ git/arch/arm/boot/dts/imx6q-tera-he.dts	2016-04-06 09:59:08.382894960 +0200
+--- git.orig/arch/arm/boot/dts/imx6q-tera-he.dts	2016-04-06 12:05:14.247041319 +0200
++++ git/arch/arm/boot/dts/imx6q-tera-he.dts	2016-04-06 12:05:14.343041321 +0200
 @@ -194,7 +194,7 @@
  		csi_id = <3>;
  	};
@@ -1525,8 +1721,8 @@ Index: git/arch/arm/boot/dts/imx6q-tera-he.dts
  	status = "okay";
 Index: git/arch/arm/boot/dts/imx6q-tera-he.dtsi
 ===================================================================
---- git.orig/arch/arm/boot/dts/imx6q-tera-he.dtsi	2016-04-06 09:59:08.178894956 +0200
-+++ git/arch/arm/boot/dts/imx6q-tera-he.dtsi	2016-04-06 09:59:08.382894960 +0200
+--- git.orig/arch/arm/boot/dts/imx6q-tera-he.dtsi	2016-04-06 12:05:14.135041317 +0200
++++ git/arch/arm/boot/dts/imx6q-tera-he.dtsi	2016-04-06 12:05:14.343041321 +0200
 @@ -369,7 +369,7 @@
  	pinctrl-0 = <&pinctrl_ecspi1 &pinctrl_ecspi1_cs>;
  	status = "disabled";
