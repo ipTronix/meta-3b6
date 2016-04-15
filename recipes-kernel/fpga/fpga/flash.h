@@ -39,9 +39,8 @@ typedef struct flash_region {
  *  storage in this chip.
  */
 typedef struct flash_epcs_dev {
-//  alt_flash_dev dev;
   int           number_of_regions;
-  flash_region  region_info[ALT_MAX_NUMBER_OF_FLASH_REGIONS]; 
+  flash_region  region_info[ALT_MAX_NUMBER_OF_FLASH_REGIONS];
 
   char         *register_base;
   uint32_t      size_in_bytes;

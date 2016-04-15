@@ -20,7 +20,7 @@ struct fpga_dev {
   struct class             *cl;            // device class
 
   uint32_t                  sys_id_0;
-  uint32_t                  sys_id_1;
+//  uint32_t                  sys_id_1;
 
   struct mutex              fops_lock;
 

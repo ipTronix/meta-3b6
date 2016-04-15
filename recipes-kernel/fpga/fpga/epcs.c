@@ -1,11 +1,15 @@
 /** ***************************************************************************
  * @file epcs.c
- * 
+ *
  **************************************************************************** */
 #include <linux/io.h>
+#include <linux/printk.h>
 
 #include "epcs.h"
 
+#define MODULE_NAME "epcs"
+#define DBG_PRINT(fmt, ...)   printk("%s:%s:"fmt, MODULE_NAME, __func__, ##__VA_ARGS__);
+#define DBG_ERROR(fmt, ...)   printk("%s:%s:ERROR:"fmt, MODULE_NAME, __func__, ##__VA_ARGS__);
 
 
 /**
@@ -69,6 +73,10 @@
 #define epcs_en4b    0xB7    /* Enter 4-byte mode */
 #define epcs_dis4b   0xE9    /* Exit 4-byte mode */
 
+
+#define EPCS_CMD_RDY_TIMEOUT    100000
+#define EPCS_CMD_TX_TIMEOUT     100000
+
 /**
  */
 int epcs_command(char* base, uint32_t slave,
@@ -87,13 +95,14 @@ int epcs_command(char* base, uint32_t slave,
   /* Unfortunately the hardware does not seem to work with credits > 1,
    * leave it at 1 for now. */
   uint32_t        credits = 1;
-
+  int             ret_code = read_length;
+  int             i;
   /* Warning: this function is not currently safe if called in a multi-threaded
    * environment, something above must perform locking to make it safe if more
    * than one thread intends to use it.
    */
   __raw_writel(1 << slave, base + EPCS_REG_SLAVE_S);
-  
+
   /* Set the SSO bit (force chipselect) only if the toggle flag is not set */
   if ((flags & EPCS_COMMAND_TOGGLE_SS_N) == 0) {
     __raw_writel(EPCS_CONTROL_SSO_MSK, base + EPCS_REG_CONTROL);
@@ -105,15 +114,30 @@ int epcs_command(char* base, uint32_t slave,
    * behind.
    */
   __raw_readl(base + EPCS_REG_RXDATA);
-    
+
   /* Keep clocking until all the data has been processed. */
   for(;;){
+/*
     do{
       status = __raw_readl(base + EPCS_REG_STATUS);
     }while(((status & EPCS_STATUS_TRDY_MSK) == 0 || credits == 0) &&
             (status & EPCS_STATUS_RRDY_MSK) == 0);
+*/
+    for(i=0; i<EPCS_CMD_RDY_TIMEOUT; i++){
+      status = __raw_readl(base + EPCS_REG_STATUS);
+      if( !(((status & EPCS_STATUS_TRDY_MSK) == 0 || credits == 0) &&
+             (status & EPCS_STATUS_RRDY_MSK) == 0) ){
+        break;
+      }
+    }
+    if(i>=EPCS_CMD_RDY_TIMEOUT){
+      DBG_ERROR("CMD_RDY_TIMEOUT\n");
+      ret_code = -1;
+      break;
+    }
+/**/
 
-    if((status & EPCS_STATUS_TRDY_MSK) != 0 && credits > 0){
+    if( ((status & EPCS_STATUS_TRDY_MSK) != 0) && (credits > 0) ){
       credits--;
 
       if(write_data < write_end){
@@ -124,9 +148,9 @@ int epcs_command(char* base, uint32_t slave,
       }else{
         credits = -1024;
       }
-    };
+    }
 
-    if((status & EPCS_STATUS_RRDY_MSK) != 0){
+    if( (status & EPCS_STATUS_RRDY_MSK) != 0 ){
       uint32_t rxdata = __raw_readl(base + EPCS_REG_RXDATA);
 
       if(read_ignore > 0){
@@ -136,16 +160,29 @@ int epcs_command(char* base, uint32_t slave,
       }
       credits++;
 
-      if(read_ignore == 0 && read_data == read_end){
+      if( (read_ignore == 0) && (read_data == read_end) ){
         break;
       }
     }
   }
 
   /* Wait until the interface has finished transmitting */
+/*
   do{
     status = __raw_readl(base + EPCS_REG_STATUS);
   }while((status & EPCS_STATUS_TMT_MSK) == 0);
+*/
+  for(i=0; i<EPCS_CMD_TX_TIMEOUT; i++){
+    status = __raw_readl(base + EPCS_REG_STATUS);
+    if( !((status & EPCS_STATUS_TMT_MSK) == 0) ){
+      break;
+    }
+  }
+  if(i>=EPCS_CMD_TX_TIMEOUT){
+    DBG_ERROR("CMD_TX_TIMEOUT\n");
+    ret_code = -1;
+  }
+/**/
 
   /* Clear SSO (release chipselect) unless the caller is going to
    * keep using this chip
@@ -153,14 +190,16 @@ int epcs_command(char* base, uint32_t slave,
   if((flags & EPCS_COMMAND_MERGE) == 0){
     __raw_writel(0, base + EPCS_REG_CONTROL);
   }
-  return read_length;
+  //return read_length;
+
+  return ret_code;
 }
 
 uint8_t epcs_read_status_register(char* base)
 {
   const uint8_t rdsr = epcs_rdsr;
   uint8_t status;
-  
+
   epcs_command(base, 0, 1, &rdsr, 1, &status, 0);
   return status;
 }
@@ -182,7 +221,7 @@ void epcs_sector_erase(char* base, uint32_t offset, uint32_t four_bytes_mode)
 {
   uint8_t se[5];
   uint8_t len;
-  
+
   if(four_bytes_mode){
     se[0] = epcs_se;  /* Note: Use epcs_se for Micron EPCS256 */
     se[1] = (offset >> 24) & 0xFF;
@@ -216,9 +255,10 @@ int32_t epcs_read_buffer(char* base, int offset, uint8_t *dest_addr, int length,
 {
   uint8_t   read_command[5];
   uint32_t  cmd_len;
+  int32_t   ret_code = length;
 
   read_command[0] = epcs_read;
-  
+
   if(four_bytes_mode){
     read_command[1] = (offset >> 24) & 0xFF;
     read_command[2] = (offset >> 16) & 0xFF;
@@ -234,27 +274,29 @@ int32_t epcs_read_buffer(char* base, int offset, uint8_t *dest_addr, int length,
   }
 
   epcs_await_wip_released(base);
+//DBG_PRINT("wip_released, send read command, dest_addr %p\n", dest_addr);
+  ret_code = epcs_command(base, 0, cmd_len, read_command, length, (uint8_t*)dest_addr, 0);
+//DBG_PRINT("readed %d bytes @ %p ret_code %d\n", length, offset, ret_code);
 
-  epcs_command(base, 0, cmd_len, read_command, length, (uint8_t*)dest_addr, 0);
-
-  if(four_bytes_mode)
-  {
+  if(four_bytes_mode){
     epcs_exit_4_bytes_mode(base);
   }
 
-  return length;
+//  return length;
+  return ret_code;
 }
 
 void epcs_write_enable(char* base)
 {
   const uint8_t wren = epcs_wren;
+
   epcs_command(base, 0, 1, &wren, 0, (uint8_t*)0, 0);
 }
 
 void epcs_write_status_register(char* base, uint8_t value)
 {
   uint8_t wrsr[2];
-  
+
   wrsr[0] = epcs_wrsr;
   wrsr[1] = value;
 
@@ -264,14 +306,14 @@ void epcs_write_status_register(char* base, uint8_t value)
 }
 
 /* Write a partial or full page, assuming that page has been erased */
-int32_t epcs_write_buffer(char* base, int offset, const uint8_t* src_addr, 
+int32_t epcs_write_buffer(char* base, int offset, const uint8_t* src_addr,
                           int length, uint32_t four_bytes_mode)
 {
   uint8_t   pp[5];
   uint32_t  cmd_len;
-  
+
   pp[0] = epcs_pp;
-  
+
   if(four_bytes_mode){
     pp[1] = (offset >> 24) & 0xFF;
     pp[2] = (offset >> 16) & 0xFF;
@@ -308,7 +350,6 @@ int32_t epcs_write_buffer(char* base, int offset, const uint8_t* src_addr,
   }
   return length;
 }
-
 
 uint8_t epcs_read_electronic_signature(char* base)
 {
