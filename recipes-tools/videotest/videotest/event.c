@@ -299,7 +299,7 @@ psEvHnd evOpen(char* name)
   memset(pHnd, 0, sizeof(sEvHnd));
 
   pHnd->fd = open(name, O_RDONLY);
-  if( pHnd->fd <0){
+  if(pHnd->fd<0){
     perror("evtest");
     free(pHnd);
     return NULL;
@@ -318,8 +318,8 @@ psEvHnd evOpen(char* name)
   ioctl(pHnd->fd, EVIOCGNAME(sizeof(name)), pHnd->name);
 
   ioctl(pHnd->fd, EVIOCGBIT(0, EV_MAX), pHnd->bit[0]);
+#if 0
   printf("Supported events:\n");
-/*
   for(i=0; i<EV_MAX; i++){
     if(test_bit(i, bit[0])) {
       printf("  Event type %d (%s)\n", i, events[i] ? events[i] : "?");
@@ -337,13 +337,12 @@ psEvHnd evOpen(char* name)
         }
     }
   }
-*/
   printf("Input driver version is %d.%d.%d\n",
     pHnd->version >> 16, (pHnd->version >> 8) & 0xff, pHnd->version & 0xff);
   printf("Input device ID: bus 0x%x vendor 0x%x product 0x%x version 0x%x\n",
     pHnd->id[ID_BUS], pHnd->id[ID_VENDOR], pHnd->id[ID_PRODUCT], pHnd->id[ID_VERSION]);
-printf("Input device name: \"%s\"\n", pHnd->name);
-
+  printf("Input device name: \"%s\"\n", pHnd->name);
+#endif
   return pHnd;
 }
 
@@ -366,8 +365,7 @@ psEvent evGet(psEvHnd pHnd)
 
   rd = read(pHnd->fd, &iev, sizeof(struct input_event));
   if(rd < (int)sizeof(struct input_event)){
-    printf("yyy\n");
-    perror("\nevtest: error reading");
+    printf("evGet:ERROR:reading\n");
     return NULL;
   }
 /*

@@ -7,7 +7,7 @@
 
 #include <linux/videodev2.h>
 
-#define CAP_NUM_BUF 4
+#define CAP_NUM_BUF 3
 
 /**
  */

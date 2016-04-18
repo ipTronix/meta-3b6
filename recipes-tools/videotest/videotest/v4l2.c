@@ -62,7 +62,7 @@ int v4l2InfoGet(char* dev, psV4l2Info pInf)
 
   fd = open(dev, O_RDWR, 0);
   if(fd<0){
-    printf("v4l2InfoGet:Unable to open %s\n", dev);
+    printf("v4l2InfoGet:Unable to open '%s'\n", dev);
     return -1;
   }
   ret = ioctl(fd, VIDIOC_QUERYCAP, &cap);

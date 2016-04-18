@@ -28,6 +28,7 @@ SRC_URI_append_tera-he = " \
    file://0020-can2-3-inverted.patch \
    file://0021-fixed-altera-cvifw.patch \
    file://0022-MCP2515_FPGA_SPI.patch \
+   file://0023-TVP5150-i2c.patch \
    file://defconfig \
 "
 

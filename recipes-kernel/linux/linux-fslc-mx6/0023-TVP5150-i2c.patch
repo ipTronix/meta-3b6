@@ -1,0 +1,72 @@
+Index: git/drivers/media/i2c/tvp5150.c
+===================================================================
+--- git.orig/drivers/media/i2c/tvp5150.c	2016-04-18 17:40:10.920512136 +0200
++++ git/drivers/media/i2c/tvp5150.c	2016-04-18 17:45:07.568520646 +0200
+@@ -760,6 +760,19 @@
+ 	return tvp5150_set_std(sd, std);
+ }
+ 
++static int tvp5150_resetq(struct v4l2_subdev *sd, u32 val)
++{
++	struct tvp5150 *decoder = to_tvp5150(sd);
++	/* Selects decoder input */
++	tvp5150_selmux(sd);
++
++	/* Initialize image preferences */
++	v4l2_ctrl_handler_setup(&decoder->hdl);
++
++	tvp5150_set_std(sd, decoder->norm);
++	return 0;
++};
++
+ static int tvp5150_reset(struct v4l2_subdev *sd, u32 val)
+ {
+ 	struct tvp5150 *decoder = to_tvp5150(sd);
+@@ -768,7 +781,7 @@
+ 	tvp5150_write_inittab(sd, tvp5150_init_default);
+ 
+ 	/* Initializes VDP registers */
+-	tvp5150_vdp_init(sd, vbi_ram_default);
++	//tvp5150_vdp_init(sd, vbi_ram_default);
+ 
+ 	/* Selects decoder input */
+ 	tvp5150_selmux(sd);
+@@ -844,7 +857,7 @@
+ 	if (f == NULL)
+ 		return -EINVAL;
+ 
+-	tvp5150_reset(sd, 0);
++	tvp5150_resetq(sd, 0);
+ 
+ 	f->width = decoder->rect.width;
+ 	f->height = decoder->rect.height;
+@@ -1064,7 +1077,7 @@
+ static const struct v4l2_subdev_core_ops tvp5150_core_ops = {
+ 	.log_status = tvp5150_log_status,
+ 	.s_std = tvp5150_s_std,
+-	.reset = tvp5150_reset,
++	.reset = tvp5150_resetq,
+ #ifdef CONFIG_VIDEO_ADV_DEBUG
+ 	.g_register = tvp5150_g_register,
+ 	.s_register = tvp5150_s_register,
+@@ -1124,9 +1137,9 @@
+ 	sd = &core->sd;
+ 	v4l2_i2c_subdev_init(sd, c, &tvp5150_ops);
+ 
+-	/* 
++	/*
+ 	 * Read consequent registers - TVP5150_MSB_DEV_ID, TVP5150_LSB_DEV_ID,
+-	 * TVP5150_ROM_MAJOR_VER, TVP5150_ROM_MINOR_VER 
++	 * TVP5150_ROM_MAJOR_VER, TVP5150_ROM_MINOR_VER
+ 	 */
+ 	for (i = 0; i < 4; i++) {
+ 		res = tvp5150_read(sd, TVP5150_MSB_DEV_ID + i);
+@@ -1187,6 +1200,8 @@
+ 	core->rect.left = 0;
+ 	core->rect.width = TVP5150_H_MAX;
+ 
++	tvp5150_reset(sd, 0);
++
+ 	if (debug > 1)
+ 		tvp5150_log_status(sd);
+ 	return 0;

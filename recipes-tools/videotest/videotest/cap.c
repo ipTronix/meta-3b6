@@ -13,9 +13,12 @@
 #include <sys/mman.h>
 #include <linux/videodev2.h>
 
+#include <sys/select.h>
+#include <sys/time.h>
+
 #include "cap.h"
 
-#define DEBUG
+//#define DEBUG
 #ifdef DEBUG
   #define DBG_NAME "CAP"
   #define DBG_PRINT(fmt, ...)   printf("%s:%s:"fmt, DBG_NAME, __func__, ##__VA_ARGS__);
@@ -37,9 +40,11 @@ psCapDev capOpen(char* name)
     DBG_ERROR("memory\n");
     return NULL;
   }
-  DBG_PRINT("device %s pCap [%p]\n", name, pCap);
   memset(pCap, 0, sizeof(sCapDev));
-  pCap->fd = open(name, O_RDWR, 0);
+  DBG_PRINT("device %s pCap [%p]\n", name, pCap);
+
+  pCap->fd = open(name, O_RDWR | O_NONBLOCK, 0);
+//  pCap->fd = open(name, O_RDWR, 0);
   if(pCap->fd<0){
     DBG_ERROR("Unable to open %s\n", name);
     free(pCap);
@@ -244,6 +249,7 @@ int capStart(psCapDev pCap)
               pCap->buf[i].length);
   }
 
+  DBG_PRINT("%s:Enqueue buffers\n", pCap->name);
   for(i=0; i<pCap->nbuf; i++){
     memset(&buf, 0, sizeof(buf));
     buf.type     = V4L2_BUF_TYPE_VIDEO_CAPTURE;
@@ -256,11 +262,13 @@ int capStart(psCapDev pCap)
     }
   }
 
+  DBG_PRINT("%s:Start streaming\n", pCap->name);
   type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
   if(ioctl(pCap->fd, VIDIOC_STREAMON, &type) < 0){
     DBG_ERROR("%s VIDIOC_STREAMON error\n", pCap->name);
     return -1;
   }
+  DBG_PRINT("%s:DONE\n", pCap->name);
   return 0;
 }
 
@@ -271,7 +279,7 @@ int capStop(psCapDev pCap)
   unsigned int        i;
   enum v4l2_buf_type  type;
 
-  DBG_PRINT("pCap [%p]\n", pCap);
+//  DBG_PRINT("pCap [%p]\n", pCap);
   type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
   ioctl(pCap->fd, VIDIOC_STREAMOFF, &type);
   for(i=0; i<pCap->nbuf; i++) {
@@ -280,6 +288,7 @@ int capStop(psCapDev pCap)
       pCap->buf[i].start = 0;
     }
   }
+  DBG_PRINT("%s:DONE\n", pCap->name);
   return 0;
 }
 
@@ -332,13 +341,30 @@ int capClose(psCapDev pCap)
 struct v4l2_buffer* capBufGet(psCapDev pCap)
 {
   static struct v4l2_buffer buf;
-  int ret;
+  int             ret;
+  fd_set          rfds;
+  struct timeval  to;
+
   memset(&buf, 0, sizeof(struct v4l2_buffer));
   buf.type   = V4L2_BUF_TYPE_VIDEO_CAPTURE;
   buf.memory = V4L2_MEMORY_MMAP;
-  ret = ioctl(pCap->fd, VIDIOC_DQBUF, &buf);
-  if(ret<0){
-    DBG_ERROR("VIDIOC_DQBUF failed (%d).\n", ret);
+
+
+
+       FD_ZERO(&rfds);
+       FD_SET(pCap->fd, &rfds);
+       to.tv_sec  = 1;
+       to.tv_usec = 0;
+  ret = select(pCap->fd+1, &rfds, NULL, NULL, &to);
+DBG_PRINT("select return %d to %d %d.\n", ret, to.tv_sec, to.tv_usec);
+  if(ret>0){
+    ret = ioctl(pCap->fd, VIDIOC_DQBUF, &buf);
+    if(ret<0){
+      DBG_ERROR("VIDIOC_DQBUF failed (%d).\n", ret);
+      return NULL;
+    }
+  }else{
+    DBG_ERROR("VIDIOC_DQBUF timed out.\n");
     return NULL;
   }
   return &buf;

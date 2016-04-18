@@ -24,7 +24,7 @@ SRC_URI = "file://main.c \
 S = "${WORKDIR}"
 
 do_compile() {
-	${CC} main.c cap.c out.c v4l2.c fs.c rng.c event.c -lpthread -o videotest
+	${CC} main.c cap.c out.c v4l2.c fs.c rng.c event.c -lpthread -o videotest -g3 -D_GNU_SOURCE
 }
 
 do_install() {
