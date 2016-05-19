@@ -109,8 +109,7 @@ int capSetup(psCapDev pCap)
     close(pCap->fd);
     return -1;
   }
-  pCap->std = id;
-
+  id = pCap->std;
   if (ioctl(pCap->fd, VIDIOC_S_STD, &id) < 0) {
     DBG_ERROR("%s VIDIOC_S_STD failed\n", pCap->name);
     close(pCap->fd);
@@ -308,11 +307,75 @@ int capInputSet(psCapDev pCap, int input)
 }
 
 /**
+ * Standard enumeration
+ */
+int capStdLst(psCapDev pCap)
+{
+  struct v4l2_standard   std;
+  int                    ret;
+
+  std.index = 0;
+  for(;;){
+    ret = ioctl(pCap->fd, VIDIOC_ENUMSTD, &std);
+    if(ret){
+      break;
+    }
+    printf("%02d - %08X %s %d %d\n",
+           std.index,
+           std.id,
+           std.name,
+           std.frameperiod,
+           std.framelines);
+    std.index++;
+  }
+  return 0;
+}
+
+/**
  */
 v4l2_std_id capStdGet(psCapDev pCap)
 {
-  //TODO
-  return 0;
+  v4l2_std_id   id;
+
+  if (ioctl(pCap->fd, VIDIOC_G_STD, &id) < 0) {
+    DBG_ERROR("VIDIOC_G_STD failed\n");
+    return -1;
+  }
+
+  printf("std %08X\n", id);
+
+  if( id & V4L2_STD_PAL_B       ){ printf("PAL_B      \n"); }
+  if( id & V4L2_STD_PAL_B1      ){ printf("PAL_B1     \n"); }
+  if( id & V4L2_STD_PAL_G       ){ printf("PAL_G      \n"); }
+  if( id & V4L2_STD_PAL_H       ){ printf("PAL_H      \n"); }
+  if( id & V4L2_STD_PAL_I       ){ printf("PAL_I      \n"); }
+  if( id & V4L2_STD_PAL_D       ){ printf("PAL_D      \n"); }
+  if( id & V4L2_STD_PAL_D1      ){ printf("PAL_D1     \n"); }
+  if( id & V4L2_STD_PAL_K       ){ printf("PAL_K      \n"); }
+
+  if( id & V4L2_STD_PAL_M       ){ printf("PAL_M      \n"); }
+  if( id & V4L2_STD_PAL_N       ){ printf("PAL_N      \n"); }
+  if( id & V4L2_STD_PAL_Nc      ){ printf("PAL_Nc     \n"); }
+  if( id & V4L2_STD_PAL_60      ){ printf("PAL_60     \n"); }
+
+  if( id & V4L2_STD_NTSC_M      ){ printf("NTSC_M     \n"); }
+  if( id & V4L2_STD_NTSC_M_JP   ){ printf("NTSC_M_JP  \n"); }
+  if( id & V4L2_STD_NTSC_443    ){ printf("NTSC_443   \n"); }
+  if( id & V4L2_STD_NTSC_M_KR   ){ printf("NTSC_M_KR  \n"); }
+
+  if( id & V4L2_STD_SECAM_B     ){ printf("SECAM_B    \n"); }
+  if( id & V4L2_STD_SECAM_D     ){ printf("SECAM_D    \n"); }
+  if( id & V4L2_STD_SECAM_G     ){ printf("SECAM_G    \n"); }
+  if( id & V4L2_STD_SECAM_H     ){ printf("SECAM_H    \n"); }
+  if( id & V4L2_STD_SECAM_K     ){ printf("SECAM_K    \n"); }
+  if( id & V4L2_STD_SECAM_K1    ){ printf("SECAM_K1   \n"); }
+  if( id & V4L2_STD_SECAM_L     ){ printf("SECAM_L    \n"); }
+  if( id & V4L2_STD_SECAM_LC    ){ printf("SECAM_LC   \n"); }
+
+  if( id & V4L2_STD_ATSC_8_VSB  ){ printf("ATSC_8_VSB \n"); }
+  if( id & V4L2_STD_ATSC_16_VSB ){ printf("ATSC_16_VSB\n"); }
+
+  return id;
 }
 
 /**

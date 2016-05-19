@@ -38,12 +38,16 @@
 #endif
 
 #define CAP_NUM 2
+
 //#define CAP_WIDTH  720
 //#define CAP_HEIGHT 574
 #define CAP_WIDTH  510  //(720/1.414)
 #define CAP_HEIGHT 406  //(574/1.414)
 //#define CAP_WIDTH  (720/4)
 //#define CAP_HEIGHT (574/4)
+
+#define CAP_STD   V4L2_STD_PAL
+//#define CAP_STD   V4L2_STD_NTSC
 #define CAP_DEF_INPUT   1
 
 #define CAP_FLG_OPENED      0x00000001
@@ -51,25 +55,14 @@
 #define CAP_FLG_STARTED     0x00000004
 #define CAP_FLG_FIRSTFRAME  0x00000008
 #define CAP_FLG_STOPPED     0x00000010
+#define CAP_FLG_OPEN        0x40000000
 #define CAP_FLG_STOP        0x80000000
-/*
-  pthread_mutex_t   lock;
-  ret = pthread_mutex_init(&usbDevice.lock, NULL);
-  if(ret){
-    DBG_ERROR("mutex init failed\n");
-    return -1;
-  }
-  pthread_mutex_destroy(&usbDevice.lock);
-  pthread_mutex_lock(&usbDevice.lock);
-  pthread_mutex_unlock(&usbDevice.lock);
-*/
 
 /**
  */
 typedef struct {
   int               capIdx;
   pthread_t         tid;
-  pthread_mutex_t   lock;
   psCapDev          pCap;
   psRng             pRng;
   int               bufIdx;
@@ -127,6 +120,10 @@ int main(int argc, char **argv)
   psImage             img0;   // No Device Connected
   psImage             img1;   // Input unselected
   psImage             img2;   // Wait device opening
+int cs[CAP_NUM];
+int os[CAP_NUM];
+memset(cs, 0, sizeof(cs));
+memset(os, 0, sizeof(os));
 
   printf("%s "__DATE__" "__TIME__"\n", argv[0]);
 
@@ -135,14 +132,10 @@ int main(int argc, char **argv)
     memset(&capArg[i], 0, sizeof(sTaskArg));
     capArg[i].capIdx = i;
     capArg[i].input  = CAP_DEF_INPUT;
+    capArg[i].flag   = CAP_FLG_STOPPED;
     capArg[i].pRng   = rngCreate(4);
     if(!capArg[i].pRng){
       DBG_ERROR("cap #%d creating rng queue fail\n", i);
-      return -1;
-    }
-    ret = pthread_mutex_init(&capArg[i].lock, NULL);
-    if(ret){
-      DBG_ERROR("cap #%d mutex init failed\n", i);
       return -1;
     }
     DBG_PRINT("capArg[%d]=%p\n", i, &capArg[i]);
@@ -205,6 +198,11 @@ int main(int argc, char **argv)
       for(i=0; i<CAP_NUM; i++){
         if(capArg[i].flag & CAP_FLG_STARTED){
           int   temp;
+cs[i] = 1;
+if(cs[i]!=os[i]){
+  DBG_PRINT("Capture #%d started\n", i);
+  os[i] = cs[i];
+}
           // Get capture buffers from ring queue and enqueue last used buffer
           ret = 1;
           while(ret){
@@ -219,11 +217,9 @@ int main(int argc, char **argv)
                 cap_buf.type   = V4L2_BUF_TYPE_VIDEO_CAPTURE;
                 cap_buf.index  = temp;
                 cap_buf.memory = V4L2_MEMORY_MMAP;
-                pthread_mutex_lock(&capArg[i].lock);
                 if(capArg[i].pCap){
                   ret = ioctl(capArg[i].pCap->fd, VIDIOC_QBUF, &cap_buf);
                 }
-                pthread_mutex_unlock(&capArg[i].lock);
               }
               capArg[i].flag |= CAP_FLG_FIRSTFRAME;
             }
@@ -243,12 +239,22 @@ int main(int argc, char **argv)
         }else{
           ret = fsFileStat(capDevName[i], FS_TYPE_CHR);
           if(!ret){
+cs[i] = 2;
+if(cs[i]!=os[i]){
+  DBG_PRINT("Capture #%d present\n", i);
+  os[i] = cs[i];
+}
             // copy 'Wait' image buffer to output
             bufcpy(pOut->buf[outb->index].start,
                    img2->image, img2->bpl, img2->h, i*2+0);
             bufcpy(pOut->buf[outb->index].start,
                    img2->image, img2->bpl, img2->h, i*2+1);
           }else{
+cs[i] = 3;
+if(cs[i]!=os[i]){
+  DBG_PRINT("Capture #%d not present\n", i);
+  os[i] = cs[i];
+}
             // copy 'NoDevice' image buffer to output
             bufcpy(pOut->buf[outb->index].start,
                    img0->image, img0->bpl, img0->h, i*2+0);
@@ -287,40 +293,51 @@ void* capThread(void* arg)
     if(pTask->flag & CAP_FLG_STOPPED){
       continue;
     }
+    // verifica che il device sia presente
     ret = fsFileStat(capDevName[index], FS_TYPE_CHR);
     if(ret){
+      DBG_PRINT("#%d:device %s not present close it.\n", index, capDevName[index]);
       // se pCap è aperto lo chiude
       if(pTask->pCap){
-        DBG_PRINT("#%d:device not present close it.\n",
-                  index, pTask->input, capDevName[index]);
+        DBG_PRINT("#%d:device %s not present close it.\n",
+                  index, capDevName[index]);
         capDevClose(pTask);
       }
       usleep(20000);
       continue;
     }
-    // se l'ingresso è cambiato chiude pCap
+    // se l'ingresso è cambiato chiude pCap e lo riapre
     if(pTask->chgin){
+      DBG_PRINT("#%d:input changed to %d close device %s.\n",
+                index, pTask->input, capDevName[index]);
       if(pTask->pCap){
-        DBG_PRINT("#%d:input changed to %d close device %s.\n",
-                  index, pTask->input, pTask->pCap->name);
         capDevClose(pTask);
       }
-    }
-    // se pCap è chiuso lo apre
-    if(pTask->pCap==NULL){
-      ret = capDevOpen(pTask);
-      if(ret){
-        usleep(20000);
-        continue;
+      if(pTask->pCap==NULL){
+        ret = capDevOpen(pTask);
+        if(ret){
+          usleep(20000);
+          continue;
+        }
       }
-    }
-    if(pTask->chgin){
       pTask->chgin = 0;
     }
+    //
+    if(pTask->flag & CAP_FLG_OPEN){
+      // apre pCap
+      DBG_PRINT("#%d:open %s requested.\n", index, capDevName[index]);
+      if(pTask->pCap==NULL){
+        ret = capDevOpen(pTask);
+        if(ret){
+          usleep(20000);
+          continue;
+        }
+      }else{
+        DBG_ERROR("#%d:pTask->pCap not null in open request\n", index);
+      }
+    }
 
-    if((pTask->flag & CAP_FLG_STARTED)==0){
-      DBG_ERROR("#%d:fd %d capture device %s not started\n",
-                  index, pTask->pCap->fd, pTask->pCap->name);
+    if( (pTask->flag & CAP_FLG_STARTED)==0 || pTask->pCap==NULL ){
       usleep(20000);
       continue;
     }
@@ -373,9 +390,11 @@ void* eventThread(void* arg)
   for(;;){
     pEve = evGet(pHnd);
     if(pEve){
+/*
       DBG_PRINT("eventThread: time %ld.%06ld, type %d, code %d, value %d\n",
                 pEve->time.tv_sec, pEve->time.tv_usec,
                 pEve->type, pEve->code, pEve->value);
+*/
       if(pEve->code==3 && pEve->value==1){
         int i;
         DBG_PRINT("\n====================================\n"
@@ -388,15 +407,23 @@ void* eventThread(void* arg)
       }
       if(pEve->code==4 && pEve->value==1){
         int i;
-        int in;
-        in = capArg[0].input? 0: 1;
-        DBG_PRINT("\n====================================\n"
-                  "Change input to %d\n", in);
-        for(i=0; i<CAP_NUM; i++){
-          if(!capArg[i].chgin){
-            capArg[i].input = in;
-            capArg[i].chgin = 1;
-            capArg[i].flag  = 0;
+        if(capArg[0].flag==0 || capArg[0].flag & CAP_FLG_STOPPED ){
+          DBG_PRINT("\n====================================\n"
+                    "Open devices\n");
+          for(i=0; i<CAP_NUM; i++){
+            capArg[i].flag = CAP_FLG_OPEN;
+          }
+        }else if(capArg[0].flag & CAP_FLG_STARTED){
+          int in;
+          in = capArg[0].input? 0: 1;
+          DBG_PRINT("\n====================================\n"
+                    "Change input to %d\n", in);
+          for(i=0; i<CAP_NUM; i++){
+            if(!capArg[i].chgin){
+              capArg[i].input = in;
+              capArg[i].chgin = 1;
+              capArg[i].flag  = 0;
+            }
           }
         }
       }
@@ -430,6 +457,7 @@ int capDevOpen(psTaskArg pTask)
   pTask->pCap->width  = CAP_WIDTH;
   pTask->pCap->height = CAP_HEIGHT;
   pTask->pCap->fmt    = V4L2_PIX_FMT_YUYV;
+  pTask->pCap->std    = CAP_STD;
   pTask->pCap->input  = pTask->input;
   DBG_PRINT("#%d:capSetup device %s input %d.\n",
             pTask->capIdx, pTask->pCap->name, pTask->pCap->input);
@@ -442,6 +470,7 @@ int capDevOpen(psTaskArg pTask)
     return -1;
   }
   pTask->flag |= CAP_FLG_SETUPED;
+
   DBG_PRINT("#%d:capStart device %s.\n",
             pTask->capIdx, pTask->pCap->name);
   if(capStart(pTask->pCap)){
@@ -470,9 +499,6 @@ int capDevClose(psTaskArg pTask)
   capStop(pTask->pCap);
   capClose(pTask->pCap);
   pTask->pCap = NULL;
-//        pthread_mutex_lock(&pTask->lock);
-//        pthread_mutex_unlock(&pTask->lock);
-
   return 0;
 }
 
