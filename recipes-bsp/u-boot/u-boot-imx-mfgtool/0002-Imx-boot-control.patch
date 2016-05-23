@@ -1,0 +1,125 @@
+Index: git/board/3b6/mx6q-tera-he/mx6q-tera-he.c
+===================================================================
+--- git.orig/board/3b6/mx6q-tera-he/mx6q-tera-he.c	2016-05-06 14:30:50.438016510 +0200
++++ git/board/3b6/mx6q-tera-he/mx6q-tera-he.c	2016-05-06 14:38:22.650007776 +0200
+@@ -30,6 +30,11 @@
+ #include <power/pmic.h>
+ #include <power/ltc3676_pmic.h>
+ 
++#include <dm.h>
++#include <dm/platform_data/serial_mxc.h>
++#include <stdio_dev.h>
++#include <serial.h>
++
+ #ifdef CONFIG_CMD_SATA
+ #include <asm/imx-common/sata.h>
+ #endif
+@@ -629,6 +634,39 @@
+ };
+ #endif
+ 
++int lpcSend(void)
++{
++	struct udevice       *dev;
++	struct dm_serial_ops *ops;
++	int                   ret;
++
++	/* Scanning the uclass is enough to probe all the devices */
++	for (ret=uclass_first_device(UCLASS_SERIAL, &dev);
++	     dev;
++	     ret=uclass_next_device(&dev)){
++	}
++
++	printf("Get serial device\n");
++	ret = uclass_get_device_by_seq(UCLASS_SERIAL, 1, &dev);
++	if(ret){
++		printf("Error while getting serial device\n");
++		return -1;
++	}
++	printf("Send %%u$ to LPC11\n");
++	ops = dev_get_driver_ops(dev);
++	ops->setbrg(dev, 115200);
++	do{ ret = ops->putc(dev, '%'); }while(ret);
++	do{ ret = ops->putc(dev, 'u'); }while(ret);
++	do{ ret = ops->putc(dev, '$'); }while(ret);
++
++	do{ ret = ops->putc(dev, '%'); }while(ret);
++	do{ ret = ops->putc(dev, 'v'); }while(ret);
++	do{ ret = ops->putc(dev, '$'); }while(ret);
++
++	return 1;
++}
++
++
+ int board_late_init(void)
+ {
+ #ifdef CONFIG_CMD_BMODE
+@@ -638,6 +676,9 @@
+ #ifdef CONFIG_ENV_IS_IN_MMC
+ 	board_late_mmc_env_init();
+ #endif
++
++	lpcSend();
++
+ 	return 0;
+ }
+ 
+@@ -660,3 +701,19 @@
+ 
+ 	return 0;
+ }
++
++
++static struct mxc_serial_platdata terahe_mxc_serial_plat[] = {
++	{.reg = (struct mxc_uart *)UART2_BASE},
++	{.reg = (struct mxc_uart *)UART5_BASE},
++};
++
++U_BOOT_DEVICE(terahe_serial) = {
++	.name = "serial_mxc",
++	.platdata = &terahe_mxc_serial_plat[0],
++};
++
++U_BOOT_DEVICE(terahe_serial_lpc) = {
++	.name = "serial_lpc",
++	.platdata = &terahe_mxc_serial_plat[1],
++};
+Index: git/configs/mx6q-tera-he_defconfig
+===================================================================
+--- git.orig/configs/mx6q-tera-he_defconfig	2016-05-06 14:30:50.438016510 +0200
++++ git/configs/mx6q-tera-he_defconfig	2016-05-06 14:40:39.814005127 +0200
+@@ -2,6 +2,16 @@
+ CONFIG_ARM=y
+ CONFIG_TARGET_MX6QTERAHE=y
+ CONFIG_POWER_LTC3676=y
++CONFIG_SYS_MALLOC_F_LEN=0x2000
++CONFIG_SYS_MALLOC_F=y
++CONFIG_DM_SERIAL=y
++# CONFIG_DM_SPI is not set
++# CONFIG_DM_I2C is not set
++# CONFIG_DM_GPIO is not set
+ CONFIG_DM=y
++CONFIG_DM_WARN=y
++CONFIG_DM_DEVICE_REMOVE=y
++CONFIG_DM_STDIO=y
++CONFIG_CMD_DM=y
+ CONFIG_DM_THERMAL=y
+ 
+Index: git/drivers/serial/serial_mxc.c
+===================================================================
+--- git.orig/drivers/serial/serial_mxc.c	2016-05-06 14:30:50.438016510 +0200
++++ git/drivers/serial/serial_mxc.c	2016-05-06 14:41:46.086003847 +0200
+@@ -341,4 +341,13 @@
+ 	.ops	= &mxc_serial_ops,
+ 	.flags = DM_FLAG_PRE_RELOC,
+ };
++
++U_BOOT_DRIVER(serial_lpc) = {
++	.name	= "serial_lpc",
++	.id	= UCLASS_SERIAL,
++	.probe = mxc_serial_probe,
++	.ops	= &mxc_serial_ops,
++	.flags = DM_FLAG_PRE_RELOC,
++};
++
+ #endif

@@ -1,0 +1,250 @@
+Index: git/board/3b6/mx6q-tera-he/mx6q-tera-he.c
+===================================================================
+--- git.orig/board/3b6/mx6q-tera-he/mx6q-tera-he.c	2016-05-04 16:11:06.113571058 +0200
++++ git/board/3b6/mx6q-tera-he/mx6q-tera-he.c	2016-05-04 16:11:06.141571057 +0200
+@@ -31,6 +31,11 @@
+ #include <power/pmic.h>
+ #include <power/ltc3676_pmic.h>
+ 
++#include <dm.h>
++#include <dm/platform_data/serial_mxc.h>
++#include <stdio_dev.h>
++#include <serial.h>
++
+ DECLARE_GLOBAL_DATA_PTR;
+ 
+ #define UART_PAD_CTRL  (PAD_CTL_PUS_100K_UP |			\
+@@ -619,6 +624,51 @@
+ };
+ #endif
+ 
++int lpcSend(void)
++{
++	struct udevice       *dev;
++	struct dm_serial_ops *ops;
++	int                   ret;
++
++	/* Scanning the uclass is enough to probe all the devices */
++	for (ret=uclass_first_device(UCLASS_SERIAL, &dev);
++	     dev;
++	     ret=uclass_next_device(&dev)){
++	}
++
++	printf("Get serial device\n");
++	ret = uclass_get_device_by_seq(UCLASS_SERIAL, 1, &dev);
++	if(ret){
++		printf("Error while getting serial device\n");
++		return -1;
++	}
++	printf("Send %%u$ to LPC11\n");
++	ops = dev_get_driver_ops(dev);
++	ops->setbrg(dev, 115200);
++	do{ ret = ops->putc(dev, '%'); }while(ret);
++	do{ ret = ops->putc(dev, 'u'); }while(ret);
++	do{ ret = ops->putc(dev, '$'); }while(ret);
++
++
++/*
++{
++int i;
++char c;
++printf("DBG waiting for 20 char from LPC11\n");
++for(i=0; i<20; i++){
++	c = ops->getc(dev);
++	if(c>=0){
++		putc(c);
++	}
++}
++putc('\n');
++printf("DBG received %d 20 char from LPC11\n", i);
++}
++*/
++	return 1;
++}
++
++
+ int board_late_init(void)
+ {
+ #ifdef CONFIG_CMD_BMODE
+@@ -628,6 +678,9 @@
+ #ifdef CONFIG_ENV_IS_IN_MMC
+ 	board_late_mmc_env_init();
+ #endif
++
++	lpcSend();
++
+ 	return 0;
+ }
+ 
+@@ -650,3 +703,18 @@
+ 
+ 	return 0;
+ }
++
++static struct mxc_serial_platdata terahe_mxc_serial_plat[] = {
++	{.reg = (struct mxc_uart *)UART2_BASE},
++	{.reg = (struct mxc_uart *)UART5_BASE},
++};
++
++U_BOOT_DEVICE(terahe_serial) = {
++	.name = "serial_mxc",
++	.platdata = &terahe_mxc_serial_plat[0],
++};
++
++U_BOOT_DEVICE(terahe_serial_lpc) = {
++	.name = "serial_lpc",
++	.platdata = &terahe_mxc_serial_plat[1],
++};
+Index: git/common/autoboot.c
+===================================================================
+--- git.orig/common/autoboot.c	2016-05-04 16:11:05.665571067 +0200
++++ git/common/autoboot.c	2016-05-04 16:34:30.861543928 +0200
+@@ -14,6 +14,11 @@
+ #include <post.h>
+ #include <u-boot/sha256.h>
+ 
++#include <dm.h>
++#include <dm/platform_data/serial_mxc.h>
++#include <stdio_dev.h>
++#include <serial.h>
++
+ DECLARE_GLOBAL_DATA_PTR;
+ 
+ #define MAX_DELAY_STOP_STR 32
+@@ -367,6 +372,38 @@
+ #if defined(CONFIG_AUTOBOOT_KEYED) && !defined(CONFIG_AUTOBOOT_KEYED_CTRLC)
+ 		disable_ctrlc(prev);	/* restore Control C checking */
+ #endif
++	} else {
++		struct udevice       *dev;
++		struct dm_serial_ops *ops;
++		int                   ret;
++		printf("Autoboot Aborted. Send %%v$ to LPC");
++		ret = uclass_get_device_by_seq(UCLASS_SERIAL, 1, &dev);
++		if(ret){
++			printf("Error while getting serial device\n");
++		} else {
++			printf("Send %%v$ to LPC11\n");
++			ops = dev_get_driver_ops(dev);
++			ops->setbrg(dev, 115200);
++			do{ ret = ops->putc(dev, '%'); }while(ret);
++			do{ ret = ops->putc(dev, 'v'); }while(ret);
++			do{ ret = ops->putc(dev, '$'); }while(ret);
++
++/*
++{
++int i;
++char c;
++printf("DBG waiting for 20 char from LPC11\n");
++for(i=0; i<20; i++){
++	c = ops->getc(dev);
++	if(c>=0){
++		putc(c);
++	}
++}
++putc('\n');
++printf("DBG received %d 20 char from LPC11\n", i);
++}
++*/
++		}
+ 	}
+ 
+ #ifdef CONFIG_MENUKEY
+Index: git/configs/mx6q-tera-he_defconfig
+===================================================================
+--- git.orig/configs/mx6q-tera-he_defconfig	2016-05-04 16:11:05.981571060 +0200
++++ git/configs/mx6q-tera-he_defconfig	2016-05-04 16:11:06.141571057 +0200
+@@ -1,4 +1,14 @@
+ CONFIG_SYS_EXTRA_OPTIONS="IMX_CONFIG=board/3b6/mx6q-tera-he/imximage.cfg,MX6Q"
+ CONFIG_ARM=y
+ CONFIG_TARGET_MX6QTERAHE=y
++CONFIG_SYS_MALLOC_F_LEN=0x2000
++CONFIG_SYS_MALLOC_F=y
+ CONFIG_DM_SERIAL=y
++# CONFIG_DM_SPI is not set
++# CONFIG_DM_I2C is not set
++# CONFIG_DM_GPIO is not set
++CONFIG_DM=y
++CONFIG_DM_WARN=y
++CONFIG_DM_DEVICE_REMOVE=y
++CONFIG_DM_STDIO=y
++CONFIG_CMD_DM=y
+Index: git/drivers/serial/serial_mxc.c
+===================================================================
+--- git.orig/drivers/serial/serial_mxc.c	2016-05-04 16:11:05.745571065 +0200
++++ git/drivers/serial/serial_mxc.c	2016-05-04 16:11:06.141571057 +0200
+@@ -341,4 +341,13 @@
+ 	.ops	= &mxc_serial_ops,
+ 	.flags = DM_FLAG_PRE_RELOC,
+ };
++
++U_BOOT_DRIVER(serial_lpc) = {
++	.name	= "serial_lpc",
++	.id	= UCLASS_SERIAL,
++	.probe = mxc_serial_probe,
++	.ops	= &mxc_serial_ops,
++	.flags = DM_FLAG_PRE_RELOC,
++};
++
+ #endif
+Index: git/include/configs/mx6-tera-he_common.h
+===================================================================
+--- git.orig/include/configs/mx6-tera-he_common.h	2016-05-04 16:11:06.113571058 +0200
++++ git/include/configs/mx6-tera-he_common.h	2016-05-04 16:11:06.141571057 +0200
+@@ -57,7 +57,6 @@
+ #define CONFIG_CMD_PING
+ #define CONFIG_CMD_DHCP
+ #define CONFIG_CMD_MII
+-#define CONFIG_CMD_NET
+ #define CONFIG_FEC_MXC
+ #define CONFIG_MII
+ #define IMX_FEC_BASE			ENET_BASE_ADDR
+@@ -84,36 +83,16 @@
+ #define CONFIG_BAUDRATE                        115200
+ 
+ /* Command definition */
+-#define CONFIG_CMD_BDI		/* bdinfo			*/
+-#define CONFIG_CMD_BOOTD	/* bootd			*/
+-#define CONFIG_CMD_CONSOLE	/* coninfo			*/
+-#define CONFIG_CMD_ECHO		/* echo arguments		*/
+-#define CONFIG_CMD_EDITENV	/* editenv			*/
+-#define CONFIG_CMD_FPGA		/* FPGA configuration Support	*/
+-#define CONFIG_CMD_IMI		/* iminfo			*/
+-#define CONFIG_CMD_ITEST	/* Integer (and string) test	*/
+ #ifndef CONFIG_SYS_NO_FLASH
+ #define CONFIG_CMD_FLASH	/* flinfo, erase, protect	*/
+ #define CONFIG_CMD_IMLS		/* List all found images	*/
+ #endif
+-#define CONFIG_CMD_LOADB	/* loadb			*/
+-#define CONFIG_CMD_LOADS	/* loads			*/
+-#define CONFIG_CMD_MEMORY	/* md mm nm mw cp cmp crc base loop */
+-#define CONFIG_CMD_MISC		/* Misc functions like sleep etc*/
+-#define CONFIG_CMD_NET		/* bootp, tftpboot, rarpboot	*/
+-#define CONFIG_CMD_NFS		/* NFS support			*/
+-#define CONFIG_CMD_RUN		/* run command in env variable	*/
+-#define CONFIG_CMD_SAVEENV	/* saveenv			*/
+ #define CONFIG_CMD_SETGETDCR	/* DCR support on 4xx		*/
+-#define CONFIG_CMD_SOURCE	/* "source" command support	*/
+-#define CONFIG_CMD_XIMG		/* Load part of Multi Image	*/
+ 
+ #define CONFIG_CMD_BMODE
+ #define CONFIG_CMD_BOOTZ
+-#define CONFIG_CMD_SETEXPR
+ #undef CONFIG_CMD_IMLS
+ 
+-#define CONFIG_BOOTDELAY               1
+ 
+ #define CONFIG_LOADADDR                        0x12000000
+ #define CONFIG_SYS_TEXT_BASE           0x17800000
+@@ -237,11 +216,9 @@
+ #define CONFIG_SYS_HUSH_PARSER
+ #define CONFIG_SYS_PROMPT_HUSH_PS2     "> "
+ #define CONFIG_AUTO_COMPLETE
+-#define CONFIG_SYS_CBSIZE              256
+ 
+ /* Print Buffer Size */
+ #define CONFIG_SYS_PBSIZE (CONFIG_SYS_CBSIZE + sizeof(CONFIG_SYS_PROMPT) + 16)
+-#define CONFIG_SYS_MAXARGS             16
+ #define CONFIG_SYS_BARGSIZE CONFIG_SYS_CBSIZE
+ 
+ #define CONFIG_SYS_MEMTEST_START       0x10000000

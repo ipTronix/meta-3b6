@@ -1,65 +1,38 @@
-Index: git/configs/mx6q-tera-he_defconfig
+Index: git/arch/arm/Kconfig
+===================================================================
+--- git.orig/arch/arm/Kconfig	2016-05-10 17:06:34.955161590 +0200
++++ git/arch/arm/Kconfig	2016-05-10 17:06:35.015161589 +0200
+@@ -60,12 +60,16 @@
+ 
+ choice
+ 	prompt "Target select"
+-	default TARGET_MX6QTERAHE
++	default TARGET_MX6QTERAHEDEP
+ 
+ config TARGET_MX6QTERAHE
+ 	bool "3B6 Tera-HE imx6"
+ 	select CPU_V7
+ 
++config TARGET_MX6QTERAHEDEP
++	bool "3B6 Tera-HE-dep imx6"
++	select CPU_V7
++
+ config TARGET_INTEGRATORAP_CM720T
+ 	bool "Support integratorap_cm720t"
+ 	select CPU_ARM720T
+@@ -825,6 +829,7 @@
+ source "arch/arm/imx-common/Kconfig"
+ 
+ source "board/3b6/mx6q-tera-he/Kconfig"
++source "board/3b6/mx6q-tera-he-dep/Kconfig"
+ source "board/aristainetos/Kconfig"
+ source "board/BuR/kwb/Kconfig"
+ source "board/BuR/tseries/Kconfig"
+Index: git/board/3b6/mx6q-tera-he-dep/imximage.cfg
 ===================================================================
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ git/configs/mx6q-tera-he_defconfig	2015-11-04 12:44:16.327042400 +0100
-@@ -0,0 +1,4 @@
-+CONFIG_SYS_EXTRA_OPTIONS="IMX_CONFIG=board/3b6/mx6q-tera-he/imximage.cfg,MX6Q"
-+CONFIG_ARM=y
-+CONFIG_TARGET_MX6QTERAHE=y
-+CONFIG_DM_SERIAL=y
-Index: git/board/3b6/mx6q-tera-he/Kconfig
-===================================================================
---- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ git/board/3b6/mx6q-tera-he/Kconfig	2015-11-04 12:44:16.327042400 +0100
-@@ -0,0 +1,18 @@
-+if TARGET_MX6QTERAHE
-+
-+config SYS_CPU
-+	default "armv7"
-+
-+config SYS_BOARD
-+	default "mx6q-tera-he"
-+
-+config SYS_VENDOR
-+	default "3b6"
-+
-+config SYS_SOC
-+	default "mx6"
-+
-+config SYS_CONFIG_NAME
-+	default "mx6q-tera-he"
-+
-+endif
-Index: git/board/3b6/mx6q-tera-he/MAINTAINERS
-===================================================================
---- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ git/board/3b6/mx6q-tera-he/MAINTAINERS	2015-11-04 12:44:16.327042400 +0100
-@@ -0,0 +1,6 @@
-+MX6QTERAHE BOARD
-+M:	Dario Pennisi <dario@iptronix.com>
-+S:	Maintained
-+F:	board/3b6/mx6q-tera-he/
-+F:	include/configs/mx6q-tera-he.h
-+F:	configs/mx6q-tera-he_defconfig
-Index: git/board/3b6/mx6q-tera-he/Makefile
-===================================================================
---- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ git/board/3b6/mx6q-tera-he/Makefile	2015-11-04 12:44:16.327042400 +0100
-@@ -0,0 +1,9 @@
-+#
-+# Copyright (C) 2014, Dario Pennisi <dario@iptronix.com>
-+#
-+# (C) Copyright 2011 Freescale Semiconductor, Inc.
-+#
-+# SPDX-License-Identifier:	GPL-2.0+
-+#
-+
-+obj-y  := mx6q-tera-he.o
-Index: git/board/3b6/mx6q-tera-he/imximage.cfg
-===================================================================
---- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ git/board/3b6/mx6q-tera-he/imximage.cfg	2015-11-04 12:44:16.327042400 +0100
-@@ -0,0 +1,152 @@
++++ git/board/3b6/mx6q-tera-he-dep/imximage.cfg	2016-05-10 17:06:35.015161589 +0200
+@@ -0,0 +1,144 @@
 +/*
 + * Copyright (C) 2014 Freescale Semiconductor, Inc.
 + *
@@ -112,68 +85,60 @@ Index: git/board/3b6/mx6q-tera-he/imximage.cfg
 + *	Address	  absolute address of the register
 + *	value	  value to be stored in the register
 + */
-+DATA 4 0x020e0798 0x000C0000
-+DATA 4 0x020e0758 0x00000000
-+DATA 4 0x020e0588 0x00000030
-+DATA 4 0x020e0594 0x00000030
-+DATA 4 0x020e056c 0x00000030
-+DATA 4 0x020e0578 0x00000030
-+DATA 4 0x020e074c 0x00000030
-+DATA 4 0x020e057c 0x00000030
-+DATA 4 0x020e058c 0x00000000
-+DATA 4 0x020e059c 0x00000030
-+DATA 4 0x020e05a0 0x00000030
-+DATA 4 0x020e078c 0x00000030
-+DATA 4 0x020e0750 0x00020000
-+DATA 4 0x020e05a8 0x00000030
-+DATA 4 0x020e05b0 0x00000030
-+DATA 4 0x020e0524 0x00000030
-+DATA 4 0x020e051c 0x00000030
-+DATA 4 0x020e0518 0x00000030
-+DATA 4 0x020e050c 0x00000030
-+DATA 4 0x020e05b8 0x00000030
-+DATA 4 0x020e05c0 0x00000030
-+DATA 4 0x020e0774 0x00020030
-+DATA 4 0x020e0784 0x00000030
-+DATA 4 0x020e0788 0x00000030
-+DATA 4 0x020e0794 0x00000030
-+DATA 4 0x020e079c 0x00000030
-+DATA 4 0x020e07a0 0x00000030
-+DATA 4 0x020e07a4 0x00000030
-+DATA 4 0x020e07a8 0x00000030
-+DATA 4 0x020e0748 0x00000030
-+DATA 4 0x020e05ac 0x00000030
-+DATA 4 0x020e05b4 0x00000030
-+DATA 4 0x020e0528 0x00000030
-+DATA 4 0x020e0520 0x00000030
-+DATA 4 0x020e0514 0x00000030
-+DATA 4 0x020e0510 0x00000030
-+DATA 4 0x020e05bc 0x00000030
-+DATA 4 0x020e05c4 0x00000030
++DATA 4 0x020e0798 0x000C0000 /* GRP_DDR_TYPE    */
++DATA 4 0x020e0758 0x00000000 /* GRP_DDRPKE      */
++DATA 4 0x020e0594 0x00000030 /* DRAM_SDCLK1_P   */
++DATA 4 0x020e056c 0x00000030 /* DRAM_CAS_B      */
++DATA 4 0x020e0578 0x00000030 /* DRAM_RAS_B      */
++DATA 4 0x020e074c 0x00000030 /* GRP_ADDDS       */
++DATA 4 0x020e057c 0x00000030 /* DRAM_RESET      */
++DATA 4 0x020e058c 0x00000000 /* DRAM_SDBA2      */
++DATA 4 0x020e059c 0x00000030 /* DRAM_ODT0       */
++DATA 4 0x020e05a0 0x00000030 /* DRAM_ODT1       */
++DATA 4 0x020e078c 0x00000030 /* GRP_CTLDS       */
++DATA 4 0x020e0750 0x00020000 /* GRP_DDRMODE_CTL */
++DATA 4 0x020e05a8 0x00000030 /* DRAM_SDQS0_P    */
++DATA 4 0x020e05b0 0x00000030 /* DRAM_SDQS1_P    */
++DATA 4 0x020e0524 0x00000030 /* DRAM_SDQS2_P    */
++DATA 4 0x020e051c 0x00000030 /* DRAM_SDQS3_P    */
++DATA 4 0x020e0774 0x00020000 /* GRP_DDRMODE     */
++DATA 4 0x020e0784 0x00000030 /* GRP_B0DS        */
++DATA 4 0x020e0788 0x00000030 /* GRP_B1DS        */
++DATA 4 0x020e0794 0x00000030 /* GRP_B2DS        */
++DATA 4 0x020e079c 0x00000030 /* GRP_B3DS        */
++//DATA 4 0x020e07a0 0x00000030 /* GRP_B4DS        */
++//DATA 4 0x020e07a4 0x00000030 /* GRP_B5DS        */
++//DATA 4 0x020e07a8 0x00000030 /* GRP_B6DS        */
++//DATA 4 0x020e0748 0x00000030 /* GRP_B7DS        */
++DATA 4 0x020e05ac 0x00000030 /* DRAM_DQM0       */
++DATA 4 0x020e05b4 0x00000030 /* DRAM_DQM1       */
++DATA 4 0x020e0528 0x00000030 /* DRAM_DQM2       */
++DATA 4 0x020e0520 0x00000030 /* DRAM_DQM3       */
++
 +DATA 4 0x021b001c 0x00008000
 +DATA 4 0x021b0800 0xA1390003
 +DATA 4 0x021b080c 0x0015001A
 +DATA 4 0x021b0810 0x0021001D
-+DATA 4 0x021b480c 0x0007001C
-+DATA 4 0x021b4810 0x0015001A
++//DATA 4 0x021b480c 0x0007001C
++//DATA 4 0x021b4810 0x0015001A
 +DATA 4 0x021b083c 0x03480350
 +DATA 4 0x021b0840 0x0348033C
-+DATA 4 0x021b483c 0x03440350
-+DATA 4 0x021b4840 0x033C0314
++//DATA 4 0x021b483c 0x03440350
++//DATA 4 0x021b4840 0x033C0314
 +DATA 4 0x021b0848 0x483A3C46
-+DATA 4 0x021b4848 0x44423E4A
++//DATA 4 0x021b4848 0x44423E4A
 +DATA 4 0x021b0850 0x3A343C32
-+DATA 4 0x021b4850 0x40324636
++//DATA 4 0x021b4850 0x40324636
 +DATA 4 0x021b081c 0x33333333
 +DATA 4 0x021b0820 0x33333333
 +DATA 4 0x021b0824 0x33333333
 +DATA 4 0x021b0828 0x33333333
-+DATA 4 0x021b481c 0x33333333
-+DATA 4 0x021b4820 0x33333333
-+DATA 4 0x021b4824 0x33333333
-+DATA 4 0x021b4828 0x33333333
++//DATA 4 0x021b481c 0x33333333
++//DATA 4 0x021b4820 0x33333333
++//DATA 4 0x021b4824 0x33333333
++//DATA 4 0x021b4828 0x33333333
 +DATA 4 0x021b08b8 0x00000800
-+DATA 4 0x021b48b8 0x00000800
++//DATA 4 0x021b48b8 0x00000800
 +DATA 4 0x021b0004 0x00020036
 +DATA 4 0x021b0008 0x09444040
 +DATA 4 0x021b000c 0x54597955
@@ -184,15 +149,15 @@ Index: git/board/3b6/mx6q-tera-he/imximage.cfg
 +DATA 4 0x021b002c 0x000026D2
 +DATA 4 0x021b0030 0x00591023
 +DATA 4 0x021b0040 0x00000027
-+DATA 4 0x021b0000 0x831A0000
++DATA 4 0x021b0000 0x83190000
 +DATA 4 0x021b001c 0x02088032
 +DATA 4 0x021b001c 0x00008033
 +DATA 4 0x021b001c 0x00048031
 +DATA 4 0x021b001c 0x19408030
 +DATA 4 0x021b001c 0x04008040
 +DATA 4 0x021b0020 0x00007800
-+DATA 4 0x021b0818 0x00022227
-+DATA 4 0x021b4818 0x00022227
++DATA 4 0x021b0818 0x00033337  /* 0x00022227 */
++//DATA 4 0x021b4818 0x00022227
 +DATA 4 0x021b0004 0x00025576
 +DATA 4 0x021b0404 0x00011006
 +DATA 4 0x021b001c 0x00000000
@@ -212,168 +177,59 @@ Index: git/board/3b6/mx6q-tera-he/imximage.cfg
 +DATA 4, 0x020e0018, 0x007F007F
 +DATA 4, 0x020e001c, 0x007F007F
 +#endif
-Index: git/board/3b6/mx6q-tera-he/mx6dl.cfg
+Index: git/board/3b6/mx6q-tera-he-dep/Kconfig
 ===================================================================
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ git/board/3b6/mx6q-tera-he/mx6dl.cfg	2015-11-04 12:44:16.327042400 +0100
-@@ -0,0 +1,152 @@
-+/*
-+ * Copyright (C) 2014 Freescale Semiconductor, Inc.
-+ * Jason Liu <r64343@freescale.com>
-+ *
-+ * SPDX-License-Identifier:	GPL-2.0+
-+ *
-+ * Refer docs/README.imxmage for more details about how-to configure
-+ * and create imximage boot image
-+ *
-+ * The syntax is taken as close as possible with the kwbimage
-+ */
-+/* image version */
++++ git/board/3b6/mx6q-tera-he-dep/Kconfig	2016-05-10 17:06:35.015161589 +0200
+@@ -0,0 +1,18 @@
++if TARGET_MX6QTERAHEDEP
 +
-+#define __ASSEMBLY__
-+#include <config.h>
++config SYS_CPU
++	default "armv7"
 +
-+IMAGE_VERSION 2
++config SYS_BOARD
++	default "mx6q-tera-he-dep"
 +
-+/*
-+ * Boot Device : one of spi, sd, eimnor, nand, sata:
-+ * spinor: flash_offset: 0x0400
-+ * nand:   flash_offset: 0x0400
-+ * sata:   flash_offset: 0x0400
-+ * sd/mmc: flash_offset: 0x0400
-+ * eimnor: flash_offset: 0x1000
-+ */
++config SYS_VENDOR
++	default "3b6"
 +
-+#if defined(CONFIG_SYS_BOOT_EIMNOR)
-+BOOT_FROM	nor
-+#else /* others has the same flash_offset as sd */
-+BOOT_FROM	sd
-+#endif
++config SYS_SOC
++	default "mx6"
 +
-+#ifdef CONFIG_USE_PLUGIN
-+/*PLUGIN    plugin-binary-file    IRAM_FREE_START_ADDR*/
-+PLUGIN	board/3b6/mx6qsabreauto/plugin.bin 0x00907000
-+#else
++config SYS_CONFIG_NAME
++	default "mx6q-tera-he-dep"
 +
-+#ifdef CONFIG_SECURE_BOOT
-+CSF 0x2000
-+#endif
-+
-+/*
-+ * Device Configuration Data (DCD)
-+ *
-+ * Each entry must have the format:
-+ * Addr-type           Address        Value
-+ *
-+ * where:
-+ *	Addr-type register length (1,2 or 4 bytes)
-+ *	Address	  absolute address of the register
-+ *	value	  value to be stored in the register
-+ */
-+DATA 4, 0x020e0774, 0x000C0000
-+DATA 4, 0x020e0754, 0x00000000
-+DATA 4, 0x020e04ac, 0x00000030
-+DATA 4, 0x020e04b0, 0x00000030
-+DATA 4, 0x020e0464, 0x00000030
-+DATA 4, 0x020e0490, 0x00000030
-+DATA 4, 0x020e074c, 0x00000030
-+DATA 4, 0x020e0494, 0x00000030
-+DATA 4, 0x020e04a0, 0x00000000
-+DATA 4, 0x020e04b4, 0x00000030
-+DATA 4, 0x020e04b8, 0x00000030
-+DATA 4, 0x020e076c, 0x00000030
-+DATA 4, 0x020e0750, 0x00020000
-+DATA 4, 0x020e04bc, 0x00000028
-+DATA 4, 0x020e04c0, 0x00000028
-+DATA 4, 0x020e04c4, 0x00000028
-+DATA 4, 0x020e04c8, 0x00000028
-+DATA 4, 0x020e04cc, 0x00000028
-+DATA 4, 0x020e04d0, 0x00000028
-+DATA 4, 0x020e04d4, 0x00000028
-+DATA 4, 0x020e04d8, 0x00000028
-+DATA 4, 0x020e0760, 0x00020000
-+DATA 4, 0x020e0764, 0x00000028
-+DATA 4, 0x020e0770, 0x00000028
-+DATA 4, 0x020e0778, 0x00000028
-+DATA 4, 0x020e077c, 0x00000028
-+DATA 4, 0x020e0780, 0x00000028
-+DATA 4, 0x020e0784, 0x00000028
-+DATA 4, 0x020e078c, 0x00000028
-+DATA 4, 0x020e0748, 0x00000028
-+DATA 4, 0x020e0470, 0x00000028
-+DATA 4, 0x020e0474, 0x00000028
-+DATA 4, 0x020e0478, 0x00000028
-+DATA 4, 0x020e047c, 0x00000028
-+DATA 4, 0x020e0480, 0x00000028
-+DATA 4, 0x020e0484, 0x00000028
-+DATA 4, 0x020e0488, 0x00000028
-+DATA 4, 0x020e048c, 0x00000028
-+DATA 4, 0x021b0800, 0xa1390003
-+DATA 4, 0x021b080c, 0x001F001F
-+DATA 4, 0x021b0810, 0x001F001F
-+DATA 4, 0x021b480c, 0x001F001F
-+DATA 4, 0x021b4810, 0x001F001F
-+DATA 4, 0x021b083c, 0x42190217
-+DATA 4, 0x021b0840, 0x017B017B
-+DATA 4, 0x021b483c, 0x4176017B
-+DATA 4, 0x021b4840, 0x015F016C
-+DATA 4, 0x021b0848, 0x4C4C4D4C
-+DATA 4, 0x021b4848, 0x4A4D4C48
-+DATA 4, 0x021b0850, 0x3F3F3F40
-+DATA 4, 0x021b4850, 0x3538382E
-+DATA 4, 0x021b081c, 0x33333333
-+DATA 4, 0x021b0820, 0x33333333
-+DATA 4, 0x021b0824, 0x33333333
-+DATA 4, 0x021b0828, 0x33333333
-+DATA 4, 0x021b481c, 0x33333333
-+DATA 4, 0x021b4820, 0x33333333
-+DATA 4, 0x021b4824, 0x33333333
-+DATA 4, 0x021b4828, 0x33333333
-+DATA 4, 0x021b08b8, 0x00000800
-+DATA 4, 0x021b48b8, 0x00000800
-+DATA 4, 0x021b0004, 0x00020025
-+DATA 4, 0x021b0008, 0x00333030
-+DATA 4, 0x021b000c, 0x676B5313
-+DATA 4, 0x021b0010, 0xB66E8B63
-+DATA 4, 0x021b0014, 0x01FF00DB
-+DATA 4, 0x021b0018, 0x00001740
-+DATA 4, 0x021b001c, 0x00008000
-+DATA 4, 0x021b002c, 0x000026d2
-+DATA 4, 0x021b0030, 0x006B1023
-+DATA 4, 0x021b0040, 0x00000047
-+DATA 4, 0x021b0000, 0x841A0000
-+DATA 4, 0x021b001c, 0x04008032
-+DATA 4, 0x021b001c, 0x00008033
-+DATA 4, 0x021b001c, 0x00048031
-+DATA 4, 0x021b001c, 0x05208030
-+DATA 4, 0x021b001c, 0x04008040
-+DATA 4, 0x021b0020, 0x00005800
-+DATA 4, 0x021b0818, 0x00011117
-+DATA 4, 0x021b4818, 0x00011117
-+DATA 4, 0x021b0004, 0x00025565
-+DATA 4, 0x021b0404, 0x00011006
-+DATA 4, 0x021b001c, 0x00000000
-+
-+/* set the default clock gate to save power */
-+DATA 4, 0x020c4068, 0x00C03F3F
-+DATA 4, 0x020c406c, 0x0030FC03
-+DATA 4, 0x020c4070, 0x0FFFC000
-+DATA 4, 0x020c4074, 0x3FF00000
-+DATA 4, 0x020c4078, 0xFFFFF300
-+DATA 4, 0x020c407c, 0x0F0000C3
-+DATA 4, 0x020c4080, 0x00000FFF
-+
-+/* enable AXI cache for VDOA/VPU/IPU */
-+DATA 4, 0x020e0010, 0xF00000CF
-+/* set IPU AXI-id0 Qos=0xf(bypass) AXI-id1 Qos=0x7 */
-+DATA 4, 0x020e0018, 0x007F007F
-+DATA 4, 0x020e001c, 0x007F007F
-+#endif
-Index: git/board/3b6/mx6q-tera-he/mx6q-tera-he.c
++endif
+Index: git/board/3b6/mx6q-tera-he-dep/MAINTAINERS
 ===================================================================
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ git/board/3b6/mx6q-tera-he/mx6q-tera-he.c	2015-11-04 12:49:14.055042400 +0100
-@@ -0,0 +1,645 @@
++++ git/board/3b6/mx6q-tera-he-dep/MAINTAINERS	2016-05-10 17:06:35.015161589 +0200
+@@ -0,0 +1,6 @@
++MX6QTERAHEDEP BOARD
++M:	Dario Pennisi <dario@iptronix.com>
++S:	Maintained
++F:	board/3b6/mx6q-tera-he-dep/
++F:	include/configs/mx6q-tera-he-dep.h
++F:	configs/mx6q-tera-he-dep_defconfig
+Index: git/board/3b6/mx6q-tera-he-dep/Makefile
+===================================================================
+--- /dev/null	1970-01-01 00:00:00.000000000 +0000
++++ git/board/3b6/mx6q-tera-he-dep/Makefile	2016-05-10 17:06:35.015161589 +0200
+@@ -0,0 +1,9 @@
++#
++# Copyright (C) 2014, Dario Pennisi <dario@iptronix.com>
++#
++# (C) Copyright 2011 Freescale Semiconductor, Inc.
++#
++# SPDX-License-Identifier:	GPL-2.0+
++#
++
++obj-y  := mx6q-tera-he-dep.o
+Index: git/board/3b6/mx6q-tera-he-dep/mx6q-tera-he-dep.c
+===================================================================
+--- /dev/null	1970-01-01 00:00:00.000000000 +0000
++++ git/board/3b6/mx6q-tera-he-dep/mx6q-tera-he-dep.c	2016-05-10 17:06:35.015161589 +0200
+@@ -0,0 +1,718 @@
 +/*
 + * Copyright (C) 2012 Freescale Semiconductor, Inc.
 + *
@@ -383,6 +239,7 @@ Index: git/board/3b6/mx6q-tera-he/mx6q-tera-he.c
 + */
 +
 +#include <common.h>
++#include <configs/mx6q-tera-he-dep.h>
 +#include <asm/io.h>
 +#include <asm/arch/clock.h>
 +#include <asm/arch/imx-regs.h>
@@ -396,8 +253,8 @@ Index: git/board/3b6/mx6q-tera-he/mx6q-tera-he.c
 +#include <asm/imx-common/spi.h>
 +#include <mmc.h>
 +#include <fsl_esdhc.h>
-+#include <miiphy.h>
-+#include <netdev.h>
++//#include <miiphy.h>
++//#include <netdev.h>
 +#include <asm/arch/sys_proto.h>
 +#include <i2c.h>
 +#include <asm/arch/mxc_hdmi.h>
@@ -405,6 +262,11 @@ Index: git/board/3b6/mx6q-tera-he/mx6q-tera-he.c
 +#include <asm/arch/crm_regs.h>
 +#include <power/pmic.h>
 +#include <power/ltc3676_pmic.h>
++
++#include <dm.h>
++#include <dm/platform_data/serial_mxc.h>
++#include <stdio_dev.h>
++#include <serial.h>
 +
 +DECLARE_GLOBAL_DATA_PTR;
 +
@@ -415,10 +277,10 @@ Index: git/board/3b6/mx6q-tera-he/mx6q-tera-he.c
 +#define USDHC_PAD_CTRL (PAD_CTL_PUS_47K_UP |			\
 +	PAD_CTL_SPEED_LOW | PAD_CTL_DSE_40ohm |			\
 +	PAD_CTL_SRE_FAST  | PAD_CTL_HYS)
-+
++/*
 +#define ENET_PAD_CTRL  (PAD_CTL_PUS_100K_UP |			\
 +	PAD_CTL_SPEED_MED | PAD_CTL_DSE_34ohm | PAD_CTL_HYS)
-+
++*/
 +#define I2C_PAD_CTRL	(PAD_CTL_PUS_100K_UP |			\
 +	PAD_CTL_SPEED_MED | PAD_CTL_DSE_40ohm | PAD_CTL_HYS |	\
 +	PAD_CTL_ODE | PAD_CTL_SRE_FAST)
@@ -467,7 +329,7 @@ Index: git/board/3b6/mx6q-tera-he/mx6q-tera-he.c
 +	MX6_PAD_KEY_ROW1__UART5_RX_DATA | MUX_PAD_CTRL(UART_PAD_CTRL),
 +	MX6_PAD_KEY_COL1__UART5_TX_DATA | MUX_PAD_CTRL(UART_PAD_CTRL),
 +};
-+
++/*
 +static iomux_v3_cfg_t const enet_pads[] = {
 +	MX6_PAD_ENET_MDIO__ENET_MDIO       | MUX_PAD_CTRL(ENET_PAD_CTRL),
 +	MX6_PAD_ENET_MDC__ENET_MDC         | MUX_PAD_CTRL(ENET_PAD_CTRL),
@@ -487,7 +349,7 @@ Index: git/board/3b6/mx6q-tera-he/mx6q-tera-he.c
 +
 +	//MX6_PAD_ENET_CRS_DV__GPIO1_IO25    | MUX_PAD_CTRL(ENET_PAD_CTRL),
 +};
-+
++*/
 +/* I2C1 Management */
 +static struct i2c_pads_info i2c_pad_info1 = {
 +        .scl = {
@@ -527,7 +389,7 @@ Index: git/board/3b6/mx6q-tera-he/mx6q-tera-he.c
 +		.gp = IMX_GPIO_NR(7, 11)
 +	}
 +};
-+
++/*
 +#define IOMUX_SW_PAD_CTRL_GRP_DDR_TYPE_RGMII       0x02e0790
 +#define IOMUX_SW_PAD_CTRL_GRP_DDR_TYPE_RGMII_1P2V  0x00080000
 +#define IOMUX_SW_PAD_CTRL_GRP_DDR_TYPE_RGMII_1P5V  0x000C0000
@@ -535,7 +397,7 @@ Index: git/board/3b6/mx6q-tera-he/mx6q-tera-he.c
 +{
 +	imx_iomux_v3_setup_multiple_pads(enet_pads, ARRAY_SIZE(enet_pads));
 +}
-+
++*/
 +iomux_v3_cfg_t const usdhc1_pads[] = {
 +	MX6_PAD_SD1_CLK__SD1_CLK    | MUX_PAD_CTRL(USDHC_PAD_CTRL),
 +	MX6_PAD_SD1_CMD__SD1_CMD    | MUX_PAD_CTRL(USDHC_PAD_CTRL),
@@ -682,7 +544,7 @@ Index: git/board/3b6/mx6q-tera-he/mx6q-tera-he.c
 +}
 +#endif
 +
-+
++/*
 +int mx6_rgmii_rework(struct phy_device *phydev)
 +{
 +
@@ -710,7 +572,7 @@ Index: git/board/3b6/mx6q-tera-he/mx6q-tera-he.c
 +
 +	return cpu_eth_init(bis);
 +}
-+
++*/
 +#define BOARD_REV_B  0x200
 +#define BOARD_REV_A  0x100
 +
@@ -780,7 +642,7 @@ Index: git/board/3b6/mx6q-tera-he/mx6q-tera-he.c
 +struct display_info_t const displays[] = {{
 +	.bus	= -1,
 +	.addr	= 0,
-+	.pixfmt	= IPU_PIX_FMT_RGB666,
++	.pixfmt	= IPU_PIX_FMT_RGB24,
 +	.detect	= NULL,
 +	.enable	= enable_lvds,
 +	.mode	= {
@@ -809,7 +671,7 @@ Index: git/board/3b6/mx6q-tera-he/mx6q-tera-he.c
 +	enable_ipu_clock();
 +	imx_setup_hdmi();
 +
-+	/* Turn on LDB0, LDB1, IPU,IPU DI0 clocks */
++	/* Turn on LDB0, LDB1, IPU, IPU DI0 clocks */
 +	reg = readl(&mxc_ccm->CCGR3);
 +	reg |=  MXC_CCM_CCGR3_LDB_DI0_MASK | MXC_CCM_CCGR3_LDB_DI1_MASK;
 +	writel(reg, &mxc_ccm->CCGR3);
@@ -862,37 +724,38 @@ Index: git/board/3b6/mx6q-tera-he/mx6q-tera-he.c
 +	return 1;
 +}
 +
++void lvds_gpio_init(void)
++{
++  imx_iomux_v3_setup_pad(NEW_PAD_CTRL(MX6_PAD_NANDF_D0__GPIO2_IO00,NO_PAD_CTRL));
++  imx_iomux_v3_setup_pad(NEW_PAD_CTRL(MX6_PAD_NANDF_D1__GPIO2_IO01,NO_PAD_CTRL));
++  imx_iomux_v3_setup_pad(NEW_PAD_CTRL(MX6_PAD_NANDF_D2__GPIO2_IO02,NO_PAD_CTRL));
++  imx_iomux_v3_setup_pad(NEW_PAD_CTRL(MX6_PAD_NANDF_D3__GPIO2_IO03,NO_PAD_CTRL));
++  imx_iomux_v3_setup_pad(NEW_PAD_CTRL(MX6_PAD_NANDF_D4__GPIO2_IO04,NO_PAD_CTRL));
++  imx_iomux_v3_setup_pad(NEW_PAD_CTRL(MX6_PAD_SD4_DAT1__GPIO2_IO09,NO_PAD_CTRL));
++  imx_iomux_v3_setup_pad(NEW_PAD_CTRL(MX6_PAD_EIM_A25__GPIO5_IO02,NO_PAD_CTRL));
++  imx_iomux_v3_setup_pad(NEW_PAD_CTRL(MX6_PAD_EIM_BCLK__GPIO6_IO31,NO_PAD_CTRL));
++
++  gpio_direction_output(IMX_GPIO_NR(2,  0), 1); // LCD_ON_C
++  gpio_direction_output(IMX_GPIO_NR(2,  1), 1); // BKL_ON
++  gpio_direction_output(IMX_GPIO_NR(2,  2), 0); // LVDS_SELLVDS
++  gpio_direction_output(IMX_GPIO_NR(2,  3), 0); // LVDS_SEL68           6/8bits LVDS data input selection [H: 8bits L/NC: 6bit]
++  gpio_direction_output(IMX_GPIO_NR(2,  4), 0); // LVDS_SCAN_DIRECTION  Reverse Scan Function [H: Enable; L/NC: Disable]
++  gpio_direction_output(IMX_GPIO_NR(2,  9), 1); // BLK_PWM
++  gpio_direction_output(IMX_GPIO_NR(5,  2), 1); // +12V_TFT_EN
++  gpio_direction_output(IMX_GPIO_NR(6, 31), 1); // +3V3_TFT_EN
++}
++
 +int board_early_init_f(void)
 +{
-+
 +	// assert carrier_pwr_ok to allow UART to be visible
 +	//gpio_direction_output(IMX_GPIO_NR(4, 5), 1);
 +	// Reset PHY and ensure RX_DV is pulled high to enable REF_CLK
 +	gpio_direction_output(IMX_GPIO_NR(1,25),0);
++/*
 +	imx_iomux_v3_setup_pad(NEW_PAD_CTRL(MX6_PAD_RGMII_RX_CTL__RGMII_RX_CTL,ENET_PAD_CTRL));
 +	imx_iomux_v3_setup_pad(NEW_PAD_CTRL(MX6_PAD_RGMII_RXC__RGMII_RXC,ENET_PAD_CTRL));
++*/
 +	setup_iomux_uart();
-+#ifdef CONFIG_VIDEO_IPUV3
-+        imx_iomux_v3_setup_pad(NEW_PAD_CTRL(MX6_PAD_NANDF_D0__GPIO2_IO00,NO_PAD_CTRL));
-+        imx_iomux_v3_setup_pad(NEW_PAD_CTRL(MX6_PAD_NANDF_D1__GPIO2_IO01,NO_PAD_CTRL));
-+        imx_iomux_v3_setup_pad(NEW_PAD_CTRL(MX6_PAD_NANDF_D2__GPIO2_IO02,NO_PAD_CTRL));
-+        imx_iomux_v3_setup_pad(NEW_PAD_CTRL(MX6_PAD_NANDF_D3__GPIO2_IO03,NO_PAD_CTRL));
-+        imx_iomux_v3_setup_pad(NEW_PAD_CTRL(MX6_PAD_NANDF_D4__GPIO2_IO04,NO_PAD_CTRL));
-+        imx_iomux_v3_setup_pad(NEW_PAD_CTRL(MX6_PAD_SD4_DAT1__GPIO2_IO09,NO_PAD_CTRL));
-+        imx_iomux_v3_setup_pad(NEW_PAD_CTRL(MX6_PAD_EIM_A25__GPIO5_IO02,NO_PAD_CTRL));
-+	gpio_direction_output(IMX_GPIO_NR(2,0),0); //LCD_ON
-+        gpio_direction_output(IMX_GPIO_NR(2,1),0); //BKL_ON
-+        gpio_direction_output(IMX_GPIO_NR(2,2),0); //SELLVDS
-+        gpio_direction_output(IMX_GPIO_NR(2,3),0); //SEL68
-+        gpio_direction_output(IMX_GPIO_NR(2,4),0); //SCAN_DIRECTION
-+        gpio_direction_output(IMX_GPIO_NR(2,9),1); //BKL_PWM
-+        gpio_direction_output(IMX_GPIO_NR(5,2),1); //+12V_EN
-+
-+	setup_display();
-+        gpio_direction_output(IMX_GPIO_NR(2,0),1); //LCD_ON
-+        gpio_direction_output(IMX_GPIO_NR(2,1),1); //BKL_ON
-+
-+#endif
 +	return 0;
 +}
 +
@@ -916,10 +779,45 @@ Index: git/board/3b6/mx6q-tera-he/mx6q-tera-he.c
 +	0x32,	//HCMB
 +	0x32	//PWRT
 +};
++
 +static unsigned char usb_init_blob2[] = {
 +	0x01,
 +	0x01
 +};
++
++int lpcSend(void)
++{
++	struct udevice       *dev;
++	struct dm_serial_ops *ops;
++	int                   ret;
++
++	/* Scanning the uclass is enough to probe all the devices */
++	for (ret=uclass_first_device(UCLASS_SERIAL, &dev);
++	     dev;
++	     ret=uclass_next_device(&dev)){
++	}
++
++	printf("Get serial device\n");
++	ret = uclass_get_device_by_seq(UCLASS_SERIAL, 1, &dev);
++	if(ret){
++		printf("Error while getting serial device\n");
++		return -1;
++	}
++	ops = dev->driver->ops;
++	ops->setbrg(dev, 115200);
++
++	printf("Send %%u$ to LPC11\n");
++	do{ ret = ops->putc(dev, '%'); }while(ret);
++	do{ ret = ops->putc(dev, 'u'); }while(ret);
++	do{ ret = ops->putc(dev, '$'); }while(ret);
++
++	printf("Send %%v$ to LPC11\n");
++	do{ ret = ops->putc(dev, '%'); }while(ret);
++	do{ ret = ops->putc(dev, 'v'); }while(ret);
++	do{ ret = ops->putc(dev, '$'); }while(ret);
++
++	return 1;
++}
 +
 +int board_init(void)
 +{
@@ -930,15 +828,21 @@ Index: git/board/3b6/mx6q-tera-he/mx6q-tera-he.c
 +	/* address of boot parameters */
 +	gd->bd->bi_boot_params = PHYS_SDRAM + 0x100;
 +
-+        /* I2C 1 setup */
-+        setup_i2c(0, CONFIG_SYS_I2C_SPEED, 0x7f, &i2c_pad_info1);
-+        /* I2C 2 setup */
-+        setup_i2c(1, CONFIG_SYS_I2C_SPEED, 0x7f, &i2c_pad_info2);
-+        /* I2C 3 setup */
-+        setup_i2c(2, CONFIG_SYS_I2C_SPEED, 0x7f, &i2c_pad_info3);
++	/* I2C 1 setup */
++	setup_i2c(0, CONFIG_SYS_I2C_SPEED, 0x7f, &i2c_pad_info1);
++	/* I2C 2 setup */
++	setup_i2c(1, CONFIG_SYS_I2C_SPEED, 0x7f, &i2c_pad_info2);
++	/* I2C 3 setup */
++	setup_i2c(2, CONFIG_SYS_I2C_SPEED, 0x7f, &i2c_pad_info3);
 +	/* set up USB HUB clock */
 +	imx_iomux_v3_setup_pad(NEW_PAD_CTRL(MX6_PAD_GPIO_3__CCM_CLKO2,CLKO2_PAD_CTRL));
 +	writel(0x10e0001,&mxc_ccm->ccosr);
++
++#ifdef CONFIG_VIDEO_IPUV3
++  printf("DISPLAY SETUP\n");
++  setup_display();
++  lvds_gpio_init();
++#endif
 +
 +        /* USB HUB reset */
 +	printf("USB RESET\n");
@@ -974,8 +878,17 @@ Index: git/board/3b6/mx6q-tera-he/mx6q-tera-he.c
 +			pmic_reg_write(p, LTC3676_DVB3A, reg);
 +		}
 +	}
++
++	lpcSend();
++
 +	return 0;
 +}
++
++#ifdef CONFIG_LDO_BYPASS_CHECK
++void ldo_mode_set(int ldo_bypass)
++{
++}
++#endif
 +
 +#ifdef CONFIG_CMD_BMODE
 +static const struct boot_mode board_boot_modes[] = {
@@ -997,6 +910,7 @@ Index: git/board/3b6/mx6q-tera-he/mx6q-tera-he.c
 +#ifdef CONFIG_ENV_IS_IN_MMC
 +	board_late_mmc_env_init();
 +#endif
++
 +	return 0;
 +}
 +
@@ -1019,46 +933,46 @@ Index: git/board/3b6/mx6q-tera-he/mx6q-tera-he.c
 +
 +	return 0;
 +}
-Index: git/arch/arm/cpu/armv7/mx6/Kconfig
-===================================================================
---- git.orig/arch/arm/cpu/armv7/mx6/Kconfig	2015-11-04 12:44:15.459042400 +0100
-+++ git/arch/arm/cpu/armv7/mx6/Kconfig	2015-11-04 12:44:16.327042400 +0100
-@@ -171,5 +171,6 @@
- source "board/udoo/Kconfig"
- source "board/wandboard/Kconfig"
- source "board/warp/Kconfig"
-+source "board/3b6/mx6q-tera-he/Kconfig"
- 
- endif
-Index: git/arch/arm/Kconfig
-===================================================================
---- git.orig/arch/arm/Kconfig	2015-11-04 12:44:15.451042400 +0100
-+++ git/arch/arm/Kconfig	2015-11-04 12:44:16.327042400 +0100
-@@ -70,7 +70,11 @@
- 
- choice
- 	prompt "Target select"
--	default TARGET_HIKEY
-+	default TARGET_MX6QTERAHE
 +
-+config TARGET_MX6QTERAHE
-+	bool "3B6 Tera-HE imx6"
-+	select CPU_V7
- 
- config ARCH_AT91
- 	bool "Atmel AT91"
-@@ -720,6 +724,7 @@
- 
- source "arch/arm/imx-common/Kconfig"
- 
-+source "board/3b6/mx6q-tera-he/Kconfig"
- source "board/BuR/kwb/Kconfig"
- source "board/BuR/tseries/Kconfig"
- source "board/CarMediaLab/flea3/Kconfig"
-Index: git/include/configs/mx6q-tera-he.h
++static struct mxc_serial_platdata terahe_mxc_serial_plat[] = {
++	{.reg = (struct mxc_uart *)UART2_BASE},
++	{.reg = (struct mxc_uart *)UART5_BASE},
++};
++
++U_BOOT_DEVICE(terahe_serial) = {
++	.name = "serial_mxc",
++	.platdata = &terahe_mxc_serial_plat[0],
++};
++
++U_BOOT_DEVICE(terahe_serial_lpc) = {
++	.name = "serial_lpc",
++	.platdata = &terahe_mxc_serial_plat[1],
++};
+Index: git/configs/mx6q-tera-he-dep_defconfig
 ===================================================================
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ git/include/configs/mx6q-tera-he.h	2015-11-04 12:44:16.327042400 +0100
++++ git/configs/mx6q-tera-he-dep_defconfig	2016-05-10 17:06:35.015161589 +0200
+@@ -0,0 +1,16 @@
++CONFIG_SYS_EXTRA_OPTIONS="IMX_CONFIG=board/3b6/mx6q-tera-he-dep/imximage.cfg,MX6Q"
++CONFIG_ARM=y
++CONFIG_TARGET_MX6QTERAHEDEP=y
++CONFIG_POWER_LTC3676=y
++CONFIG_SYS_MALLOC_F_LEN=0x2000
++CONFIG_SYS_MALLOC_F=y
++CONFIG_DM_SERIAL=y
++# CONFIG_DM_SPI is not set
++# CONFIG_DM_I2C is not set
++# CONFIG_DM_GPIO is not set
++CONFIG_DM=y
++CONFIG_DM_WARN=y
++CONFIG_DM_DEVICE_REMOVE=y
++CONFIG_DM_STDIO=y
++CONFIG_CMD_DM=y
++CONFIG_DM_THERMAL=y
+Index: git/include/configs/mx6q-tera-he-dep.h
+===================================================================
+--- /dev/null	1970-01-01 00:00:00.000000000 +0000
++++ git/include/configs/mx6q-tera-he-dep.h	2016-05-10 17:06:35.015161589 +0200
 @@ -0,0 +1,58 @@
 +/*
 + * Copyright (C) 2012 Freescale Semiconductor, Inc.
@@ -1068,17 +982,17 @@ Index: git/include/configs/mx6q-tera-he.h
 + * SPDX-License-Identifier:	GPL-2.0+
 + */
 +
-+#ifndef __MX6Q_TERA_HE_CONFIG_H
-+#define __MX6Q_TERA_HE_CONFIG_H
++#ifndef __MX6Q_TERA_HE_DEP_CONFIG_H
++#define __MX6Q_TERA_HE_DEP_CONFIG_H
 +
 +#define CONFIG_MACH_TYPE	3529
 +#define CONFIG_MXC_UART_BASE	UART2_BASE
 +#define CONFIG_CONSOLE_DEV		"ttymxc1"
 +#if defined CONFIG_MX6Q
-+#define CONFIG_DEFAULT_FDT_FILE	"zImage-imx6q-tera-he.dtb"
++#define CONFIG_DEFAULT_FDT_FILE	"zImage-imx6q-tera-he-dep.dtb"
 +#endif
 +#define CONFIG_MMCROOT			"/dev/mmcblk2p2"
-+#define PHYS_SDRAM_SIZE		(1u * 1024 * 1024 * 1024)
++#define PHYS_SDRAM_SIZE		(512 * 1024 * 1024)
 +
 +/* USB Configs */
 +#define CONFIG_CMD_USB
@@ -1092,7 +1006,7 @@ Index: git/include/configs/mx6q-tera-he.h
 +#define CONFIG_MXC_USB_PORTSC	(PORT_PTS_UTMI | PORT_PTS_PTW)
 +#define CONFIG_MXC_USB_FLAGS	0
 +
-+#include "mx6-tera-he_common.h"
++#include "mx6-tera-he-dep_common.h"
 +
 +#define CONFIG_SYS_FSL_USDHC_NUM	3
 +#if defined(CONFIG_ENV_IS_IN_MMC)
@@ -1117,12 +1031,23 @@ Index: git/include/configs/mx6q-tera-he.h
 +/* BMP */
 +#define CONFIG_CMD_BMP
 +
-+#endif                         /* __MX6Q_TERA_HE_CONFIG_H */
-Index: git/include/configs/mx6-tera-he_common.h
++#endif                         /* __MX6Q_TERA_HE_DEP_CONFIG_H */
+Index: git/arch/arm/cpu/armv7/mx6/Kconfig
+===================================================================
+--- git.orig/arch/arm/cpu/armv7/mx6/Kconfig	2016-05-10 17:06:34.955161590 +0200
++++ git/arch/arm/cpu/armv7/mx6/Kconfig	2016-05-10 17:06:35.015161589 +0200
+@@ -42,5 +42,6 @@
+ 
+ source "board/seco/Kconfig"
+ source "board/3b6/mx6q-tera-he/Kconfig"
++source "board/3b6/mx6q-tera-he-dep/Kconfig"
+ 
+ endif
+Index: git/include/configs/mx6-tera-he-dep_common.h
 ===================================================================
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ git/include/configs/mx6-tera-he_common.h	2015-11-04 12:44:16.327042400 +0100
-@@ -0,0 +1,303 @@
++++ git/include/configs/mx6-tera-he-dep_common.h	2016-05-11 09:46:58.170002383 +0200
+@@ -0,0 +1,292 @@
 +/*
 + * Copyright (C) 2012 Freescale Semiconductor, Inc.
 + *
@@ -1131,8 +1056,8 @@ Index: git/include/configs/mx6-tera-he_common.h
 + * SPDX-License-Identifier:	GPL-2.0+
 + */
 +
-+#ifndef __MX6Q_TERA_HE_COMMON_CONFIG_H
-+#define __MX6Q_TERA_HE_COMMON_CONFIG_H
++#ifndef __MX6Q_TERA_HE_DEP_COMMON_CONFIG_H
++#define __MX6Q_TERA_HE_DEP_COMMON_CONFIG_H
 +
 +#define CONFIG_MX6
 +
@@ -1178,7 +1103,7 @@ Index: git/include/configs/mx6-tera-he_common.h
 +#define CONFIG_CMD_EXT2
 +#define CONFIG_CMD_FAT
 +#define CONFIG_DOS_PARTITION
-+
++/*
 +#define CONFIG_CMD_PING
 +#define CONFIG_CMD_DHCP
 +#define CONFIG_CMD_MII
@@ -1192,21 +1117,22 @@ Index: git/include/configs/mx6-tera-he_common.h
 +
 +#define CONFIG_PHYLIB
 +#define CONFIG_PHY_MICREL
++*/
 +#define CONFIG_CMD_SF
 +#ifdef CONFIG_CMD_SF
 +#define CONFIG_SPI_FLASH
 +#define CONFIG_SPI_FLASH_STMICRO
 +#define CONFIG_MXC_SPI
-+#define CONFIG_SF_DEFAULT_BUS		0
-+#define CONFIG_SF_DEFAULT_CS		0
-+#define CONFIG_SF_DEFAULT_SPEED		20000000
-+#define CONFIG_SF_DEFAULT_MODE		SPI_MODE_0
++#define CONFIG_SF_DEFAULT_BUS     0
++#define CONFIG_SF_DEFAULT_CS      0
++#define CONFIG_SF_DEFAULT_SPEED   20000000
++#define CONFIG_SF_DEFAULT_MODE    SPI_MODE_0
 +#endif
 +
 +/* allow to overwrite serial and ethaddr */
 +#define CONFIG_ENV_OVERWRITE
 +#define CONFIG_CONS_INDEX              1
-+#define CONFIG_BAUDRATE                        115200
++#define CONFIG_BAUDRATE                115200
 +
 +/* Command definition */
 +#define CONFIG_CMD_BDI		/* bdinfo			*/
@@ -1240,7 +1166,7 @@ Index: git/include/configs/mx6-tera-he_common.h
 +
 +#define CONFIG_BOOTDELAY               1
 +
-+#define CONFIG_LOADADDR                        0x12000000
++#define CONFIG_LOADADDR                0x12000000
 +#define CONFIG_SYS_TEXT_BASE           0x17800000
 +
 +#ifdef CONFIG_SUPPORT_EMMC_BOOT
@@ -1265,7 +1191,19 @@ Index: git/include/configs/mx6-tera-he_common.h
 +#define EMMC_ENV ""
 +#endif
 +
++#define CONFIG_MFG_ENV_SETTINGS \
++	"mfgtool_args=setenv bootargs console=${console},${baudrate} " \
++		"rdinit=/linuxrc mem=512M " \
++		"g_mass_storage.stall=0 g_mass_storage.removable=1 " \
++		"g_mass_storage.idVendor=0x066F g_mass_storage.idProduct=0x37FF "\
++		"g_mass_storage.iSerialNumber=\"\" "\
++		"\0" \
++		"initrd_addr=0x12C00000\0" \
++		"initrd_high=0xffffffff\0" \
++		"bootcmd_mfg=run mfgtool_args;bootz ${loadaddr} ${initrd_addr} ${fdt_addr};\0" \
++
 +#define CONFIG_EXTRA_ENV_SETTINGS \
++	CONFIG_MFG_ENV_SETTINGS \
 +	"script=boot.scr\0" \
 +	"image=zImage\0" \
 +	"fdt_file=" CONFIG_DEFAULT_FDT_FILE "\0" \
@@ -1293,7 +1231,7 @@ Index: git/include/configs/mx6-tera-he_common.h
 +			"fi; "	\
 +		"fi\0" \
 +	EMMC_ENV	  \
-+ "mmcsetroot=setenv mmcroot /dev/mmcblk${mmcdev}p${mmcrootpart} rootwait rw\0" \
++	"mmcsetroot=setenv mmcroot /dev/mmcblk${mmcdev}p${mmcrootpart} rootwait rw\0" \
 +	"mmcargs=run mmcsetroot;setenv bootargs console=${console},${baudrate} " \
 +		"root=${mmcroot}\0" \
 +	"loadbootscript=" \
@@ -1316,30 +1254,6 @@ Index: git/include/configs/mx6-tera-he_common.h
 +			"fi; " \
 +		"else " \
 +			"bootz; " \
-+		"fi;\0" \
-+	"netargs=setenv bootargs console=${console},${baudrate} " \
-+		"root=/dev/nfs " \
-+		"ip=dhcp nfsroot=${serverip}:${nfsroot},v3,tcp\0" \
-+	"netboot=echo Booting from net ...; " \
-+		"run netargs; " \
-+		"if test ${ip_dyn} = yes; then " \
-+			"setenv get_cmd dhcp; " \
-+		"else " \
-+			"setenv get_cmd tftp; " \
-+		"fi; " \
-+		"${get_cmd} ${image}; " \
-+		"if test ${boot_fdt} = yes || test ${boot_fdt} = try; then " \
-+			"if ${get_cmd} ${fdt_addr} ${fdt_file}; then " \
-+				"bootz ${loadaddr} - ${fdt_addr}; " \
-+			"else " \
-+				"if test ${boot_fdt} = try; then " \
-+					"bootz; " \
-+				"else " \
-+					"echo WARN: Cannot load the DT; " \
-+				"fi; " \
-+			"fi; " \
-+		"else " \
-+			"bootz; " \
 +		"fi;\0"
 +
 +#define CONFIG_BOOTCOMMAND \
@@ -1350,13 +1264,13 @@ Index: git/include/configs/mx6-tera-he_common.h
 +		"else " \
 +			"if run loadimage; then " \
 +				"run mmcboot; " \
-+			"else run netboot; " \
 +			"fi; " \
 +		"fi; " \
-+	"else run netboot; fi"
++	"fi;"
 +
++/*
 +#define CONFIG_ARP_TIMEOUT     200UL
-+
++*/
 +/* Miscellaneous configurable options */
 +#define CONFIG_SYS_LONGHELP
 +#define CONFIG_SYS_HUSH_PARSER
@@ -1425,4 +1339,4 @@ Index: git/include/configs/mx6-tera-he_common.h
 +#define CONFIG_IMX_HDMI
 +#define CONFIG_IMX_VIDEO_SKIP
 +
-+#endif                         /* __MX6Q_TERA_HE_COMMON_CONFIG_H */
++#endif                         /* __MX6Q_TERA_HE_DEP_COMMON_CONFIG_H */

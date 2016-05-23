@@ -32,6 +32,21 @@ SRC_URI_append_tera-he = " \
    file://defconfig \
 "
 
+SRC_URI_append_tera-he-dep = " \
+   file://0000-tera-he-dep-dts.patch \
+   file://0001-ltc3676.patch \
+   file://0002-lsm330.patch \
+   file://0003-mxc_tvp5150.patch \
+   file://0004-advancedsilicon_multitouch.patch \
+   file://0005-backported-new-isl29018-driver.patch \
+   file://0008-mcp251x-spi-patch-to-reduce-latency.patch \
+   file://0011-Add-SDIO-function-devicetree-subnode-parsing.patch \
+   file://0013-mxc_tvp5150-std_autodet.patch \
+   file://0015-splashlogo.patch \
+   file://0016-Flexcan-fix-fifo-overrun.patch \
+   file://defconfig \
+"
+
 KERNEL_IMAGE_BASE_NAME ?= "${KERNEL_IMAGETYPE}-${PKGE}-${PKGV}-${PKGR}"
 
 

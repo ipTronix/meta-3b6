@@ -8,3 +8,9 @@ SRC_URI_append_tera-he = " \
    file://0000-Add_Tera_HE_target.patch \
 "
 
+SRC_URI_append_tera-he-dep = " \
+   file://0000-Add_Tera_HE_target.patch \
+   file://0002-Imx-boot-control.patch \
+   file://0003-Add_Tera_HE_dep_target.patch \
+"
+

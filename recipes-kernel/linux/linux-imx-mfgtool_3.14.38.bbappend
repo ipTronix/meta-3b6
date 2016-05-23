@@ -10,3 +10,7 @@ SRC_URI_append_tera-he = " \
    file://0001-splashlogo.patch \
    file://defconfig \
 "
+SRC_URI_append_tera-he-dep = " \
+   file://0000-tera-he-dep-dts.patch \
+   file://defconfig \
+"
