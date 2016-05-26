@@ -42,7 +42,7 @@ int main(int argc, char** argv)
     printf("Send command [%%%s$] to LPC\n", cmd);
     lpcCmdSend(lpc_uart, cmd);
   }
-
+/*
   do{
     if(read(lpc_uart, &c, 1)>0){
       if(c == '%'){
@@ -57,7 +57,7 @@ int main(int argc, char** argv)
       }
     }
   }while(1);
-
+*/
   uartClose(lpc_uart);
   return 0;
 }
