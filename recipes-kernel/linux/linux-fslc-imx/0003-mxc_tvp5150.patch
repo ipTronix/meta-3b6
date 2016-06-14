@@ -1,7 +1,7 @@
 Index: git/drivers/media/platform/mxc/capture/Kconfig
 ===================================================================
---- git.orig/drivers/media/platform/mxc/capture/Kconfig	2016-06-14 10:41:36.654904618 +0200
-+++ git/drivers/media/platform/mxc/capture/Kconfig	2016-06-14 10:08:35.000000000 +0200
+--- git.orig/drivers/media/platform/mxc/capture/Kconfig	2016-06-14 13:05:16.254780940 +0200
++++ git/drivers/media/platform/mxc/capture/Kconfig	2016-06-14 13:05:18.534780908 +0200
 @@ -33,6 +33,12 @@
  	---help---
  	  If you plan to use the adv7180 video decoder with your MXC system, say Y here.
@@ -17,8 +17,8 @@ Index: git/drivers/media/platform/mxc/capture/Kconfig
  	default MXC_IPU_DEVICE_QUEUE_SDC
 Index: git/drivers/media/platform/mxc/capture/Makefile
 ===================================================================
---- git.orig/drivers/media/platform/mxc/capture/Makefile	2016-06-14 10:41:36.654904618 +0200
-+++ git/drivers/media/platform/mxc/capture/Makefile	2016-06-14 10:08:35.000000000 +0200
+--- git.orig/drivers/media/platform/mxc/capture/Makefile	2016-06-14 13:05:16.254780940 +0200
++++ git/drivers/media/platform/mxc/capture/Makefile	2016-06-14 13:05:18.534780908 +0200
 @@ -18,4 +18,7 @@
  adv7180_tvin-objs := adv7180.o
  obj-$(CONFIG_MXC_TVIN_ADV7180) += adv7180_tvin.o
@@ -30,7 +30,7 @@ Index: git/drivers/media/platform/mxc/capture/Makefile
 Index: git/drivers/media/platform/mxc/capture/mxc_tvp5150.c
 ===================================================================
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ git/drivers/media/platform/mxc/capture/mxc_tvp5150.c	2016-06-14 10:08:35.000000000 +0200
++++ git/drivers/media/platform/mxc/capture/mxc_tvp5150.c	2016-06-14 13:05:18.534780908 +0200
 @@ -0,0 +1,1442 @@
 +/*
 + * tvp5150 - Texas Instruments TVP5150A/AM1 video decoder driver
@@ -1477,7 +1477,7 @@ Index: git/drivers/media/platform/mxc/capture/mxc_tvp5150.c
 Index: git/drivers/media/platform/mxc/capture/tvp5150_reg.h
 ===================================================================
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ git/drivers/media/platform/mxc/capture/tvp5150_reg.h	2016-06-14 10:46:12.000000000 +0200
++++ git/drivers/media/platform/mxc/capture/tvp5150_reg.h	2016-06-14 13:05:18.534780908 +0200
 @@ -0,0 +1,139 @@
 +/*
 + * tvp5150 - Texas Instruments TVP5150A/AM1 video decoder registers
