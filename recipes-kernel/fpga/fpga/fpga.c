@@ -162,7 +162,7 @@ ssize_t fpga_write(struct file *file, const char *buf, size_t count, loff_t *f_p
   loff_t            pos = *f_pos;
   int               ret;
   uint8_t          *fbuf;
-	int               i;
+  int               i;
 DBG_PRINT("count %d, f_pos %lld\n", count, *f_pos);
   mutex_lock(&fpgaDevice->fops_lock);
   if( pos >= (dev->flash.size_in_bytes/2) ){
