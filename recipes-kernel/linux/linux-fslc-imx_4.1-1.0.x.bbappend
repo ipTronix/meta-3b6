@@ -9,6 +9,9 @@ SRC_URI_append_tera-he = " \
   file://0001-ltc3676.patch \
   file://0002-lsm330.patch \
   file://0003-mxc_tvp5150.patch \
+  file://0004-advancedsilicon_multitouch.patch \
+  file://0005-splashlogo.patch \
+  file://0006-mcp251x-spi-reduce-latency_Fix-flexcan-fifo-overrun.patch \
 "
 
 KERNEL_IMAGE_BASE_NAME ?= "${KERNEL_IMAGETYPE}-${PKGE}-${PKGV}-${PKGR}"
