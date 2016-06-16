@@ -15,6 +15,9 @@ SRC_URI_append_tera-he = " \
   file://0007-WDOG-Assert-WDOG_B-on-Time-out.patch \
   file://0008-altera-cvifw.patch \
   file://0009-MCP2515_FPGA_SPI.patch \
+  file://0010-usb-capture-update.patch \
+  file://0011-TVP5150-i2c.patch \
+  file://0012-Bluetooth-Add-tty-HCI-driver.patch \
 "
 
 KERNEL_IMAGE_BASE_NAME ?= "${KERNEL_IMAGETYPE}-${PKGE}-${PKGV}-${PKGR}"

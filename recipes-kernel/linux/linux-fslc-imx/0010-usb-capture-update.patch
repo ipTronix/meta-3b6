@@ -1,0 +1,43 @@
+Index: kernel-source/drivers/media/usb/em28xx/em28xx-cards.c
+===================================================================
+--- kernel-source.orig/drivers/media/usb/em28xx/em28xx-cards.c	2016-03-08 18:17:52.240315989 +0100
++++ kernel-source/drivers/media/usb/em28xx/em28xx-cards.c	2016-03-08 18:17:55.420315928 +0100
+@@ -1948,13 +1948,13 @@
+ 		.mute_gpio       = terratec_av350_mute_gpio,
+ 		.input           = { {
+ 			.type     = EM28XX_VMUX_COMPOSITE1,
+-			.vmux     = TVP5150_COMPOSITE1,
++			.vmux     = TVP5150_COMPOSITE0,
+ 			.amux     = EM28XX_AUDIO_SRC_LINE,
+ 			.gpio     = terratec_av350_unmute_gpio,
+
+ 		}, {
+ 			.type     = EM28XX_VMUX_SVIDEO,
+-			.vmux     = TVP5150_SVIDEO,
++			.vmux     = TVP5150_COMPOSITE1,
+ 			.amux     = EM28XX_AUDIO_SRC_LINE,
+ 			.gpio     = terratec_av350_unmute_gpio,
+ 		} },
+Index: kernel-source/drivers/media/usb/em28xx/em28xx-video.c
+===================================================================
+--- kernel-source.orig/drivers/media/usb/em28xx/em28xx-video.c	2016-03-08 18:17:52.244315989 +0100
++++ kernel-source/drivers/media/usb/em28xx/em28xx-video.c	2016-03-08 18:18:58.036314718 +0100
+@@ -349,7 +349,7 @@
+ 	   get the pixelformatting associated with that area.  So by cropping
+ 	   it out, we end up with the same format as the rest of the VBI
+ 	   region */
+-	if (em28xx_vbi_supported(dev) == 1)
++	if (0)/*(em28xx_vbi_supported(dev) == 1)*/
+ 		em28xx_capture_area_set(dev, 0, 2, width, height);
+ 	else
+ 		em28xx_capture_area_set(dev, 0, 0, width, height);
+@@ -2324,7 +2324,7 @@
+ 	if (dev->board.decoder == EM28XX_TVP5150)
+ 		v4l2_i2c_new_subdev(&dev->v4l2_dev,
+				    &dev->i2c_adap[dev->def_i2c_bus],
+-				    "tvp5150", 0, tvp5150_addrs);
++				    "tvp5150a", 0, tvp5150_addrs);
+
+ 	if (dev->board.adecoder == EM28XX_TVAUDIO)
+ 		v4l2_i2c_new_subdev(&dev->v4l2_dev, &dev->i2c_adap[dev->def_i2c_bus],
+Index: kernel-source/drivers/media/i2c/tvp5150.c
