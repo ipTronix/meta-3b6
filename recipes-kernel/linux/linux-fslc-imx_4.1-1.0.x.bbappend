@@ -1,4 +1,4 @@
-# TERA-HE 
+# TERA-HE
 
 DESCRIPTION = "kernel for 3b6 tera-he platform"
 
@@ -12,6 +12,9 @@ SRC_URI_append_tera-he = " \
   file://0004-advancedsilicon_multitouch.patch \
   file://0005-splashlogo.patch \
   file://0006-mcp251x-spi-reduce-latency_Fix-flexcan-fifo-overrun.patch \
+  file://0007-WDOG-Assert-WDOG_B-on-Time-out.patch \
+  file://0008-altera-cvifw.patch \
+  file://0009-MCP2515_FPGA_SPI.patch \
 "
 
 KERNEL_IMAGE_BASE_NAME ?= "${KERNEL_IMAGETYPE}-${PKGE}-${PKGV}-${PKGR}"

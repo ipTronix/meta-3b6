@@ -1,7 +1,7 @@
 Index: git/drivers/media/platform/mxc/capture/Kconfig
 ===================================================================
---- git.orig/drivers/media/platform/mxc/capture/Kconfig	2016-06-14 13:05:16.254780940 +0200
-+++ git/drivers/media/platform/mxc/capture/Kconfig	2016-06-14 13:05:18.534780908 +0200
+--- git.orig/drivers/media/platform/mxc/capture/Kconfig	2016-06-15 15:00:07.609442351 +0200
++++ git/drivers/media/platform/mxc/capture/Kconfig	2016-06-15 15:00:09.789442320 +0200
 @@ -33,6 +33,12 @@
  	---help---
  	  If you plan to use the adv7180 video decoder with your MXC system, say Y here.
@@ -17,8 +17,8 @@ Index: git/drivers/media/platform/mxc/capture/Kconfig
  	default MXC_IPU_DEVICE_QUEUE_SDC
 Index: git/drivers/media/platform/mxc/capture/Makefile
 ===================================================================
---- git.orig/drivers/media/platform/mxc/capture/Makefile	2016-06-14 13:05:16.254780940 +0200
-+++ git/drivers/media/platform/mxc/capture/Makefile	2016-06-14 13:05:18.534780908 +0200
+--- git.orig/drivers/media/platform/mxc/capture/Makefile	2016-06-15 15:00:07.609442351 +0200
++++ git/drivers/media/platform/mxc/capture/Makefile	2016-06-15 15:00:09.789442320 +0200
 @@ -18,4 +18,7 @@
  adv7180_tvin-objs := adv7180.o
  obj-$(CONFIG_MXC_TVIN_ADV7180) += adv7180_tvin.o
@@ -30,7 +30,7 @@ Index: git/drivers/media/platform/mxc/capture/Makefile
 Index: git/drivers/media/platform/mxc/capture/mxc_tvp5150.c
 ===================================================================
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ git/drivers/media/platform/mxc/capture/mxc_tvp5150.c	2016-06-14 13:05:18.534780908 +0200
++++ git/drivers/media/platform/mxc/capture/mxc_tvp5150.c	2016-06-15 17:51:49.377294537 +0200
 @@ -0,0 +1,1442 @@
 +/*
 + * tvp5150 - Texas Instruments TVP5150A/AM1 video decoder driver
@@ -39,7 +39,7 @@ Index: git/drivers/media/platform/mxc/capture/mxc_tvp5150.c
 + * This code is placed under the terms of the GNU General Public License v2
 + */
 +
-+//#define DEBUG
++#define DEBUG
 +
 +#ifdef DEBUG
 +  #define DRIVER_NAME "tvp5150"
@@ -822,7 +822,7 @@ Index: git/drivers/media/platform/mxc/capture/mxc_tvp5150.c
 +{
 +	struct tvp5150 *core = s->priv;
 +
-+  DBG_PRINT("TVP5150:ioctl_s_power\n");
++  DBG_PRINT("On %d\n", on);
 +
 +  if (on) {
 +		//scrivere 1 in Operation mode control TODO
@@ -924,7 +924,7 @@ Index: git/drivers/media/platform/mxc/capture/mxc_tvp5150.c
 +static int ioctl_g_fmt_cap(struct v4l2_int_device *s, struct v4l2_format *f)
 +{
 +	struct tvp5150 *core = s->priv;
-+	DBG_PRINT("TVP5150:ioctl_g_fmt_cap\n");
++//	DBG_PRINT("\n");
 +	dev_dbg(&core->sen.i2c_client->dev, "tvp5150:ioctl_g_fmt_cap\n");
 +
 +	switch (f->type) {
@@ -1477,7 +1477,7 @@ Index: git/drivers/media/platform/mxc/capture/mxc_tvp5150.c
 Index: git/drivers/media/platform/mxc/capture/tvp5150_reg.h
 ===================================================================
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ git/drivers/media/platform/mxc/capture/tvp5150_reg.h	2016-06-14 13:05:18.534780908 +0200
++++ git/drivers/media/platform/mxc/capture/tvp5150_reg.h	2016-06-15 15:00:09.789442320 +0200
 @@ -0,0 +1,139 @@
 +/*
 + * tvp5150 - Texas Instruments TVP5150A/AM1 video decoder registers
