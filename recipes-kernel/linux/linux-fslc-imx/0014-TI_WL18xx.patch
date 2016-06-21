@@ -1,0 +1,1915 @@
+Index: git/drivers/net/wireless/ti/wlcore/acx.c
+===================================================================
+--- git.orig/drivers/net/wireless/ti/wlcore/acx.c	2016-06-21 13:51:49.754062899 +0200
++++ git/drivers/net/wireless/ti/wlcore/acx.c	2016-06-21 13:51:52.398062861 +0200
+@@ -1419,7 +1419,8 @@
+ 
+ /* setup BA session receiver setting in the FW. */
+ int wl12xx_acx_set_ba_receiver_session(struct wl1271 *wl, u8 tid_index,
+-				       u16 ssn, bool enable, u8 peer_hlid)
++				       u16 ssn, bool enable, u8 peer_hlid,
++				       u8 win_size)
+ {
+ 	struct wl1271_acx_ba_receiver_setup *acx;
+ 	int ret;
+@@ -1435,7 +1436,7 @@
+ 	acx->hlid = peer_hlid;
+ 	acx->tid = tid_index;
+ 	acx->enable = enable;
+-	acx->win_size = wl->conf.ht.rx_ba_win_size;
++	acx->win_size =	win_size;
+ 	acx->ssn = ssn;
+ 
+ 	ret = wlcore_cmd_configure_failsafe(wl, ACX_BA_SESSION_RX_SETUP, acx,
+Index: git/drivers/net/wireless/ti/wlcore/acx.h
+===================================================================
+--- git.orig/drivers/net/wireless/ti/wlcore/acx.h	2016-06-21 13:51:49.754062899 +0200
++++ git/drivers/net/wireless/ti/wlcore/acx.h	2016-06-21 13:51:52.398062861 +0200
+@@ -1112,7 +1112,8 @@
+ int wl12xx_acx_set_ba_initiator_policy(struct wl1271 *wl,
+ 				       struct wl12xx_vif *wlvif);
+ int wl12xx_acx_set_ba_receiver_session(struct wl1271 *wl, u8 tid_index,
+-				       u16 ssn, bool enable, u8 peer_hlid);
++				       u16 ssn, bool enable, u8 peer_hlid,
++				       u8 win_size);
+ int wl12xx_acx_tsf_info(struct wl1271 *wl, struct wl12xx_vif *wlvif,
+ 			u64 *mactime);
+ int wl1271_acx_ps_rx_streaming(struct wl1271 *wl, struct wl12xx_vif *wlvif,
+Index: git/drivers/net/wireless/ti/wlcore/cmd.c
+===================================================================
+--- git.orig/drivers/net/wireless/ti/wlcore/cmd.c	2016-06-21 13:51:49.754062899 +0200
++++ git/drivers/net/wireless/ti/wlcore/cmd.c	2016-06-21 13:51:52.402062861 +0200
+@@ -2003,12 +2003,15 @@
+ 		      wlvif->bss_type == BSS_TYPE_IBSS)))
+ 		return -EINVAL;
+ 
+-	ret = wl12xx_cmd_role_enable(wl,
+-				     wl12xx_wlvif_to_vif(wlvif)->addr,
+-				     WL1271_ROLE_DEVICE,
+-				     &wlvif->dev_role_id);
+-	if (ret < 0)
+-		goto out;
++	/* the dev role is already started for p2p mgmt interfaces */
++	if (!wlcore_is_p2p_mgmt(wlvif)) {
++		ret = wl12xx_cmd_role_enable(wl,
++					     wl12xx_wlvif_to_vif(wlvif)->addr,
++					     WL1271_ROLE_DEVICE,
++					     &wlvif->dev_role_id);
++		if (ret < 0)
++			goto out;
++	}
+ 
+ 	ret = wl12xx_cmd_role_start_dev(wl, wlvif, band, channel);
+ 	if (ret < 0)
+@@ -2023,7 +2026,8 @@
+ out_stop:
+ 	wl12xx_cmd_role_stop_dev(wl, wlvif);
+ out_disable:
+-	wl12xx_cmd_role_disable(wl, &wlvif->dev_role_id);
++	if (!wlcore_is_p2p_mgmt(wlvif))
++		wl12xx_cmd_role_disable(wl, &wlvif->dev_role_id);
+ out:
+ 	return ret;
+ }
+@@ -2052,10 +2056,42 @@
+ 	if (ret < 0)
+ 		goto out;
+ 
+-	ret = wl12xx_cmd_role_disable(wl, &wlvif->dev_role_id);
+-	if (ret < 0)
+-		goto out;
++	if (!wlcore_is_p2p_mgmt(wlvif)) {
++		ret = wl12xx_cmd_role_disable(wl, &wlvif->dev_role_id);
++		if (ret < 0)
++			goto out;
++	}
+ 
+ out:
+ 	return ret;
+ }
++
++int wlcore_cmd_generic_cfg(struct wl1271 *wl, struct wl12xx_vif *wlvif,
++			   u8 feature, u8 enable, u8 value)
++{
++	struct wlcore_cmd_generic_cfg *cmd;
++	int ret;
++
++	wl1271_debug(DEBUG_CMD,
++		     "cmd generic cfg (role %d feature %d enable %d value %d)",
++		     wlvif->role_id, feature, enable, value);
++
++	cmd = kzalloc(sizeof(*cmd), GFP_KERNEL);
++	if (!cmd)
++		return -ENOMEM;
++
++	cmd->role_id = wlvif->role_id;
++	cmd->feature = feature;
++	cmd->enable = enable;
++	cmd->value = value;
++
++	ret = wl1271_cmd_send(wl, CMD_GENERIC_CFG, cmd, sizeof(*cmd), 0);
++	if (ret < 0) {
++		wl1271_error("failed to send generic cfg command");
++		goto out_free;
++	}
++out_free:
++	kfree(cmd);
++	return ret;
++}
++EXPORT_SYMBOL_GPL(wlcore_cmd_generic_cfg);
+Index: git/drivers/net/wireless/ti/wlcore/cmd.h
+===================================================================
+--- git.orig/drivers/net/wireless/ti/wlcore/cmd.h	2016-06-21 13:51:49.754062899 +0200
++++ git/drivers/net/wireless/ti/wlcore/cmd.h	2016-06-21 13:51:52.402062861 +0200
+@@ -92,6 +92,8 @@
+ void wlcore_set_pending_regdomain_ch(struct wl1271 *wl, u16 channel,
+ 				     enum ieee80211_band band);
+ int wlcore_cmd_regdomain_config_locked(struct wl1271 *wl);
++int wlcore_cmd_generic_cfg(struct wl1271 *wl, struct wl12xx_vif *wlvif,
++			   u8 feature, u8 enable, u8 value);
+ int wl12xx_cmd_config_fwlog(struct wl1271 *wl);
+ int wl12xx_cmd_start_fwlog(struct wl1271 *wl);
+ int wl12xx_cmd_stop_fwlog(struct wl1271 *wl);
+@@ -652,6 +654,19 @@
+ 	u8 padding[3];
+ } __packed;
+ 
++enum wlcore_generic_cfg_feature {
++	WLCORE_CFG_FEATURE_RADAR_DEBUG = 2,
++};
++
++struct wlcore_cmd_generic_cfg {
++	struct wl1271_cmd_header header;
++
++	u8 role_id;
++	u8 feature;
++	u8 enable;
++	u8 value;
++} __packed;
++
+ struct wl12xx_cmd_config_fwlog {
+ 	struct wl1271_cmd_header header;
+ 
+Index: git/drivers/net/wireless/ti/wlcore/init.c
+===================================================================
+--- git.orig/drivers/net/wireless/ti/wlcore/init.c	2016-06-21 13:51:49.754062899 +0200
++++ git/drivers/net/wireless/ti/wlcore/init.c	2016-06-21 13:51:52.402062861 +0200
+@@ -348,7 +348,7 @@
+ }
+ 
+ /* generic sta initialization (non vif-specific) */
+-static int wl1271_sta_hw_init(struct wl1271 *wl, struct wl12xx_vif *wlvif)
++int wl1271_sta_hw_init(struct wl1271 *wl, struct wl12xx_vif *wlvif)
+ {
+ 	int ret;
+ 
+Index: git/drivers/net/wireless/ti/wlcore/init.h
+===================================================================
+--- git.orig/drivers/net/wireless/ti/wlcore/init.h	2016-06-21 13:51:49.754062899 +0200
++++ git/drivers/net/wireless/ti/wlcore/init.h	2016-06-21 13:51:52.402062861 +0200
+@@ -35,5 +35,6 @@
+ int wl1271_init_vif_specific(struct wl1271 *wl, struct ieee80211_vif *vif);
+ int wl1271_init_ap_rates(struct wl1271 *wl, struct wl12xx_vif *wlvif);
+ int wl1271_ap_init_templates(struct wl1271 *wl, struct ieee80211_vif *vif);
++int wl1271_sta_hw_init(struct wl1271 *wl, struct wl12xx_vif *wlvif);
+ 
+ #endif
+Index: git/drivers/net/wireless/ti/wlcore/io.h
+===================================================================
+--- git.orig/drivers/net/wireless/ti/wlcore/io.h	2016-06-21 13:51:49.754062899 +0200
++++ git/drivers/net/wireless/ti/wlcore/io.h	2016-06-21 13:51:52.402062861 +0200
+@@ -207,23 +207,19 @@
+ 
+ static inline void wl1271_power_off(struct wl1271 *wl)
+ {
+-	int ret = 0;
++	int ret;
+ 
+ 	if (!test_bit(WL1271_FLAG_GPIO_POWER, &wl->flags))
+ 		return;
+ 
+-	if (wl->if_ops->power)
+-		ret = wl->if_ops->power(wl->dev, false);
++	ret = wl->if_ops->power(wl->dev, false);
+ 	if (!ret)
+ 		clear_bit(WL1271_FLAG_GPIO_POWER, &wl->flags);
+ }
+ 
+ static inline int wl1271_power_on(struct wl1271 *wl)
+ {
+-	int ret = 0;
+-
+-	if (wl->if_ops->power)
+-		ret = wl->if_ops->power(wl->dev, true);
++	int ret = wl->if_ops->power(wl->dev, true);
+ 	if (ret == 0)
+ 		set_bit(WL1271_FLAG_GPIO_POWER, &wl->flags);
+ 
+Index: git/drivers/net/wireless/ti/wlcore/main.c
+===================================================================
+--- git.orig/drivers/net/wireless/ti/wlcore/main.c	2016-06-21 13:51:49.758062899 +0200
++++ git/drivers/net/wireless/ti/wlcore/main.c	2016-06-21 13:51:52.402062861 +0200
+@@ -1792,6 +1792,9 @@
+ 
+ 	wl->wow_enabled = true;
+ 	wl12xx_for_each_wlvif(wl, wlvif) {
++		if (wlcore_is_p2p_mgmt(wlvif))
++			continue;
++
+ 		ret = wl1271_configure_suspend(wl, wlvif, wow);
+ 		if (ret < 0) {
+ 			mutex_unlock(&wl->mutex);
+@@ -1901,6 +1904,9 @@
+ 		goto out;
+ 
+ 	wl12xx_for_each_wlvif(wl, wlvif) {
++		if (wlcore_is_p2p_mgmt(wlvif))
++			continue;
++
+ 		wl1271_configure_resume(wl, wlvif);
+ 	}
+ 
+@@ -2256,6 +2262,7 @@
+ 		wlvif->p2p = 1;
+ 		/* fall-through */
+ 	case NL80211_IFTYPE_STATION:
++	case NL80211_IFTYPE_P2P_DEVICE:
+ 		wlvif->bss_type = BSS_TYPE_STA_BSS;
+ 		break;
+ 	case NL80211_IFTYPE_ADHOC:
+@@ -2477,7 +2484,8 @@
+ {
+ 	struct wlcore_hw_queue_iter_data *iter_data = data;
+ 
+-	if (WARN_ON_ONCE(vif->hw_queue[0] == IEEE80211_INVAL_HW_QUEUE))
++	if (vif->type == NL80211_IFTYPE_P2P_DEVICE ||
++	    WARN_ON_ONCE(vif->hw_queue[0] == IEEE80211_INVAL_HW_QUEUE))
+ 		return;
+ 
+ 	if (iter_data->cur_running || vif == iter_data->vif) {
+@@ -2495,6 +2503,11 @@
+ 	struct wlcore_hw_queue_iter_data iter_data = {};
+ 	int i, q_base;
+ 
++	if (vif->type == NL80211_IFTYPE_P2P_DEVICE) {
++		vif->cab_queue = IEEE80211_INVAL_HW_QUEUE;
++		return 0;
++	}
++
+ 	iter_data.vif = vif;
+ 
+ 	/* mark all bits taken by active interfaces */
+@@ -2618,14 +2631,27 @@
+ 			goto out;
+ 	}
+ 
+-	ret = wl12xx_cmd_role_enable(wl, vif->addr,
+-				     role_type, &wlvif->role_id);
+-	if (ret < 0)
+-		goto out;
++	if (!wlcore_is_p2p_mgmt(wlvif)) {
++		ret = wl12xx_cmd_role_enable(wl, vif->addr,
++					     role_type, &wlvif->role_id);
++		if (ret < 0)
++			goto out;
+ 
+-	ret = wl1271_init_vif_specific(wl, vif);
+-	if (ret < 0)
+-		goto out;
++		ret = wl1271_init_vif_specific(wl, vif);
++		if (ret < 0)
++			goto out;
++
++	} else {
++		ret = wl12xx_cmd_role_enable(wl, vif->addr, WL1271_ROLE_DEVICE,
++					     &wlvif->dev_role_id);
++		if (ret < 0)
++			goto out;
++
++		/* needed mainly for configuring rate policies */
++		ret = wl1271_sta_hw_init(wl, wlvif);
++		if (ret < 0)
++			goto out;
++	}
+ 
+ 	list_add(&wlvif->list, &wl->wlvif_list);
+ 	set_bit(WLVIF_FLAG_INITIALIZED, &wlvif->flags);
+@@ -2696,9 +2722,15 @@
+ 				wl12xx_stop_dev(wl, wlvif);
+ 		}
+ 
+-		ret = wl12xx_cmd_role_disable(wl, &wlvif->role_id);
+-		if (ret < 0)
+-			goto deinit;
++		if (!wlcore_is_p2p_mgmt(wlvif)) {
++			ret = wl12xx_cmd_role_disable(wl, &wlvif->role_id);
++			if (ret < 0)
++				goto deinit;
++		} else {
++			ret = wl12xx_cmd_role_disable(wl, &wlvif->dev_role_id);
++			if (ret < 0)
++				goto deinit;
++		}
+ 
+ 		wl1271_ps_elp_sleep(wl);
+ 	}
+@@ -3088,6 +3120,9 @@
+ {
+ 	int ret;
+ 
++	if (wlcore_is_p2p_mgmt(wlvif))
++		return 0;
++
+ 	if (conf->power_level != wlvif->power_level) {
+ 		ret = wl1271_acx_tx_power(wl, wlvif, conf->power_level);
+ 		if (ret < 0)
+@@ -3208,6 +3243,9 @@
+ 		goto out;
+ 
+ 	wl12xx_for_each_wlvif(wl, wlvif) {
++		if (wlcore_is_p2p_mgmt(wlvif))
++			continue;
++
+ 		if (wlvif->bss_type != BSS_TYPE_AP_BSS) {
+ 			if (*total & FIF_ALLMULTI)
+ 				ret = wl1271_acx_group_address_tbl(wl, wlvif,
+@@ -4838,6 +4876,9 @@
+ 	u8 ps_scheme;
+ 	int ret = 0;
+ 
++	if (wlcore_is_p2p_mgmt(wlvif))
++		return 0;
++
+ 	mutex_lock(&wl->mutex);
+ 
+ 	wl1271_debug(DEBUG_MAC80211, "mac80211 conf tx %d", queue);
+@@ -5219,6 +5260,48 @@
+ 	return ret;
+ }
+ 
++int wlcore_rx_ba_max_subframes(struct wl1271 *wl, u8 hlid)
++{
++	struct wl12xx_vif *wlvif;
++	struct ieee80211_vif *vif;
++	struct ieee80211_sta *sta;
++
++	int win_size;
++
++	wlvif = wl->links[hlid].wlvif;
++	if (unlikely(!wlvif)) {
++		win_size = -EINVAL;
++		wl1271_error("wlvif for hlid %d is null", hlid);
++		goto out;
++	}
++
++	vif = wl12xx_wlvif_to_vif(wlvif);
++	if (unlikely(!vif)) {
++		win_size = -EINVAL;
++		wl1271_error("vif for hlid %d is null", hlid);
++		goto out;
++	}
++
++	rcu_read_lock();
++	sta = ieee80211_find_sta(vif, wlvif->bss_type != BSS_TYPE_AP_BSS ?
++					   vif->bss_conf.bssid :
++					   wl->links[hlid].addr);
++	if (unlikely(!sta)) {
++		win_size = -EINVAL;
++		wl1271_error("sta for hlid %d is null", hlid);
++
++		rcu_read_unlock();
++		goto out;
++	}
++
++	win_size = sta->max_rx_aggregation_subframes;
++	rcu_read_unlock();
++
++out:
++	return win_size;
++}
++EXPORT_SYMBOL_GPL(wlcore_rx_ba_max_subframes);
++
+ static int wl1271_op_ampdu_action(struct ieee80211_hw *hw,
+ 				  struct ieee80211_vif *vif,
+ 				  enum ieee80211_ampdu_mlme_action action,
+@@ -5229,6 +5312,7 @@
+ 	struct wl12xx_vif *wlvif = wl12xx_vif_to_data(vif);
+ 	int ret;
+ 	u8 hlid, *ba_bitmap;
++	int win_size;
+ 
+ 	wl1271_debug(DEBUG_MAC80211, "mac80211 ampdu action %d tid %d", action,
+ 		     tid);
+@@ -5285,8 +5369,15 @@
+ 			break;
+ 		}
+ 
++		win_size = wlcore_rx_ba_max_subframes(wl, hlid);
++		if (win_size < 0) {
++			ret = -EINVAL;
++			wl1271_error("cannot get link rx_ba_max_subframes");
++			break;
++		}
++
+ 		ret = wl12xx_acx_set_ba_receiver_session(wl, tid, *ssn, true,
+-							 hlid);
++							 hlid, win_size);
+ 		if (!ret) {
+ 			*ba_bitmap |= BIT(tid);
+ 			wl->ba_rx_session_count++;
+@@ -5307,7 +5398,7 @@
+ 		}
+ 
+ 		ret = wl12xx_acx_set_ba_receiver_session(wl, tid, 0, false,
+-							 hlid);
++							 hlid, 0);
+ 		if (!ret) {
+ 			*ba_bitmap &= ~BIT(tid);
+ 			wl->ba_rx_session_count--;
+@@ -5966,10 +6057,6 @@
+ {
+ 	int ret;
+ 
+-	ret = wl12xx_set_power_on(wl);
+-	if (ret < 0)
+-		return ret;
+-
+ 	ret = wlcore_read_reg(wl, REG_CHIP_ID_B, &wl->chip.id);
+ 	if (ret < 0)
+ 		goto out;
+@@ -5985,7 +6072,6 @@
+ 		ret = wl->ops->get_mac(wl);
+ 
+ out:
+-	wl1271_power_off(wl);
+ 	return ret;
+ }
+ 
+@@ -6083,8 +6169,10 @@
+ 	wl->hw->wiphy->n_cipher_suites = ARRAY_SIZE(cipher_suites);
+ 
+ 	wl->hw->wiphy->interface_modes = BIT(NL80211_IFTYPE_STATION) |
+-		BIT(NL80211_IFTYPE_ADHOC) | BIT(NL80211_IFTYPE_AP) |
+-		BIT(NL80211_IFTYPE_P2P_CLIENT) | BIT(NL80211_IFTYPE_P2P_GO);
++					 BIT(NL80211_IFTYPE_AP) |
++					 BIT(NL80211_IFTYPE_P2P_DEVICE) |
++					 BIT(NL80211_IFTYPE_P2P_CLIENT) |
++					 BIT(NL80211_IFTYPE_P2P_GO);
+ 	wl->hw->wiphy->max_scan_ssids = 1;
+ 	wl->hw->wiphy->max_sched_scan_ssids = 16;
+ 	wl->hw->wiphy->max_match_sets = 16;
+@@ -6432,10 +6520,22 @@
+ 	else
+ 		wl->irq_flags |= IRQF_ONESHOT;
+ 
++	ret = wl12xx_set_power_on(wl);
++	if (ret < 0)
++		goto out_free_nvs;
++
++	ret = wl12xx_get_hw_info(wl);
++	if (ret < 0) {
++		wl1271_error("couldn't get hw info");
++		wl1271_power_off(wl);
++		goto out_free_nvs;
++	}
++
+ 	ret = request_threaded_irq(wl->irq, hardirq_fn, wlcore_irq,
+ 				   wl->irq_flags, pdev->name, wl);
+ 	if (ret < 0) {
+-		wl1271_error("request_irq() failed: %d", ret);
++		wl1271_error("interrupt configuration failed");
++		wl1271_power_off(wl);
+ 		goto out_free_nvs;
+ 	}
+ 
+@@ -6449,12 +6549,7 @@
+ 	}
+ #endif
+ 	disable_irq(wl->irq);
+-
+-	ret = wl12xx_get_hw_info(wl);
+-	if (ret < 0) {
+-		wl1271_error("couldn't get hw info");
+-		goto out_irq;
+-	}
++	wl1271_power_off(wl);
+ 
+ 	ret = wl->ops->identify_chip(wl);
+ 	if (ret < 0)
+Index: git/drivers/net/wireless/ti/wlcore/rx.c
+===================================================================
+--- git.orig/drivers/net/wireless/ti/wlcore/rx.c	2016-06-21 13:51:49.758062899 +0200
++++ git/drivers/net/wireless/ti/wlcore/rx.c	2016-06-21 13:51:52.402062861 +0200
+@@ -74,7 +74,8 @@
+ 	if (desc->rate <= wl->hw_min_ht_rate)
+ 		status->flag |= RX_FLAG_HT;
+ 
+-	status->signal = desc->rssi;
++	status->signal = ((desc->rssi & RSSI_LEVEL_BITMASK) | BIT(7));
++	status->antenna = ((desc->rssi & ANT_DIVERSITY_BITMASK) >> 7);
+ 
+ 	/*
+ 	 * FIXME: In wl1251, the SNR should be divided by two.  In wl1271 we
+Index: git/drivers/net/wireless/ti/wlcore/rx.h
+===================================================================
+--- git.orig/drivers/net/wireless/ti/wlcore/rx.h	2016-06-21 13:51:49.758062899 +0200
++++ git/drivers/net/wireless/ti/wlcore/rx.h	2016-06-21 13:51:52.402062861 +0200
+@@ -30,6 +30,9 @@
+ #define WL1271_RX_MAX_RSSI -30
+ #define WL1271_RX_MIN_RSSI -95
+ 
++#define RSSI_LEVEL_BITMASK	0x7F
++#define ANT_DIVERSITY_BITMASK	BIT(7)
++
+ #define SHORT_PREAMBLE_BIT   BIT(0)
+ #define OFDM_RATE_BIT        BIT(6)
+ #define PBCC_RATE_BIT        BIT(7)
+Index: git/drivers/net/wireless/ti/wlcore/scan.h
+===================================================================
+--- git.orig/drivers/net/wireless/ti/wlcore/scan.h	2016-06-21 13:51:49.758062899 +0200
++++ git/drivers/net/wireless/ti/wlcore/scan.h	2016-06-21 13:51:52.402062861 +0200
+@@ -83,6 +83,12 @@
+ #define MAX_CHANNELS_5GHZ	42
+ 
+ #define SCAN_MAX_CYCLE_INTERVALS 16
++
++/* The FW intervals can take up to 16 entries.
++ * The 1st entry isn't used (scan is immediate). The last
++ * entry should be used for the long_interval
++ */
++#define SCAN_MAX_SHORT_INTERVALS (SCAN_MAX_CYCLE_INTERVALS - 2)
+ #define SCAN_MAX_BANDS 3
+ 
+ enum {
+Index: git/drivers/net/wireless/ti/wlcore/sdio.c
+===================================================================
+--- git.orig/drivers/net/wireless/ti/wlcore/sdio.c	2016-06-21 13:51:49.758062899 +0200
++++ git/drivers/net/wireless/ti/wlcore/sdio.c	2016-06-21 13:51:52.402062861 +0200
+@@ -390,8 +390,16 @@
+ 	dev_dbg(dev, "wl1271 suspend. wow_enabled: %d\n",
+ 		wl->wow_enabled);
+ 
+-	/* check whether sdio should keep power */
+-	if (wl->wow_enabled) {
++	/*
++	 * check whether sdio should keep power.
++	 * due to some mmc layer issues, the system automatically
++	 * powers us up on resume, which later cause issues when
++	 * we try to restore_power again explicitly.
++	 * workaround it by always asking to keep power. this is
++	 * fine as the driver controls the chip power anyway.
++	 * TODO: remove it when mmc issue is fixed.
++	 */
++	if (true || wl->wow_enabled) {
+ 		sdio_flags = sdio_get_host_pm_caps(func);
+ 
+ 		if (!(sdio_flags & MMC_PM_KEEP_POWER)) {
+Index: git/drivers/net/wireless/ti/wlcore/spi.c
+===================================================================
+--- git.orig/drivers/net/wireless/ti/wlcore/spi.c	2016-06-21 13:51:49.758062899 +0200
++++ git/drivers/net/wireless/ti/wlcore/spi.c	2016-06-21 13:51:52.402062861 +0200
+@@ -73,10 +73,7 @@
+  */
+ #define SPI_AGGR_BUFFER_SIZE (4 * PAGE_SIZE)
+ 
+-/* Maximum number of SPI write chunks */
+-#define WSPI_MAX_NUM_OF_CHUNKS \
+-	((SPI_AGGR_BUFFER_SIZE / WSPI_MAX_CHUNK_SIZE) + 1)
+-
++#define WSPI_MAX_NUM_OF_CHUNKS (SPI_AGGR_BUFFER_SIZE / WSPI_MAX_CHUNK_SIZE)
+ 
+ struct wl12xx_spi_glue {
+ 	struct device *dev;
+@@ -271,10 +268,9 @@
+ 					     void *buf, size_t len, bool fixed)
+ {
+ 	struct wl12xx_spi_glue *glue = dev_get_drvdata(child->parent);
+-	/* SPI write buffers - 2 for each chunk */
+-	struct spi_transfer t[2 * WSPI_MAX_NUM_OF_CHUNKS];
++	struct spi_transfer t[2 * (WSPI_MAX_NUM_OF_CHUNKS + 1)];
+ 	struct spi_message m;
+-	u32 commands[WSPI_MAX_NUM_OF_CHUNKS]; /* 1 command per chunk */
++	u32 commands[WSPI_MAX_NUM_OF_CHUNKS];
+ 	u32 *cmd;
+ 	u32 chunk_len;
+ 	int i;
+Index: git/drivers/net/wireless/ti/wlcore/wlcore.h
+===================================================================
+--- git.orig/drivers/net/wireless/ti/wlcore/wlcore.h	2016-06-21 13:51:49.758062899 +0200
++++ git/drivers/net/wireless/ti/wlcore/wlcore.h	2016-06-21 13:51:52.402062861 +0200
+@@ -500,6 +500,9 @@
+ 	/* interface combinations supported by the hw */
+ 	const struct ieee80211_iface_combination *iface_combinations;
+ 	u8 n_iface_combinations;
++
++	/* dynamic fw traces */
++	u32 dynamic_fw_traces;
+ };
+ 
+ int wlcore_probe(struct wl1271 *wl, struct platform_device *pdev);
+Index: git/drivers/net/wireless/ti/wlcore/wlcore_i.h
+===================================================================
+--- git.orig/drivers/net/wireless/ti/wlcore/wlcore_i.h	2016-06-21 13:51:49.758062899 +0200
++++ git/drivers/net/wireless/ti/wlcore/wlcore_i.h	2016-06-21 13:51:52.402062861 +0200
+@@ -503,6 +503,11 @@
+ 	return container_of((void *)wlvif, struct ieee80211_vif, drv_priv);
+ }
+ 
++static inline bool wlcore_is_p2p_mgmt(struct wl12xx_vif *wlvif)
++{
++	return wl12xx_wlvif_to_vif(wlvif)->type == NL80211_IFTYPE_P2P_DEVICE;
++}
++
+ #define wl12xx_for_each_wlvif(wl, wlvif) \
+ 		list_for_each_entry(wlvif, &wl->wlvif_list, list)
+ 
+@@ -532,6 +537,7 @@
+ int wl1271_rx_filter_get_fields_size(struct wl12xx_rx_filter *filter);
+ void wl1271_rx_filter_flatten_fields(struct wl12xx_rx_filter *filter,
+ 				     u8 *buf);
++int wlcore_rx_ba_max_subframes(struct wl1271 *wl, u8 hlid);
+ 
+ #define JOIN_TIMEOUT 5000 /* 5000 milliseconds to join */
+ 
+Index: git/drivers/net/wireless/ti/wl18xx/acx.c
+===================================================================
+--- git.orig/drivers/net/wireless/ti/wl18xx/acx.c	2016-06-21 13:51:49.754062899 +0200
++++ git/drivers/net/wireless/ti/wl18xx/acx.c	2016-06-21 13:51:52.402062861 +0200
+@@ -282,3 +282,30 @@
+ 	kfree(acx);
+ 	return ret;
+ }
++
++int wl18xx_acx_dynamic_fw_traces(struct wl1271 *wl)
++{
++	struct acx_dynamic_fw_traces_cfg *acx;
++	int ret;
++
++	wl1271_debug(DEBUG_ACX, "acx dynamic fw traces config %d",
++		     wl->dynamic_fw_traces);
++
++	acx = kzalloc(sizeof(*acx), GFP_KERNEL);
++	if (!acx) {
++		ret = -ENOMEM;
++		goto out;
++	}
++
++	acx->dynamic_fw_traces = cpu_to_le32(wl->dynamic_fw_traces);
++
++	ret = wl1271_cmd_configure(wl, ACX_DYNAMIC_TRACES_CFG,
++				   acx, sizeof(*acx));
++	if (ret < 0) {
++		wl1271_warning("acx config dynamic fw traces failed: %d", ret);
++		goto out;
++	}
++out:
++	kfree(acx);
++	return ret;
++}
+Index: git/drivers/net/wireless/ti/wl18xx/acx.h
+===================================================================
+--- git.orig/drivers/net/wireless/ti/wl18xx/acx.h	2016-06-21 13:51:49.754062899 +0200
++++ git/drivers/net/wireless/ti/wl18xx/acx.h	2016-06-21 13:51:52.402062861 +0200
+@@ -35,7 +35,8 @@
+ 	ACX_PEER_CAP			 = 0x0056,
+ 	ACX_INTERRUPT_NOTIFY		 = 0x0057,
+ 	ACX_RX_BA_FILTER		 = 0x0058,
+-	ACX_AP_SLEEP_CFG                 = 0x0059
++	ACX_AP_SLEEP_CFG                 = 0x0059,
++	ACX_DYNAMIC_TRACES_CFG		 = 0x005A,
+ };
+ 
+ /* numbers of bits the length field takes (add 1 for the actual number) */
+@@ -92,27 +93,26 @@
+ 
+ 
+ struct wl18xx_acx_error_stats {
+-	u32 error_frame;
+-	u32 error_null_Frame_tx_start;
+-	u32 error_numll_frame_cts_start;
+-	u32 error_bar_retry;
+-	u32 error_frame_cts_nul_flid;
+-} __packed;
+-
+-struct wl18xx_acx_debug_stats {
+-	u32 debug1;
+-	u32 debug2;
+-	u32 debug3;
+-	u32 debug4;
+-	u32 debug5;
+-	u32 debug6;
+-} __packed;
+-
+-struct wl18xx_acx_ring_stats {
+-	u32 prepared_descs;
+-	u32 tx_cmplt;
++	u32 error_frame_non_ctrl;
++	u32 error_frame_ctrl;
++	u32 error_frame_during_protection;
++	u32 null_frame_tx_start;
++	u32 null_frame_cts_start;
++	u32 bar_retry;
++	u32 num_frame_cts_nul_flid;
++	u32 tx_abort_failure;
++	u32 tx_resume_failure;
++	u32 rx_cmplt_db_overflow_cnt;
++	u32 elp_while_rx_exch;
++	u32 elp_while_tx_exch;
++	u32 elp_while_tx;
++	u32 elp_while_nvic_pending;
++	u32 rx_excessive_frame_len;
++	u32 burst_mismatch;
++	u32 tbc_exch_mismatch;
+ } __packed;
+ 
++#define NUM_OF_RATES_INDEXES 30
+ struct wl18xx_acx_tx_stats {
+ 	u32 tx_prepared_descs;
+ 	u32 tx_cmplt;
+@@ -122,7 +122,7 @@
+ 	u32 tx_data_programmed;
+ 	u32 tx_burst_programmed;
+ 	u32 tx_starts;
+-	u32 tx_imm_resp;
++	u32 tx_stop;
+ 	u32 tx_start_templates;
+ 	u32 tx_start_int_templates;
+ 	u32 tx_start_fw_gen;
+@@ -131,13 +131,14 @@
+ 	u32 tx_exch;
+ 	u32 tx_retry_template;
+ 	u32 tx_retry_data;
++	u32 tx_retry_per_rate[NUM_OF_RATES_INDEXES];
+ 	u32 tx_exch_pending;
+ 	u32 tx_exch_expiry;
+ 	u32 tx_done_template;
+ 	u32 tx_done_data;
+ 	u32 tx_done_int_template;
+-	u32 tx_frame_checksum;
+-	u32 tx_checksum_result;
++	u32 tx_cfe1;
++	u32 tx_cfe2;
+ 	u32 frag_called;
+ 	u32 frag_mpdu_alloc_failed;
+ 	u32 frag_init_called;
+@@ -165,11 +166,8 @@
+ 	u32 rx_cmplt_task;
+ 	u32 rx_phy_hdr;
+ 	u32 rx_timeout;
++	u32 rx_rts_timeout;
+ 	u32 rx_timeout_wa;
+-	u32 rx_wa_density_dropped_frame;
+-	u32 rx_wa_ba_not_expected;
+-	u32 rx_frame_checksum;
+-	u32 rx_checksum_result;
+ 	u32 defrag_called;
+ 	u32 defrag_init_called;
+ 	u32 defrag_in_process_called;
+@@ -179,6 +177,7 @@
+ 	u32 decrypt_key_not_found;
+ 	u32 defrag_need_decrypt;
+ 	u32 rx_tkip_replays;
++	u32 rx_xfr;
+ } __packed;
+ 
+ struct wl18xx_acx_isr_stats {
+@@ -193,21 +192,13 @@
+ 	u32 connection_out_of_sync;
+ 	u32 cont_miss_bcns_spread[PWR_STAT_MAX_CONT_MISSED_BCNS_SPREAD];
+ 	u32 rcvd_awake_bcns_cnt;
+-} __packed;
+-
+-struct wl18xx_acx_event_stats {
+-	u32 calibration;
+-	u32 rx_mismatch;
+-	u32 rx_mem_empty;
+-} __packed;
+-
+-struct wl18xx_acx_ps_poll_stats {
+-	u32 ps_poll_timeouts;
+-	u32 upsd_timeouts;
+-	u32 upsd_max_ap_turn;
+-	u32 ps_poll_max_ap_turn;
+-	u32 ps_poll_utilization;
+-	u32 upsd_utilization;
++	u32 sleep_time_count;
++	u32 sleep_time_avg;
++	u32 sleep_cycle_avg;
++	u32 sleep_percent;
++	u32 ap_sleep_active_conf;
++	u32 ap_sleep_user_conf;
++	u32 ap_sleep_counter;
+ } __packed;
+ 
+ struct wl18xx_acx_rx_filter_stats {
+@@ -227,11 +218,11 @@
+ } __packed;
+ 
+ #define AGGR_STATS_TX_AGG	16
+-#define AGGR_STATS_TX_RATE	16
+ #define AGGR_STATS_RX_SIZE_LEN	16
+ 
+ struct wl18xx_acx_aggr_stats {
+-	u32 tx_agg_vs_rate[AGGR_STATS_TX_AGG * AGGR_STATS_TX_RATE];
++	u32 tx_agg_rate[AGGR_STATS_TX_AGG];
++	u32 tx_agg_len[AGGR_STATS_TX_AGG];
+ 	u32 rx_size[AGGR_STATS_RX_SIZE_LEN];
+ } __packed;
+ 
+@@ -240,8 +231,6 @@
+ struct wl18xx_acx_pipeline_stats {
+ 	u32 hs_tx_stat_fifo_int;
+ 	u32 hs_rx_stat_fifo_int;
+-	u32 tcp_tx_stat_fifo_int;
+-	u32 tcp_rx_stat_fifo_int;
+ 	u32 enc_tx_stat_fifo_int;
+ 	u32 enc_rx_stat_fifo_int;
+ 	u32 rx_complete_stat_fifo_int;
+@@ -249,38 +238,61 @@
+ 	u32 post_proc_swi;
+ 	u32 sec_frag_swi;
+ 	u32 pre_to_defrag_swi;
+-	u32 defrag_to_csum_swi;
+-	u32 csum_to_rx_xfer_swi;
++	u32 defrag_to_rx_xfer_swi;
+ 	u32 dec_packet_in;
+ 	u32 dec_packet_in_fifo_full;
+ 	u32 dec_packet_out;
+-	u32 cs_rx_packet_in;
+-	u32 cs_rx_packet_out;
+ 	u16 pipeline_fifo_full[PIPE_STATS_HW_FIFO];
++	u16 padding;
+ } __packed;
+ 
+-struct wl18xx_acx_mem_stats {
+-	u32 rx_free_mem_blks;
+-	u32 tx_free_mem_blks;
+-	u32 fwlog_free_mem_blks;
+-	u32 fw_gen_free_mem_blks;
++#define DIVERSITY_STATS_NUM_OF_ANT	2
++
++struct wl18xx_acx_diversity_stats {
++	u32 num_of_packets_per_ant[DIVERSITY_STATS_NUM_OF_ANT];
++	u32 total_num_of_toggles;
++} __packed;
++
++struct wl18xx_acx_thermal_stats {
++	u16 irq_thr_low;
++	u16 irq_thr_high;
++	u16 tx_stop;
++	u16 tx_resume;
++	u16 false_irq;
++	u16 adc_source_unexpected;
++} __packed;
++
++#define WL18XX_NUM_OF_CALIBRATIONS_ERRORS 18
++struct wl18xx_acx_calib_failure_stats {
++	u16 fail_count[WL18XX_NUM_OF_CALIBRATIONS_ERRORS];
++	u32 calib_count;
++} __packed;
++
++struct wl18xx_roaming_stats {
++	s32 rssi_level;
++} __packed;
++
++struct wl18xx_dfs_stats {
++	u32 num_of_radar_detections;
+ } __packed;
+ 
+ struct wl18xx_acx_statistics {
+ 	struct acx_header header;
+ 
+ 	struct wl18xx_acx_error_stats		error;
+-	struct wl18xx_acx_debug_stats		debug;
+ 	struct wl18xx_acx_tx_stats		tx;
+ 	struct wl18xx_acx_rx_stats		rx;
+ 	struct wl18xx_acx_isr_stats		isr;
+ 	struct wl18xx_acx_pwr_stats		pwr;
+-	struct wl18xx_acx_ps_poll_stats		ps_poll;
+ 	struct wl18xx_acx_rx_filter_stats	rx_filter;
+ 	struct wl18xx_acx_rx_rate_stats		rx_rate;
+ 	struct wl18xx_acx_aggr_stats		aggr_size;
+ 	struct wl18xx_acx_pipeline_stats	pipeline;
+-	struct wl18xx_acx_mem_stats		mem;
++	struct wl18xx_acx_diversity_stats	diversity;
++	struct wl18xx_acx_thermal_stats		thermal;
++	struct wl18xx_acx_calib_failure_stats	calib;
++	struct wl18xx_roaming_stats		roaming;
++	struct wl18xx_dfs_stats			dfs;
+ } __packed;
+ 
+ struct wl18xx_acx_clear_statistics {
+@@ -367,6 +379,15 @@
+ 	u8 idle_conn_thresh;
+ } __packed;
+ 
++/*
++ * ACX_DYNAMIC_TRACES_CFG
++ * configure the FW dynamic traces
++ */
++struct acx_dynamic_fw_traces_cfg {
++	struct acx_header header;
++	__le32 dynamic_fw_traces;
++} __packed;
++
+ int wl18xx_acx_host_if_cfg_bitmap(struct wl1271 *wl, u32 host_cfg_bitmap,
+ 				  u32 sdio_blk_size, u32 extra_mem_blks,
+ 				  u32 len_field_size);
+@@ -380,5 +401,6 @@
+ int wl18xx_acx_interrupt_notify_config(struct wl1271 *wl, bool action);
+ int wl18xx_acx_rx_ba_filter(struct wl1271 *wl, bool action);
+ int wl18xx_acx_ap_sleep(struct wl1271 *wl);
++int wl18xx_acx_dynamic_fw_traces(struct wl1271 *wl);
+ 
+ #endif /* __WL18XX_ACX_H__ */
+Index: git/drivers/net/wireless/ti/wl18xx/debugfs.c
+===================================================================
+--- git.orig/drivers/net/wireless/ti/wl18xx/debugfs.c	2016-06-21 13:51:49.754062899 +0200
++++ git/drivers/net/wireless/ti/wl18xx/debugfs.c	2016-06-21 13:51:52.402062861 +0200
+@@ -36,18 +36,23 @@
+ 	DEBUGFS_FWSTATS_FILE_ARRAY(a, b, c, wl18xx_acx_statistics)
+ 
+ 
+-WL18XX_DEBUGFS_FWSTATS_FILE(debug, debug1, "%u");
+-WL18XX_DEBUGFS_FWSTATS_FILE(debug, debug2, "%u");
+-WL18XX_DEBUGFS_FWSTATS_FILE(debug, debug3, "%u");
+-WL18XX_DEBUGFS_FWSTATS_FILE(debug, debug4, "%u");
+-WL18XX_DEBUGFS_FWSTATS_FILE(debug, debug5, "%u");
+-WL18XX_DEBUGFS_FWSTATS_FILE(debug, debug6, "%u");
+-
+-WL18XX_DEBUGFS_FWSTATS_FILE(error, error_frame, "%u");
+-WL18XX_DEBUGFS_FWSTATS_FILE(error, error_null_Frame_tx_start, "%u");
+-WL18XX_DEBUGFS_FWSTATS_FILE(error, error_numll_frame_cts_start, "%u");
+-WL18XX_DEBUGFS_FWSTATS_FILE(error, error_bar_retry, "%u");
+-WL18XX_DEBUGFS_FWSTATS_FILE(error, error_frame_cts_nul_flid, "%u");
++WL18XX_DEBUGFS_FWSTATS_FILE(error, error_frame_non_ctrl, "%u");
++WL18XX_DEBUGFS_FWSTATS_FILE(error, error_frame_ctrl, "%u");
++WL18XX_DEBUGFS_FWSTATS_FILE(error, error_frame_during_protection, "%u");
++WL18XX_DEBUGFS_FWSTATS_FILE(error, null_frame_tx_start, "%u");
++WL18XX_DEBUGFS_FWSTATS_FILE(error, null_frame_cts_start, "%u");
++WL18XX_DEBUGFS_FWSTATS_FILE(error, bar_retry, "%u");
++WL18XX_DEBUGFS_FWSTATS_FILE(error, num_frame_cts_nul_flid, "%u");
++WL18XX_DEBUGFS_FWSTATS_FILE(error, tx_abort_failure, "%u");
++WL18XX_DEBUGFS_FWSTATS_FILE(error, tx_resume_failure, "%u");
++WL18XX_DEBUGFS_FWSTATS_FILE(error, rx_cmplt_db_overflow_cnt, "%u");
++WL18XX_DEBUGFS_FWSTATS_FILE(error, elp_while_rx_exch, "%u");
++WL18XX_DEBUGFS_FWSTATS_FILE(error, elp_while_tx_exch, "%u");
++WL18XX_DEBUGFS_FWSTATS_FILE(error, elp_while_tx, "%u");
++WL18XX_DEBUGFS_FWSTATS_FILE(error, elp_while_nvic_pending, "%u");
++WL18XX_DEBUGFS_FWSTATS_FILE(error, rx_excessive_frame_len, "%u");
++WL18XX_DEBUGFS_FWSTATS_FILE(error, burst_mismatch, "%u");
++WL18XX_DEBUGFS_FWSTATS_FILE(error, tbc_exch_mismatch, "%u");
+ 
+ WL18XX_DEBUGFS_FWSTATS_FILE(tx, tx_prepared_descs, "%u");
+ WL18XX_DEBUGFS_FWSTATS_FILE(tx, tx_cmplt, "%u");
+@@ -57,7 +62,7 @@
+ WL18XX_DEBUGFS_FWSTATS_FILE(tx, tx_data_programmed, "%u");
+ WL18XX_DEBUGFS_FWSTATS_FILE(tx, tx_burst_programmed, "%u");
+ WL18XX_DEBUGFS_FWSTATS_FILE(tx, tx_starts, "%u");
+-WL18XX_DEBUGFS_FWSTATS_FILE(tx, tx_imm_resp, "%u");
++WL18XX_DEBUGFS_FWSTATS_FILE(tx, tx_stop, "%u");
+ WL18XX_DEBUGFS_FWSTATS_FILE(tx, tx_start_templates, "%u");
+ WL18XX_DEBUGFS_FWSTATS_FILE(tx, tx_start_int_templates, "%u");
+ WL18XX_DEBUGFS_FWSTATS_FILE(tx, tx_start_fw_gen, "%u");
+@@ -66,13 +71,15 @@
+ WL18XX_DEBUGFS_FWSTATS_FILE(tx, tx_exch, "%u");
+ WL18XX_DEBUGFS_FWSTATS_FILE(tx, tx_retry_template, "%u");
+ WL18XX_DEBUGFS_FWSTATS_FILE(tx, tx_retry_data, "%u");
++WL18XX_DEBUGFS_FWSTATS_FILE_ARRAY(tx, tx_retry_per_rate,
++				  NUM_OF_RATES_INDEXES);
+ WL18XX_DEBUGFS_FWSTATS_FILE(tx, tx_exch_pending, "%u");
+ WL18XX_DEBUGFS_FWSTATS_FILE(tx, tx_exch_expiry, "%u");
+ WL18XX_DEBUGFS_FWSTATS_FILE(tx, tx_done_template, "%u");
+ WL18XX_DEBUGFS_FWSTATS_FILE(tx, tx_done_data, "%u");
+ WL18XX_DEBUGFS_FWSTATS_FILE(tx, tx_done_int_template, "%u");
+-WL18XX_DEBUGFS_FWSTATS_FILE(tx, tx_frame_checksum, "%u");
+-WL18XX_DEBUGFS_FWSTATS_FILE(tx, tx_checksum_result, "%u");
++WL18XX_DEBUGFS_FWSTATS_FILE(tx, tx_cfe1, "%u");
++WL18XX_DEBUGFS_FWSTATS_FILE(tx, tx_cfe2, "%u");
+ WL18XX_DEBUGFS_FWSTATS_FILE(tx, frag_called, "%u");
+ WL18XX_DEBUGFS_FWSTATS_FILE(tx, frag_mpdu_alloc_failed, "%u");
+ WL18XX_DEBUGFS_FWSTATS_FILE(tx, frag_init_called, "%u");
+@@ -97,11 +104,8 @@
+ WL18XX_DEBUGFS_FWSTATS_FILE(rx, rx_cmplt_task, "%u");
+ WL18XX_DEBUGFS_FWSTATS_FILE(rx, rx_phy_hdr, "%u");
+ WL18XX_DEBUGFS_FWSTATS_FILE(rx, rx_timeout, "%u");
++WL18XX_DEBUGFS_FWSTATS_FILE(rx, rx_rts_timeout, "%u");
+ WL18XX_DEBUGFS_FWSTATS_FILE(rx, rx_timeout_wa, "%u");
+-WL18XX_DEBUGFS_FWSTATS_FILE(rx, rx_wa_density_dropped_frame, "%u");
+-WL18XX_DEBUGFS_FWSTATS_FILE(rx, rx_wa_ba_not_expected, "%u");
+-WL18XX_DEBUGFS_FWSTATS_FILE(rx, rx_frame_checksum, "%u");
+-WL18XX_DEBUGFS_FWSTATS_FILE(rx, rx_checksum_result, "%u");
+ WL18XX_DEBUGFS_FWSTATS_FILE(rx, defrag_called, "%u");
+ WL18XX_DEBUGFS_FWSTATS_FILE(rx, defrag_init_called, "%u");
+ WL18XX_DEBUGFS_FWSTATS_FILE(rx, defrag_in_process_called, "%u");
+@@ -111,6 +115,7 @@
+ WL18XX_DEBUGFS_FWSTATS_FILE(rx, decrypt_key_not_found, "%u");
+ WL18XX_DEBUGFS_FWSTATS_FILE(rx, defrag_need_decrypt, "%u");
+ WL18XX_DEBUGFS_FWSTATS_FILE(rx, rx_tkip_replays, "%u");
++WL18XX_DEBUGFS_FWSTATS_FILE(rx, rx_xfr, "%u");
+ 
+ WL18XX_DEBUGFS_FWSTATS_FILE(isr, irqs, "%u");
+ 
+@@ -120,14 +125,13 @@
+ WL18XX_DEBUGFS_FWSTATS_FILE_ARRAY(pwr, cont_miss_bcns_spread,
+ 				  PWR_STAT_MAX_CONT_MISSED_BCNS_SPREAD);
+ WL18XX_DEBUGFS_FWSTATS_FILE(pwr, rcvd_awake_bcns_cnt, "%u");
+-
+-
+-WL18XX_DEBUGFS_FWSTATS_FILE(ps_poll, ps_poll_timeouts, "%u");
+-WL18XX_DEBUGFS_FWSTATS_FILE(ps_poll, upsd_timeouts, "%u");
+-WL18XX_DEBUGFS_FWSTATS_FILE(ps_poll, upsd_max_ap_turn, "%u");
+-WL18XX_DEBUGFS_FWSTATS_FILE(ps_poll, ps_poll_max_ap_turn, "%u");
+-WL18XX_DEBUGFS_FWSTATS_FILE(ps_poll, ps_poll_utilization, "%u");
+-WL18XX_DEBUGFS_FWSTATS_FILE(ps_poll, upsd_utilization, "%u");
++WL18XX_DEBUGFS_FWSTATS_FILE(pwr, sleep_time_count, "%u");
++WL18XX_DEBUGFS_FWSTATS_FILE(pwr, sleep_time_avg, "%u");
++WL18XX_DEBUGFS_FWSTATS_FILE(pwr, sleep_cycle_avg, "%u");
++WL18XX_DEBUGFS_FWSTATS_FILE(pwr, sleep_percent, "%u");
++WL18XX_DEBUGFS_FWSTATS_FILE(pwr, ap_sleep_active_conf, "%u");
++WL18XX_DEBUGFS_FWSTATS_FILE(pwr, ap_sleep_user_conf, "%u");
++WL18XX_DEBUGFS_FWSTATS_FILE(pwr, ap_sleep_counter, "%u");
+ 
+ WL18XX_DEBUGFS_FWSTATS_FILE(rx_filter, beacon_filter, "%u");
+ WL18XX_DEBUGFS_FWSTATS_FILE(rx_filter, arp_filter, "%u");
+@@ -141,14 +145,14 @@
+ 
+ WL18XX_DEBUGFS_FWSTATS_FILE_ARRAY(rx_rate, rx_frames_per_rates, 50);
+ 
+-WL18XX_DEBUGFS_FWSTATS_FILE_ARRAY(aggr_size, tx_agg_vs_rate,
+-				  AGGR_STATS_TX_AGG*AGGR_STATS_TX_RATE);
++WL18XX_DEBUGFS_FWSTATS_FILE_ARRAY(aggr_size, tx_agg_rate,
++				  AGGR_STATS_TX_AGG);
++WL18XX_DEBUGFS_FWSTATS_FILE_ARRAY(aggr_size, tx_agg_len,
++				  AGGR_STATS_TX_AGG);
+ WL18XX_DEBUGFS_FWSTATS_FILE_ARRAY(aggr_size, rx_size,
+ 				  AGGR_STATS_RX_SIZE_LEN);
+ 
+ WL18XX_DEBUGFS_FWSTATS_FILE(pipeline, hs_tx_stat_fifo_int, "%u");
+-WL18XX_DEBUGFS_FWSTATS_FILE(pipeline, tcp_tx_stat_fifo_int, "%u");
+-WL18XX_DEBUGFS_FWSTATS_FILE(pipeline, tcp_rx_stat_fifo_int, "%u");
+ WL18XX_DEBUGFS_FWSTATS_FILE(pipeline, enc_tx_stat_fifo_int, "%u");
+ WL18XX_DEBUGFS_FWSTATS_FILE(pipeline, enc_rx_stat_fifo_int, "%u");
+ WL18XX_DEBUGFS_FWSTATS_FILE(pipeline, rx_complete_stat_fifo_int, "%u");
+@@ -156,21 +160,32 @@
+ WL18XX_DEBUGFS_FWSTATS_FILE(pipeline, post_proc_swi, "%u");
+ WL18XX_DEBUGFS_FWSTATS_FILE(pipeline, sec_frag_swi, "%u");
+ WL18XX_DEBUGFS_FWSTATS_FILE(pipeline, pre_to_defrag_swi, "%u");
+-WL18XX_DEBUGFS_FWSTATS_FILE(pipeline, defrag_to_csum_swi, "%u");
+-WL18XX_DEBUGFS_FWSTATS_FILE(pipeline, csum_to_rx_xfer_swi, "%u");
++WL18XX_DEBUGFS_FWSTATS_FILE(pipeline, defrag_to_rx_xfer_swi, "%u");
+ WL18XX_DEBUGFS_FWSTATS_FILE(pipeline, dec_packet_in, "%u");
+ WL18XX_DEBUGFS_FWSTATS_FILE(pipeline, dec_packet_in_fifo_full, "%u");
+ WL18XX_DEBUGFS_FWSTATS_FILE(pipeline, dec_packet_out, "%u");
+-WL18XX_DEBUGFS_FWSTATS_FILE(pipeline, cs_rx_packet_in, "%u");
+-WL18XX_DEBUGFS_FWSTATS_FILE(pipeline, cs_rx_packet_out, "%u");
+ 
+ WL18XX_DEBUGFS_FWSTATS_FILE_ARRAY(pipeline, pipeline_fifo_full,
+ 				  PIPE_STATS_HW_FIFO);
+ 
+-WL18XX_DEBUGFS_FWSTATS_FILE(mem, rx_free_mem_blks, "%u");
+-WL18XX_DEBUGFS_FWSTATS_FILE(mem, tx_free_mem_blks, "%u");
+-WL18XX_DEBUGFS_FWSTATS_FILE(mem, fwlog_free_mem_blks, "%u");
+-WL18XX_DEBUGFS_FWSTATS_FILE(mem, fw_gen_free_mem_blks, "%u");
++WL18XX_DEBUGFS_FWSTATS_FILE_ARRAY(diversity, num_of_packets_per_ant,
++				  DIVERSITY_STATS_NUM_OF_ANT);
++WL18XX_DEBUGFS_FWSTATS_FILE(diversity, total_num_of_toggles, "%u");
++
++WL18XX_DEBUGFS_FWSTATS_FILE(thermal, irq_thr_low, "%u");
++WL18XX_DEBUGFS_FWSTATS_FILE(thermal, irq_thr_high, "%u");
++WL18XX_DEBUGFS_FWSTATS_FILE(thermal, tx_stop, "%u");
++WL18XX_DEBUGFS_FWSTATS_FILE(thermal, tx_resume, "%u");
++WL18XX_DEBUGFS_FWSTATS_FILE(thermal, false_irq, "%u");
++WL18XX_DEBUGFS_FWSTATS_FILE(thermal, adc_source_unexpected, "%u");
++
++WL18XX_DEBUGFS_FWSTATS_FILE_ARRAY(calib, fail_count,
++				  WL18XX_NUM_OF_CALIBRATIONS_ERRORS);
++WL18XX_DEBUGFS_FWSTATS_FILE(calib, calib_count, "%u");
++
++WL18XX_DEBUGFS_FWSTATS_FILE(roaming, rssi_level, "%d");
++
++WL18XX_DEBUGFS_FWSTATS_FILE(dfs, num_of_radar_detections, "%d");
+ 
+ static ssize_t conf_read(struct file *file, char __user *user_buf,
+ 			 size_t count, loff_t *ppos)
+@@ -281,6 +296,56 @@
+ 	.llseek = default_llseek,
+ };
+ 
++static ssize_t dynamic_fw_traces_write(struct file *file,
++					const char __user *user_buf,
++					size_t count, loff_t *ppos)
++{
++	struct wl1271 *wl = file->private_data;
++	unsigned long value;
++	int ret;
++
++	ret = kstrtoul_from_user(user_buf, count, 0, &value);
++	if (ret < 0)
++		return ret;
++
++	mutex_lock(&wl->mutex);
++
++	wl->dynamic_fw_traces = value;
++
++	if (unlikely(wl->state != WLCORE_STATE_ON))
++		goto out;
++
++	ret = wl1271_ps_elp_wakeup(wl);
++	if (ret < 0)
++		goto out;
++
++	ret = wl18xx_acx_dynamic_fw_traces(wl);
++	if (ret < 0)
++		count = ret;
++
++	wl1271_ps_elp_sleep(wl);
++out:
++	mutex_unlock(&wl->mutex);
++	return count;
++}
++
++static ssize_t dynamic_fw_traces_read(struct file *file,
++					char __user *userbuf,
++					size_t count, loff_t *ppos)
++{
++	struct wl1271 *wl = file->private_data;
++
++	return wl1271_format_buffer(userbuf, count, ppos,
++				    "%d\n", wl->dynamic_fw_traces);
++}
++
++static const struct file_operations dynamic_fw_traces_ops = {
++	.read = dynamic_fw_traces_read,
++	.write = dynamic_fw_traces_write,
++	.open = simple_open,
++	.llseek = default_llseek,
++};
++
+ int wl18xx_debugfs_add_files(struct wl1271 *wl,
+ 			     struct dentry *rootdir)
+ {
+@@ -301,18 +366,23 @@
+ 
+ 	DEBUGFS_ADD(clear_fw_stats, stats);
+ 
+-	DEBUGFS_FWSTATS_ADD(debug, debug1);
+-	DEBUGFS_FWSTATS_ADD(debug, debug2);
+-	DEBUGFS_FWSTATS_ADD(debug, debug3);
+-	DEBUGFS_FWSTATS_ADD(debug, debug4);
+-	DEBUGFS_FWSTATS_ADD(debug, debug5);
+-	DEBUGFS_FWSTATS_ADD(debug, debug6);
+-
+-	DEBUGFS_FWSTATS_ADD(error, error_frame);
+-	DEBUGFS_FWSTATS_ADD(error, error_null_Frame_tx_start);
+-	DEBUGFS_FWSTATS_ADD(error, error_numll_frame_cts_start);
+-	DEBUGFS_FWSTATS_ADD(error, error_bar_retry);
+-	DEBUGFS_FWSTATS_ADD(error, error_frame_cts_nul_flid);
++	DEBUGFS_FWSTATS_ADD(error, error_frame_non_ctrl);
++	DEBUGFS_FWSTATS_ADD(error, error_frame_ctrl);
++	DEBUGFS_FWSTATS_ADD(error, error_frame_during_protection);
++	DEBUGFS_FWSTATS_ADD(error, null_frame_tx_start);
++	DEBUGFS_FWSTATS_ADD(error, null_frame_cts_start);
++	DEBUGFS_FWSTATS_ADD(error, bar_retry);
++	DEBUGFS_FWSTATS_ADD(error, num_frame_cts_nul_flid);
++	DEBUGFS_FWSTATS_ADD(error, tx_abort_failure);
++	DEBUGFS_FWSTATS_ADD(error, tx_resume_failure);
++	DEBUGFS_FWSTATS_ADD(error, rx_cmplt_db_overflow_cnt);
++	DEBUGFS_FWSTATS_ADD(error, elp_while_rx_exch);
++	DEBUGFS_FWSTATS_ADD(error, elp_while_tx_exch);
++	DEBUGFS_FWSTATS_ADD(error, elp_while_tx);
++	DEBUGFS_FWSTATS_ADD(error, elp_while_nvic_pending);
++	DEBUGFS_FWSTATS_ADD(error, rx_excessive_frame_len);
++	DEBUGFS_FWSTATS_ADD(error, burst_mismatch);
++	DEBUGFS_FWSTATS_ADD(error, tbc_exch_mismatch);
+ 
+ 	DEBUGFS_FWSTATS_ADD(tx, tx_prepared_descs);
+ 	DEBUGFS_FWSTATS_ADD(tx, tx_cmplt);
+@@ -322,7 +392,7 @@
+ 	DEBUGFS_FWSTATS_ADD(tx, tx_data_programmed);
+ 	DEBUGFS_FWSTATS_ADD(tx, tx_burst_programmed);
+ 	DEBUGFS_FWSTATS_ADD(tx, tx_starts);
+-	DEBUGFS_FWSTATS_ADD(tx, tx_imm_resp);
++	DEBUGFS_FWSTATS_ADD(tx, tx_stop);
+ 	DEBUGFS_FWSTATS_ADD(tx, tx_start_templates);
+ 	DEBUGFS_FWSTATS_ADD(tx, tx_start_int_templates);
+ 	DEBUGFS_FWSTATS_ADD(tx, tx_start_fw_gen);
+@@ -331,13 +401,14 @@
+ 	DEBUGFS_FWSTATS_ADD(tx, tx_exch);
+ 	DEBUGFS_FWSTATS_ADD(tx, tx_retry_template);
+ 	DEBUGFS_FWSTATS_ADD(tx, tx_retry_data);
++	DEBUGFS_FWSTATS_ADD(tx, tx_retry_per_rate);
+ 	DEBUGFS_FWSTATS_ADD(tx, tx_exch_pending);
+ 	DEBUGFS_FWSTATS_ADD(tx, tx_exch_expiry);
+ 	DEBUGFS_FWSTATS_ADD(tx, tx_done_template);
+ 	DEBUGFS_FWSTATS_ADD(tx, tx_done_data);
+ 	DEBUGFS_FWSTATS_ADD(tx, tx_done_int_template);
+-	DEBUGFS_FWSTATS_ADD(tx, tx_frame_checksum);
+-	DEBUGFS_FWSTATS_ADD(tx, tx_checksum_result);
++	DEBUGFS_FWSTATS_ADD(tx, tx_cfe1);
++	DEBUGFS_FWSTATS_ADD(tx, tx_cfe2);
+ 	DEBUGFS_FWSTATS_ADD(tx, frag_called);
+ 	DEBUGFS_FWSTATS_ADD(tx, frag_mpdu_alloc_failed);
+ 	DEBUGFS_FWSTATS_ADD(tx, frag_init_called);
+@@ -362,11 +433,8 @@
+ 	DEBUGFS_FWSTATS_ADD(rx, rx_cmplt_task);
+ 	DEBUGFS_FWSTATS_ADD(rx, rx_phy_hdr);
+ 	DEBUGFS_FWSTATS_ADD(rx, rx_timeout);
++	DEBUGFS_FWSTATS_ADD(rx, rx_rts_timeout);
+ 	DEBUGFS_FWSTATS_ADD(rx, rx_timeout_wa);
+-	DEBUGFS_FWSTATS_ADD(rx, rx_wa_density_dropped_frame);
+-	DEBUGFS_FWSTATS_ADD(rx, rx_wa_ba_not_expected);
+-	DEBUGFS_FWSTATS_ADD(rx, rx_frame_checksum);
+-	DEBUGFS_FWSTATS_ADD(rx, rx_checksum_result);
+ 	DEBUGFS_FWSTATS_ADD(rx, defrag_called);
+ 	DEBUGFS_FWSTATS_ADD(rx, defrag_init_called);
+ 	DEBUGFS_FWSTATS_ADD(rx, defrag_in_process_called);
+@@ -376,6 +444,7 @@
+ 	DEBUGFS_FWSTATS_ADD(rx, decrypt_key_not_found);
+ 	DEBUGFS_FWSTATS_ADD(rx, defrag_need_decrypt);
+ 	DEBUGFS_FWSTATS_ADD(rx, rx_tkip_replays);
++	DEBUGFS_FWSTATS_ADD(rx, rx_xfr);
+ 
+ 	DEBUGFS_FWSTATS_ADD(isr, irqs);
+ 
+@@ -384,13 +453,13 @@
+ 	DEBUGFS_FWSTATS_ADD(pwr, connection_out_of_sync);
+ 	DEBUGFS_FWSTATS_ADD(pwr, cont_miss_bcns_spread);
+ 	DEBUGFS_FWSTATS_ADD(pwr, rcvd_awake_bcns_cnt);
+-
+-	DEBUGFS_FWSTATS_ADD(ps_poll, ps_poll_timeouts);
+-	DEBUGFS_FWSTATS_ADD(ps_poll, upsd_timeouts);
+-	DEBUGFS_FWSTATS_ADD(ps_poll, upsd_max_ap_turn);
+-	DEBUGFS_FWSTATS_ADD(ps_poll, ps_poll_max_ap_turn);
+-	DEBUGFS_FWSTATS_ADD(ps_poll, ps_poll_utilization);
+-	DEBUGFS_FWSTATS_ADD(ps_poll, upsd_utilization);
++	DEBUGFS_FWSTATS_ADD(pwr, sleep_time_count);
++	DEBUGFS_FWSTATS_ADD(pwr, sleep_time_avg);
++	DEBUGFS_FWSTATS_ADD(pwr, sleep_cycle_avg);
++	DEBUGFS_FWSTATS_ADD(pwr, sleep_percent);
++	DEBUGFS_FWSTATS_ADD(pwr, ap_sleep_active_conf);
++	DEBUGFS_FWSTATS_ADD(pwr, ap_sleep_user_conf);
++	DEBUGFS_FWSTATS_ADD(pwr, ap_sleep_counter);
+ 
+ 	DEBUGFS_FWSTATS_ADD(rx_filter, beacon_filter);
+ 	DEBUGFS_FWSTATS_ADD(rx_filter, arp_filter);
+@@ -404,12 +473,11 @@
+ 
+ 	DEBUGFS_FWSTATS_ADD(rx_rate, rx_frames_per_rates);
+ 
+-	DEBUGFS_FWSTATS_ADD(aggr_size, tx_agg_vs_rate);
++	DEBUGFS_FWSTATS_ADD(aggr_size, tx_agg_rate);
++	DEBUGFS_FWSTATS_ADD(aggr_size, tx_agg_len);
+ 	DEBUGFS_FWSTATS_ADD(aggr_size, rx_size);
+ 
+ 	DEBUGFS_FWSTATS_ADD(pipeline, hs_tx_stat_fifo_int);
+-	DEBUGFS_FWSTATS_ADD(pipeline, tcp_tx_stat_fifo_int);
+-	DEBUGFS_FWSTATS_ADD(pipeline, tcp_rx_stat_fifo_int);
+ 	DEBUGFS_FWSTATS_ADD(pipeline, enc_tx_stat_fifo_int);
+ 	DEBUGFS_FWSTATS_ADD(pipeline, enc_rx_stat_fifo_int);
+ 	DEBUGFS_FWSTATS_ADD(pipeline, rx_complete_stat_fifo_int);
+@@ -417,22 +485,33 @@
+ 	DEBUGFS_FWSTATS_ADD(pipeline, post_proc_swi);
+ 	DEBUGFS_FWSTATS_ADD(pipeline, sec_frag_swi);
+ 	DEBUGFS_FWSTATS_ADD(pipeline, pre_to_defrag_swi);
+-	DEBUGFS_FWSTATS_ADD(pipeline, defrag_to_csum_swi);
+-	DEBUGFS_FWSTATS_ADD(pipeline, csum_to_rx_xfer_swi);
++	DEBUGFS_FWSTATS_ADD(pipeline, defrag_to_rx_xfer_swi);
+ 	DEBUGFS_FWSTATS_ADD(pipeline, dec_packet_in);
+ 	DEBUGFS_FWSTATS_ADD(pipeline, dec_packet_in_fifo_full);
+ 	DEBUGFS_FWSTATS_ADD(pipeline, dec_packet_out);
+-	DEBUGFS_FWSTATS_ADD(pipeline, cs_rx_packet_in);
+-	DEBUGFS_FWSTATS_ADD(pipeline, cs_rx_packet_out);
+ 	DEBUGFS_FWSTATS_ADD(pipeline, pipeline_fifo_full);
+ 
+-	DEBUGFS_FWSTATS_ADD(mem, rx_free_mem_blks);
+-	DEBUGFS_FWSTATS_ADD(mem, tx_free_mem_blks);
+-	DEBUGFS_FWSTATS_ADD(mem, fwlog_free_mem_blks);
+-	DEBUGFS_FWSTATS_ADD(mem, fw_gen_free_mem_blks);
++	DEBUGFS_FWSTATS_ADD(diversity, num_of_packets_per_ant);
++	DEBUGFS_FWSTATS_ADD(diversity, total_num_of_toggles);
++
++	DEBUGFS_FWSTATS_ADD(thermal, irq_thr_low);
++	DEBUGFS_FWSTATS_ADD(thermal, irq_thr_high);
++	DEBUGFS_FWSTATS_ADD(thermal, tx_stop);
++	DEBUGFS_FWSTATS_ADD(thermal, tx_resume);
++	DEBUGFS_FWSTATS_ADD(thermal, false_irq);
++	DEBUGFS_FWSTATS_ADD(thermal, adc_source_unexpected);
++
++	DEBUGFS_FWSTATS_ADD(calib, fail_count);
++
++	DEBUGFS_FWSTATS_ADD(calib, calib_count);
++
++	DEBUGFS_FWSTATS_ADD(roaming, rssi_level);
++
++	DEBUGFS_FWSTATS_ADD(dfs, num_of_radar_detections);
+ 
+ 	DEBUGFS_ADD(conf, moddir);
+ 	DEBUGFS_ADD(radar_detection, moddir);
++	DEBUGFS_ADD(dynamic_fw_traces, moddir);
+ 
+ 	return 0;
+ 
+Index: git/drivers/net/wireless/ti/wl18xx/event.c
+===================================================================
+--- git.orig/drivers/net/wireless/ti/wl18xx/event.c	2016-06-21 13:51:49.754062899 +0200
++++ git/drivers/net/wireless/ti/wl18xx/event.c	2016-06-21 13:51:52.402062861 +0200
+@@ -112,6 +112,14 @@
+ 	return 0;
+ }
+ 
++static void wlcore_event_time_sync(struct wl1271 *wl, u16 tsf_msb, u16 tsf_lsb)
++{
++	u32 clock;
++	/* convert the MSB+LSB to a u32 TSF value */
++	clock = (tsf_msb << 16) | tsf_lsb;
++	wl1271_info("TIME_SYNC_EVENT_ID: clock %u", clock);
++}
++
+ int wl18xx_process_mailbox_events(struct wl1271 *wl)
+ {
+ 	struct wl18xx_event_mailbox *mbox = wl->mbox;
+@@ -128,6 +136,11 @@
+ 			wl18xx_scan_completed(wl, wl->scan_wlvif);
+ 	}
+ 
++	if (vector & TIME_SYNC_EVENT_ID)
++		wlcore_event_time_sync(wl,
++				mbox->time_sync_tsf_msb,
++				mbox->time_sync_tsf_lsb);
++
+ 	if (vector & RADAR_DETECTED_EVENT_ID) {
+ 		wl1271_info("radar event: channel %d type %s",
+ 			    mbox->radar_channel,
+@@ -193,5 +206,66 @@
+ 						 mbox->sc_pwd_len,
+ 						 mbox->sc_pwd);
+ 
++	if (vector & RX_BA_WIN_SIZE_CHANGE_EVENT_ID) {
++		struct wl12xx_vif *wlvif;
++		struct ieee80211_vif *vif;
++		u8 role_id = mbox->rx_ba_role_id;
++		u8 link_id = mbox->rx_ba_link_id;
++		u8 win_size = mbox->rx_ba_win_size;
++		int prev_win_size;
++
++		wl1271_debug(DEBUG_EVENT,
++			     "%s. role_id=%u link_id=%u win_size=%u",
++			     "RX_BA_WIN_SIZE_CHANGE_EVENT_ID",
++			     role_id, link_id, win_size);
++
++		wlvif = wl->links[link_id].wlvif;
++		if (unlikely(!wlvif)) {
++			wl1271_error("%s. link_id wlvif is null",
++				     "RX_BA_WIN_SIZE_CHANGE_EVENT_ID");
++
++			goto out_event;
++		}
++
++		if (unlikely(wlvif->role_id != role_id)) {
++			wl1271_error("%s. wlvif has different role_id=%d",
++				     "RX_BA_WIN_SIZE_CHANGE_EVENT_ID",
++				     wlvif->role_id);
++
++			goto out_event;
++		}
++
++		prev_win_size = wlcore_rx_ba_max_subframes(wl, link_id);
++		if (unlikely(prev_win_size < 0)) {
++			wl1271_error("%s. cannot get link rx_ba_max_subframes",
++				     "RX_BA_WIN_SIZE_CHANGE_EVENT_ID");
++
++			goto out_event;
++		}
++
++		if ((u8)prev_win_size <= win_size) {
++			/* This not supposed to happen unless a FW bug */
++			wl1271_error("%s. prev_win_size(%d) <= win_size(%d)",
++				       "RX_BA_WIN_SIZE_CHANGE_EVENT_ID",
++					prev_win_size, win_size);
++
++			goto out_event;
++		}
++
++		/*
++		 * Call MAC routine to update win_size and stop all link active
++		 * BA sessions. This routine returns 0 on failure or previous
++		 * win_size on success
++		 */
++		vif = wl12xx_wlvif_to_vif(wlvif);
++		ieee80211_change_rx_ba_max_subframes(vif,
++			(wlvif->bss_type != BSS_TYPE_AP_BSS ?
++				vif->bss_conf.bssid :
++				wl->links[link_id].addr),
++			win_size);
++	}
++
++out_event:
++
+ 	return 0;
+ }
+Index: git/drivers/net/wireless/ti/wl18xx/event.h
+===================================================================
+--- git.orig/drivers/net/wireless/ti/wl18xx/event.h	2016-06-21 13:51:49.754062899 +0200
++++ git/drivers/net/wireless/ti/wl18xx/event.h	2016-06-21 13:51:52.402062861 +0200
+@@ -38,8 +38,10 @@
+ 	REMAIN_ON_CHANNEL_COMPLETE_EVENT_ID      = BIT(18),
+ 	DFS_CHANNELS_CONFIG_COMPLETE_EVENT       = BIT(19),
+ 	PERIODIC_SCAN_REPORT_EVENT_ID            = BIT(20),
+-	SMART_CONFIG_SYNC_EVENT_ID		 = BIT(22),
+-	SMART_CONFIG_DECODE_EVENT_ID		 = BIT(23),
++	RX_BA_WIN_SIZE_CHANGE_EVENT_ID           = BIT(21),
++	SMART_CONFIG_SYNC_EVENT_ID               = BIT(22),
++	SMART_CONFIG_DECODE_EVENT_ID             = BIT(23),
++	TIME_SYNC_EVENT_ID                       = BIT(24),
+ };
+ 
+ enum wl18xx_radar_types {
+@@ -95,13 +97,16 @@
+ 	/* smart config sync channel */
+ 	u8 sc_sync_channel;
+ 	u8 sc_sync_band;
+-	u8 padding2[2];
+ 
++	/* time sync msb*/
++	u16 time_sync_tsf_msb;
+ 	/* radar detect */
+ 	u8 radar_channel;
+ 	u8 radar_type;
+ 
+-	u8 padding3[2];
++	/* time sync lsb*/
++	u16 time_sync_tsf_lsb;
++
+ } __packed;
+ 
+ int wl18xx_wait_for_event(struct wl1271 *wl, enum wlcore_wait_event event,
+Index: git/drivers/net/wireless/ti/wl18xx/main.c
+===================================================================
+--- git.orig/drivers/net/wireless/ti/wl18xx/main.c	2016-06-21 13:51:49.754062899 +0200
++++ git/drivers/net/wireless/ti/wl18xx/main.c	2016-06-21 13:51:52.402062861 +0200
+@@ -24,6 +24,7 @@
+ #include <linux/ip.h>
+ #include <linux/firmware.h>
+ #include <linux/etherdevice.h>
++#include <linux/irq.h>
+ 
+ #include "../wlcore/wlcore.h"
+ #include "../wlcore/debug.h"
+@@ -421,6 +422,8 @@
+ 		.num_probe_reqs			= 2,
+ 		.rssi_threshold			= -90,
+ 		.snr_threshold			= 0,
++		.num_short_intervals		= SCAN_MAX_SHORT_INTERVALS,
++		.long_interval			= 30000,
+ 	},
+ 	.ht = {
+ 		.rx_ba_win_size = 32,
+@@ -578,7 +581,7 @@
+ 
+ static const struct wlcore_partition_set wl18xx_ptable[PART_TABLE_LEN] = {
+ 	[PART_TOP_PRCM_ELP_SOC] = {
+-		.mem  = { .start = 0x00A02000, .size  = 0x00010000 },
++		.mem  = { .start = 0x00A00000, .size  = 0x00012000 },
+ 		.reg  = { .start = 0x00807000, .size  = 0x00005000 },
+ 		.mem2 = { .start = 0x00800000, .size  = 0x0000B000 },
+ 		.mem3 = { .start = 0x00000000, .size  = 0x00000000 },
+@@ -862,6 +865,7 @@
+ {
+ 	u32 tmp;
+ 	int ret;
++	u16 irq_invert;
+ 
+ 	BUILD_BUG_ON(sizeof(struct wl18xx_mac_and_phy_params) >
+ 		WL18XX_PHY_INIT_MEM_SIZE);
+@@ -911,6 +915,28 @@
+ 	/* re-enable FDSP clock */
+ 	ret = wlcore_write32(wl, WL18XX_PHY_FPGA_SPARE_1,
+ 			     MEM_FDSP_CLK_120_ENABLE);
++	if (ret < 0)
++		goto out;
++
++	ret = irq_get_trigger_type(wl->irq);
++	if ((ret == IRQ_TYPE_LEVEL_LOW) || (ret == IRQ_TYPE_EDGE_FALLING)) {
++		wl1271_info("using inverted interrupt logic: %d", ret);
++		ret = wlcore_set_partition(wl,
++					   &wl->ptable[PART_TOP_PRCM_ELP_SOC]);
++		if (ret < 0)
++			goto out;
++
++		ret = wl18xx_top_reg_read(wl, TOP_FN0_CCCR_REG_32, &irq_invert);
++		if (ret < 0)
++			goto out;
++
++		irq_invert |= BIT(1);
++		ret = wl18xx_top_reg_write(wl, TOP_FN0_CCCR_REG_32, irq_invert);
++		if (ret < 0)
++			goto out;
++
++		ret = wlcore_set_partition(wl, &wl->ptable[PART_PHY_INIT]);
++	}
+ 
+ out:
+ 	return ret;
+@@ -1002,8 +1028,9 @@
+ 		CHANNEL_SWITCH_COMPLETE_EVENT_ID |
+ 		DFS_CHANNELS_CONFIG_COMPLETE_EVENT |
+ 		SMART_CONFIG_SYNC_EVENT_ID |
+-		SMART_CONFIG_DECODE_EVENT_ID;
+-;
++		SMART_CONFIG_DECODE_EVENT_ID |
++		RX_BA_WIN_SIZE_CHANGE_EVENT_ID |
++		TIME_SYNC_EVENT_ID;
+ 
+ 	wl->ap_event_mask = MAX_TX_FAILURE_EVENT_ID;
+ 
+@@ -1135,6 +1162,11 @@
+ 	if (ret < 0)
+ 		return ret;
+ 
++	/* set the dynamic fw traces bitmap */
++	ret = wl18xx_acx_dynamic_fw_traces(wl);
++	if (ret < 0)
++		return ret;
++
+ 	if (checksum_param) {
+ 		ret = wl18xx_acx_set_checksum_state(wl);
+ 		if (ret != 0)
+@@ -1351,9 +1383,10 @@
+ }
+ 
+ #define WL18XX_CONF_FILE_NAME "ti-connectivity/wl18xx-conf.bin"
+-static int wl18xx_conf_init(struct wl1271 *wl, struct device *dev)
++
++static int wl18xx_load_conf_file(struct device *dev, struct wlcore_conf *conf,
++				 struct wl18xx_priv_conf *priv_conf)
+ {
+-	struct wl18xx_priv *priv = wl->priv;
+ 	struct wlcore_conf_file *conf_file;
+ 	const struct firmware *fw;
+ 	int ret;
+@@ -1362,14 +1395,14 @@
+ 	if (ret < 0) {
+ 		wl1271_error("could not get configuration binary %s: %d",
+ 			     WL18XX_CONF_FILE_NAME, ret);
+-		goto out_fallback;
++		return ret;
+ 	}
+ 
+ 	if (fw->size != WL18XX_CONF_SIZE) {
+ 		wl1271_error("configuration binary file size is wrong, expected %zu got %zu",
+ 			     WL18XX_CONF_SIZE, fw->size);
+ 		ret = -EINVAL;
+-		goto out;
++		goto out_release;
+ 	}
+ 
+ 	conf_file = (struct wlcore_conf_file *) fw->data;
+@@ -1379,7 +1412,7 @@
+ 			     "expected 0x%0x got 0x%0x", WL18XX_CONF_MAGIC,
+ 			     conf_file->header.magic);
+ 		ret = -EINVAL;
+-		goto out;
++		goto out_release;
+ 	}
+ 
+ 	if (conf_file->header.version != cpu_to_le32(WL18XX_CONF_VERSION)) {
+@@ -1387,28 +1420,32 @@
+ 			     "expected 0x%08x got 0x%08x",
+ 			     WL18XX_CONF_VERSION, conf_file->header.version);
+ 		ret = -EINVAL;
+-		goto out;
++		goto out_release;
+ 	}
+ 
+-	memcpy(&wl->conf, &conf_file->core, sizeof(wl18xx_conf));
+-	memcpy(&priv->conf, &conf_file->priv, sizeof(priv->conf));
++	memcpy(conf, &conf_file->core, sizeof(*conf));
++	memcpy(priv_conf, &conf_file->priv, sizeof(*priv_conf));
+ 
+-	goto out;
++out_release:
++	release_firmware(fw);
++	return ret;
++}
++
++static int wl18xx_conf_init(struct wl1271 *wl, struct device *dev)
++{
++	struct wl18xx_priv *priv = wl->priv;
+ 
+-out_fallback:
+-	wl1271_warning("falling back to default config");
++	if (wl18xx_load_conf_file(dev, &wl->conf, &priv->conf) < 0) {
++		wl1271_warning("falling back to default config");
+ 
+-	/* apply driver default configuration */
+-	memcpy(&wl->conf, &wl18xx_conf, sizeof(wl18xx_conf));
+-	/* apply default private configuration */
+-	memcpy(&priv->conf, &wl18xx_default_priv_conf, sizeof(priv->conf));
++		/* apply driver default configuration */
++		memcpy(&wl->conf, &wl18xx_conf, sizeof(wl->conf));
++		/* apply default private configuration */
++		memcpy(&priv->conf, &wl18xx_default_priv_conf,
++		       sizeof(priv->conf));
++	}
+ 
+-	/* For now we just fallback */
+ 	return 0;
+-
+-out:
+-	release_firmware(fw);
+-	return ret;
+ }
+ 
+ static int wl18xx_plt_init(struct wl1271 *wl)
+@@ -1768,7 +1805,7 @@
+ 
+ static const struct ieee80211_iface_limit wl18xx_iface_limits[] = {
+ 	{
+-		.max = 3,
++		.max = 2,
+ 		.types = BIT(NL80211_IFTYPE_STATION),
+ 	},
+ 	{
+@@ -1777,6 +1814,10 @@
+ 			 BIT(NL80211_IFTYPE_P2P_GO) |
+ 			 BIT(NL80211_IFTYPE_P2P_CLIENT),
+ 	},
++	{
++		.max = 1,
++		.types = BIT(NL80211_IFTYPE_P2P_DEVICE),
++	},
+ };
+ 
+ static const struct ieee80211_iface_limit wl18xx_iface_ap_limits[] = {
+@@ -1784,6 +1825,48 @@
+ 		.max = 2,
+ 		.types = BIT(NL80211_IFTYPE_AP),
+ 	},
++	{
++		.max = 1,
++		.types = BIT(NL80211_IFTYPE_P2P_DEVICE),
++	},
++};
++
++static const struct ieee80211_iface_limit wl18xx_iface_ap_cl_limits[] = {
++	{
++		.max = 1,
++		.types = BIT(NL80211_IFTYPE_STATION),
++	},
++	{
++		.max = 1,
++		.types = BIT(NL80211_IFTYPE_AP),
++	},
++	{
++		.max = 1,
++		.types = BIT(NL80211_IFTYPE_P2P_CLIENT),
++	},
++	{
++		.max = 1,
++		.types = BIT(NL80211_IFTYPE_P2P_DEVICE),
++	},
++};
++
++static const struct ieee80211_iface_limit wl18xx_iface_ap_go_limits[] = {
++	{
++		.max = 1,
++		.types = BIT(NL80211_IFTYPE_STATION),
++	},
++	{
++		.max = 1,
++		.types = BIT(NL80211_IFTYPE_AP),
++	},
++	{
++		.max = 1,
++		.types = BIT(NL80211_IFTYPE_P2P_GO),
++	},
++	{
++		.max = 1,
++		.types = BIT(NL80211_IFTYPE_P2P_DEVICE),
++	},
+ };
+ 
+ static const struct ieee80211_iface_combination
+Index: git/drivers/net/wireless/ti/wl18xx/reg.h
+===================================================================
+--- git.orig/drivers/net/wireless/ti/wl18xx/reg.h	2016-06-21 13:51:49.754062899 +0200
++++ git/drivers/net/wireless/ti/wl18xx/reg.h	2016-06-21 13:51:52.402062861 +0200
+@@ -109,6 +109,7 @@
+ 
+ #define WL18XX_WELP_ARM_COMMAND		(WL18XX_REGISTERS_BASE + 0x7100)
+ #define WL18XX_ENABLE			(WL18XX_REGISTERS_BASE + 0x01543C)
++#define TOP_FN0_CCCR_REG_32		(WL18XX_TOP_OCP_BASE + 0x64)
+ 
+ /* PRCM registers */
+ #define PLATFORM_DETECTION		0xA0E3E0
+Index: git/drivers/net/wireless/ti/wl18xx/scan.c
+===================================================================
+--- git.orig/drivers/net/wireless/ti/wl18xx/scan.c	2016-06-21 13:51:49.754062899 +0200
++++ git/drivers/net/wireless/ti/wl18xx/scan.c	2016-06-21 13:51:52.402062861 +0200
+@@ -51,7 +51,11 @@
+ 		goto out;
+ 	}
+ 
+-	cmd->role_id = wlvif->role_id;
++	/* scan on the dev role if the regular one is not started */
++	if (wlcore_is_p2p_mgmt(wlvif))
++		cmd->role_id = wlvif->dev_role_id;
++	else
++		cmd->role_id = wlvif->role_id;
+ 
+ 	if (WARN_ON(cmd->role_id == WL12XX_INVALID_ROLE_ID)) {
+ 		ret = -EINVAL;
+@@ -223,9 +227,20 @@
+ 				    SCAN_TYPE_PERIODIC);
+ 	wl18xx_adjust_channels(cmd, cmd_channels);
+ 
+-	cmd->short_cycles_sec = 0;
+-	cmd->long_cycles_sec = cpu_to_le16(req->interval);
+-	cmd->short_cycles_count = 0;
++	if (c->num_short_intervals && c->long_interval &&
++	    c->long_interval > req->interval) {
++		cmd->short_cycles_msec = cpu_to_le16(req->interval);
++		cmd->long_cycles_msec = cpu_to_le16(c->long_interval);
++		cmd->short_cycles_count = c->num_short_intervals;
++	} else {
++		cmd->short_cycles_msec = 0;
++		cmd->long_cycles_msec = cpu_to_le16(req->interval);
++		cmd->short_cycles_count = 0;
++	}
++	wl1271_debug(DEBUG_SCAN, "short_interval: %d, long_interval: %d, num_short: %d",
++		     le16_to_cpu(cmd->short_cycles_msec),
++		     le16_to_cpu(cmd->long_cycles_msec),
++		     cmd->short_cycles_count);
+ 
+ 	cmd->total_cycles = 0;
+ 
+Index: git/drivers/net/wireless/ti/wl18xx/scan.h
+===================================================================
+--- git.orig/drivers/net/wireless/ti/wl18xx/scan.h	2016-06-21 13:51:49.754062899 +0200
++++ git/drivers/net/wireless/ti/wl18xx/scan.h	2016-06-21 13:51:52.402062861 +0200
+@@ -74,8 +74,8 @@
+ 	u8 dfs;		   /* number of dfs channels in 5ghz */
+ 	u8 passive_active; /* number of passive before active channels 2.4ghz */
+ 
+-	__le16 short_cycles_sec;
+-	__le16 long_cycles_sec;
++	__le16 short_cycles_msec;
++	__le16 long_cycles_msec;
+ 	u8 short_cycles_count;
+ 	u8 total_cycles; /* 0 - infinite */
+ 	u8 padding[2];
+Index: git/drivers/net/wireless/ti/wl12xx/scan.c
+===================================================================
+--- git.orig/drivers/net/wireless/ti/wl12xx/scan.c	2016-06-21 13:51:49.754062899 +0200
++++ git/drivers/net/wireless/ti/wl12xx/scan.c	2016-06-21 13:51:52.402062861 +0200
+@@ -118,7 +118,11 @@
+ 	if (passive)
+ 		scan_options |= WL1271_SCAN_OPT_PASSIVE;
+ 
+-	cmd->params.role_id = wlvif->role_id;
++	/* scan on the dev role if the regular one is not started */
++	if (wlcore_is_p2p_mgmt(wlvif))
++		cmd->params.role_id = wlvif->dev_role_id;
++	else
++		cmd->params.role_id = wlvif->role_id;
+ 
+ 	if (WARN_ON(cmd->params.role_id == WL12XX_INVALID_ROLE_ID)) {
+ 		ret = -EINVAL;
+Index: git/include/net/mac80211.h
+===================================================================
+--- git.orig/include/net/mac80211.h	2016-06-21 13:51:50.758062884 +0200
++++ git/include/net/mac80211.h	2016-06-21 13:51:52.406062861 +0200
+@@ -1594,6 +1594,9 @@
+  * @supp_rates: Bitmap of supported rates (per band)
+  * @ht_cap: HT capabilities of this STA; restricted to our own capabilities
+  * @vht_cap: VHT capabilities of this STA; restricted to our own capabilities
++ * @max_rx_aggregation_subframes: restriction on rx buff size for this active
++ *	link. Initially set to local->hw.max_rx_aggregation_subframes but can
++ *	be modified by driver.
+  * @wme: indicates whether the STA supports QoS/WME (if local devices does,
+  *	otherwise always false)
+  * @drv_priv: data area for driver use, will always be aligned to
+@@ -1620,6 +1623,7 @@
+ 	u16 aid;
+ 	struct ieee80211_sta_ht_cap ht_cap;
+ 	struct ieee80211_sta_vht_cap vht_cap;
++	u8 max_rx_aggregation_subframes;
+ 	bool wme;
+ 	u8 uapsd_queues;
+ 	u8 max_sp;
+@@ -4990,6 +4994,23 @@
+ 				  const u8 *addr);
+ 
+ /**
++ * ieee80211_change_rx_ba_max_subframes - callback to change
++ *	sta.max_rx_aggregation_subframes and stop existing BA sessions
++ *
++ * This capability is useful in cases of IOP, i.e. cases where peer sta
++ * or ap doesn't respect the max subframes in a single-frame and uses the
++ * max window size instead. In these cases the driver/chip may recover by
++ * decreasing the max_rx_aggregation_subframes to use the single frame
++ * limitation.
++ *
++ * @vif: &struct ieee80211_vif pointer from the add_interface callback.
++ * @addr: & to bssid mac address
++ * @max_subframes: new max_rx_aggregation_subframes for this sta
++ */
++void ieee80211_change_rx_ba_max_subframes(struct ieee80211_vif *vif,
++					  const u8 *addr,
++					  u8 max_subframes);
++/**
+  * ieee80211_send_bar - send a BlockAckReq frame
+  *
+  * can be used to flush pending frames from the peer's aggregation reorder
+Index: git/net/mac80211/agg-rx.c
+===================================================================
+--- git.orig/net/mac80211/agg-rx.c	2016-06-21 13:51:50.962062881 +0200
++++ git/net/mac80211/agg-rx.c	2016-06-21 13:51:52.406062861 +0200
+@@ -131,6 +131,28 @@
+ }
+ EXPORT_SYMBOL(ieee80211_stop_rx_ba_session);
+ 
++void ieee80211_change_rx_ba_max_subframes(struct ieee80211_vif *vif,
++					  const u8 *addr,
++					  u8 max_subframes)
++{
++	struct ieee80211_sub_if_data *sdata = vif_to_sdata(vif);
++	struct sta_info *sta;
++
++	if (max_subframes == 0)
++		return;
++
++	rcu_read_lock();
++	sta = sta_info_get_bss(sdata, addr);
++	if (!sta) {
++		rcu_read_unlock();
++		return;
++	}
++	sta->sta.max_rx_aggregation_subframes = max_subframes;
++	ieee80211_queue_work(&sta->local->hw, &sta->ampdu_mlme.work);
++	rcu_read_unlock();
++}
++EXPORT_SYMBOL(ieee80211_change_rx_ba_max_subframes);
++
+ /*
+  * After accepting the AddBA Request we activated a timer,
+  * resetting it after each frame that arrives from the originator.
+@@ -270,13 +292,15 @@
+ 	if (buf_size == 0)
+ 		buf_size = IEEE80211_MAX_AMPDU_BUF;
+ 
+-	/* make sure the size doesn't exceed the maximum supported by the hw */
+-	if (buf_size > local->hw.max_rx_aggregation_subframes)
+-		buf_size = local->hw.max_rx_aggregation_subframes;
+-
+ 	/* examine state machine */
+ 	mutex_lock(&sta->ampdu_mlme.mtx);
+ 
++	/* make sure the size doesn't exceed the maximum supported by link */
++	if (buf_size > sta->sta.max_rx_aggregation_subframes)
++		buf_size = sta->sta.max_rx_aggregation_subframes;
++
++	ht_dbg(sta->sdata, "AddBA Req buf_size=%d\n", buf_size);
++
+ 	if (sta->ampdu_mlme.tid_rx[tid]) {
+ 		ht_dbg_ratelimited(sta->sdata,
+ 				   "unexpected AddBA Req from %pM on tid %u\n",
+@@ -289,7 +313,7 @@
+ 	}
+ 
+ 	/* prepare A-MPDU MLME for Rx aggregation */
+-	tid_agg_rx = kzalloc(sizeof(*tid_agg_rx), GFP_KERNEL);
++	tid_agg_rx = kmalloc(sizeof(struct tid_ampdu_rx), GFP_KERNEL);
+ 	if (!tid_agg_rx)
+ 		goto end;
+ 
+Index: git/drivers/net/wireless/ti/wlcore/conf.h
+===================================================================
+--- git.orig/drivers/net/wireless/ti/wlcore/conf.h	2016-06-21 13:51:49.754062899 +0200
++++ git/drivers/net/wireless/ti/wlcore/conf.h	2016-06-21 13:26:54.522084000 +0200
+@@ -1186,6 +1186,15 @@
+ 
+ 	/* SNR threshold to be used for filtering */
+ 	s8 snr_threshold;
++
++	/*
++	 * number of short intervals scheduled scan cycles before
++	 * switching to long intervals
++	 */
++	u8 num_short_intervals;
++
++	/* interval between each long scheduled scan cycle (in ms) */
++	u16 long_interval;
+ } __packed;
+ 
+ struct conf_ht_setting {
+@@ -1352,7 +1361,7 @@
+  * version, the two LSB are the lower driver's private conf
+  * version.
+  */
+-#define WLCORE_CONF_VERSION	(0x0006 << 16)
++#define WLCORE_CONF_VERSION	(0x0007 << 16)
+ #define WLCORE_CONF_MASK	0xffff0000
+ #define WLCORE_CONF_SIZE	(sizeof(struct wlcore_conf_header) +	\
+ 				 sizeof(struct wlcore_conf))

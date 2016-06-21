@@ -10,14 +10,15 @@ PACKAGE_ARCH = "${MACHINE_ARCH}"
 RCONFLICTS_${PN} = "linux-firmware-wl12xx"
 RREPLACES_${PN}  = "linux-firmware-wl12xx"
 
-PV = "R8.5+git${SRCPV}"
+PV = "R8.6_SP1+git${SRCPV}"
 PR = "r9"
 
 COMPATIBLE_MACHINE = "tera-he"
 
 CLEANBROKEN = "1"
 
-SRCREV = "46f6a1d0087bd9aac6e6cbae58ed9ee236e5f1b1"
+SRCREV = "45897a170bc30afb841b1491642e774f0c89b584"
+#"46f6a1d0087bd9aac6e6cbae58ed9ee236e5f1b1"
 BRANCH = "master"
 SRC_URI = "git://git.ti.com/wilink8-bt/ti-bt-firmware.git;branch=${BRANCH} \
            file://0001-Makefile-allow-building-within-the-OE.patch \

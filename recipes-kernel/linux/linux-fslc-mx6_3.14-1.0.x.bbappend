@@ -1,4 +1,4 @@
-# TERA-HE 
+# TERA-HE
 
 DESCRIPTION = "kernel for 3b6 tera-he platform"
 

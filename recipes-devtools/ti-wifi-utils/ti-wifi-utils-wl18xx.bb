@@ -10,7 +10,8 @@ PV = "R8.6+git${SRCPV}"
 PR = "r5"
 
 #Tag: R8.6
-SRCREV = "cf8965aad73764022669647fa33852558a657930"
+SRCREV = "R8.6_SP1"
+#"cf8965aad73764022669647fa33852558a657930"
 SRC_URI = "git://git.ti.com/wilink8-wlan/18xx-ti-utils.git \
 "
 

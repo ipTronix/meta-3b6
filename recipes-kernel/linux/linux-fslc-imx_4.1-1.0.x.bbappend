@@ -19,6 +19,7 @@ SRC_URI_append_tera-he = " \
   file://0011-TVP5150-i2c.patch \
   file://0012-Bluetooth-Add-tty-HCI-driver.patch \
   file://0013-btwilink-add-minimal-device-tree-support.patch \
+  file://0014-TI_WL18xx.patch \
 "
 
 KERNEL_IMAGE_BASE_NAME ?= "${KERNEL_IMAGETYPE}-${PKGE}-${PKGV}-${PKGR}"

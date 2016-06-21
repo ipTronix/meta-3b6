@@ -14,8 +14,10 @@ RREPLACES_${PN} += "wl12xx-firmware"
 RCONFLICTS_${PN} += "wl12xx-firmware"
 
 # Tag: R8.6
-SRCREV = "c4c0c7943040473bd9aeba2ab9fa99617fa08a4b"
-BRANCH = "ap_dfs"
+SRCREV = "R8.6_SP1"
+#"c4c0c7943040473bd9aeba2ab9fa99617fa08a4b"
+BRANCH = "service_pack"
+#"ap_dfs"
 SRC_URI = "git://git.ti.com/wilink8-wlan/wl18xx_fw.git;protocol=git;branch=${BRANCH} \
            file://0001-Add-Makefile-for-SDK.patch \
           "

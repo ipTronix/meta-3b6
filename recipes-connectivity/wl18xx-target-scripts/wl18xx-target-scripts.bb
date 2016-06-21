@@ -2,12 +2,13 @@ DESCRIPTION = "Scripts and configuration files for TI wireless drivers"
 LICENSE = "GPLv2"
 LIC_FILES_CHKSUM = "file://README;beginline=1;endline=21;md5=b8d6a0865f50159bf5c0d175d1f4a705"
 
-PV = "R8.6+git${SRCPV}"
+PV = "R8.6_SP1+git${SRCPV}"
 
 PR = "r7"
 
-# Tag: R8.6
-SRCREV = "693f71c709abcaa9047835cf3903aea26a63fa94"
+# Tag: R8.6_SP1
+SRCREV = "R8.6_SP1"
+# SRCREV = "693f71c709abcaa9047835cf3903aea26a63fa94"
 BRANCH = "sitara-scripts"
 SRC_URI = "git://git.ti.com/wilink8-wlan/wl18xx-target-scripts.git;protocol=git;branch=${BRANCH}\
            file://0001-fix-system-bin.patch"
