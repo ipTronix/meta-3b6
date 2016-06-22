@@ -22,7 +22,9 @@ SRCREV = "45897a170bc30afb841b1491642e774f0c89b584"
 BRANCH = "master"
 SRC_URI = "git://git.ti.com/wilink8-bt/ti-bt-firmware.git;branch=${BRANCH} \
            file://0001-Makefile-allow-building-within-the-OE.patch \
-           file://0001-bt-firmware-Remove-platform-check-and-install-defaul.patch"
+           file://0001-bt-firmware-Remove-platform-check-and-install-defaul.patch \
+           file://0002-Makefile-install_in_lib_firmarware_ti-connectivity.patch \
+           "
 
 PLATFORM = "unknown"
 PLATFORM_ti33x = "am335x-evm"

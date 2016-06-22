@@ -1,0 +1,14 @@
+Index: git/Makefile
+===================================================================
+--- git.orig/Makefile	2016-06-22 11:33:09.588942572 +0200
++++ git/Makefile	2016-06-22 11:37:55.408938471 +0200
+@@ -24,7 +24,7 @@
+     MACHINE_NAME := am43xx
+ endif
+ install:
+-	install -d $(DEST_DIR)${BASE_LIB_DIR}/firmware
+-	cp -f ./${MACHINE_NAME}/*.bts $(DEST_DIR)${BASE_LIB_DIR}/firmware
++	install -d $(DEST_DIR)${BASE_LIB_DIR}/firmware/ti-connectivity
++	cp -f ./${MACHINE_NAME}/*.bts $(DEST_DIR)${BASE_LIB_DIR}/firmware/ti-connectivity
+ 
+ 

@@ -1,7 +1,7 @@
 Index: git/arch/arm/boot/dts/imx6q-tera-he.dts
 ===================================================================
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ git/arch/arm/boot/dts/imx6q-tera-he.dts	2016-06-17 14:48:18.850973104 +0200
++++ git/arch/arm/boot/dts/imx6q-tera-he.dts	2016-06-22 13:28:40.003112100 +0200
 @@ -0,0 +1,262 @@
 +/*
 + * Copyright 2012 Freescale Semiconductor, Inc.
@@ -214,7 +214,7 @@ Index: git/arch/arm/boot/dts/imx6q-tera-he.dts
 +		csi_id = <3>;
 +	};
 +};
-+
++/*
 +&ecspi2 {
 +	status = "okay";
 +
@@ -242,7 +242,7 @@ Index: git/arch/arm/boot/dts/imx6q-tera-he.dts
 +		status = "okay";
 +	};
 +};
-+
++*/
 +&mxcfb1 {
 +	status = "okay";
 +};
@@ -268,7 +268,7 @@ Index: git/arch/arm/boot/dts/imx6q-tera-he.dts
 Index: git/arch/arm/boot/dts/imx6q-tera-he.dtsi
 ===================================================================
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ git/arch/arm/boot/dts/imx6q-tera-he.dtsi	2016-06-20 12:19:49.747381811 +0200
++++ git/arch/arm/boot/dts/imx6q-tera-he.dtsi	2016-06-22 13:30:06.295110433 +0200
 @@ -0,0 +1,526 @@
 +/*
 + * Copyright 2012 Freescale Semiconductor, Inc.
@@ -600,7 +600,7 @@ Index: git/arch/arm/boot/dts/imx6q-tera-he.dtsi
 +	pinctrl-0 = <&pinctrl_ecspi1 &pinctrl_ecspi1_cs>;
 +	status = "disabled";
 +};
-+
++/*
 +&ecspi2 {
 +	fsl,spi-num-chipselects = <1>;
 +	cs-gpios = <&gpio2 26 0>;
@@ -614,7 +614,7 @@ Index: git/arch/arm/boot/dts/imx6q-tera-he.dtsi
 +	pinctrl-names = "default";
 +	pinctrl-0 = <&pinctrl_ecspi3 &pinctrl_ecspi3_cs>;
 +};
-+
++*/
 +&ecspi4 {
 +	fsl,spi-num-chipselects = <1>;
 +	cs-gpios = <&gpio3 29 0>;
@@ -798,8 +798,8 @@ Index: git/arch/arm/boot/dts/imx6q-tera-he.dtsi
 +};
 Index: git/arch/arm/boot/dts/Makefile
 ===================================================================
---- git.orig/arch/arm/boot/dts/Makefile	2016-06-17 14:47:24.006973891 +0200
-+++ git/arch/arm/boot/dts/Makefile	2016-06-17 14:48:18.850973104 +0200
+--- git.orig/arch/arm/boot/dts/Makefile	2016-06-22 13:19:33.439122655 +0200
++++ git/arch/arm/boot/dts/Makefile	2016-06-22 13:19:36.795122591 +0200
 @@ -322,6 +322,7 @@
  	imx6q-sabresd-ldo.dtb \
  	imx6q-sabresd-enetirq.dtb \
@@ -811,8 +811,8 @@ Index: git/arch/arm/boot/dts/Makefile
 Index: git/arch/arm/boot/dts/imx6q-tera-he-iomux.dtsi
 ===================================================================
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ git/arch/arm/boot/dts/imx6q-tera-he-iomux.dtsi	2016-06-17 14:48:18.850973104 +0200
-@@ -0,0 +1,382 @@
++++ git/arch/arm/boot/dts/imx6q-tera-he-iomux.dtsi	2016-06-22 13:28:36.483112168 +0200
+@@ -0,0 +1,394 @@
 +/*
 + * Copyright 2015
 + *
@@ -871,6 +871,18 @@ Index: git/arch/arm/boot/dts/imx6q-tera-he-iomux.dtsi
 +				MX6QDL_PAD_ENET_RXD1__GPIO1_IO26     0x80000000		/* RGMII_INT            */
 +				MX6QDL_PAD_ENET_CRS_DV__GPIO1_IO25   0x80000000		/* RGMII_nRST           */
 +				MX6QDL_PAD_GPIO_0__CCM_CLKO1         0x1b0b0
++
++				/* ECSPI2, ECSPI3 pins configuration to use CAN3 CAN4 with FPGA */
++				MX6QDL_PAD_EIM_RW__GPIO2_IO26        0x100b1
++				MX6QDL_PAD_EIM_OE__GPIO2_IO25        0x100b1
++				MX6QDL_PAD_EIM_CS1__GPIO2_IO24       0x100b1
++				MX6QDL_PAD_EIM_CS0__GPIO2_IO23       0x100b1
++
++				MX6QDL_PAD_DISP0_DAT3__GPIO4_IO24    0x100b1
++				MX6QDL_PAD_DISP0_DAT2__GPIO4_IO23    0x100b1
++				MX6QDL_PAD_DISP0_DAT1__GPIO4_IO22    0x100b1
++				MX6QDL_PAD_DISP0_DAT0__GPIO4_IO21    0x100b1
++
 +			>;
 +		};
 +
@@ -886,7 +898,7 @@ Index: git/arch/arm/boot/dts/imx6q-tera-he-iomux.dtsi
 +				MX6QDL_PAD_CSI0_DAT4__ECSPI1_SCLK  0x100b1
 +			>;
 +		};
-+
++/*
 +		pinctrl_ecspi2_cs: ecspi2_cs_grp {
 +			fsl,pins = <
 +				MX6QDL_PAD_EIM_RW__GPIO2_IO26  0x100b1
@@ -912,7 +924,7 @@ Index: git/arch/arm/boot/dts/imx6q-tera-he-iomux.dtsi
 +				MX6QDL_PAD_DISP0_DAT0__ECSPI3_SCLK  0x100b1
 +			>;
 +		};
-+
++*/
 +		pinctrl_ecspi4_cs: ecspi4_cs_grp {
 +			fsl,pins = <
 +				MX6QDL_PAD_EIM_D29__ECSPI4_SS0  0x100b1

@@ -96,11 +96,12 @@ static int fpga_open(struct inode *inode, struct file *file)
   mutex_lock(&fpgaDevice->fops_lock);
 
   file->private_data = fpgaDevice;
-
+/*
   file->f_mapping->backing_dev_info = fpgaDevice->dev_info;
   if (fpgaDevice->dev_info == &directly_mappable_cdev_bdi) {
     file->f_mode |= FMODE_UNSIGNED_OFFSET;
   }
+*/
   fpgaDevice->flags |= FPGA_FLG_DEVICE_IN_USE;
 
   mutex_unlock(&fpgaDevice->fops_lock);
@@ -412,7 +413,7 @@ static int __init fpga_init(void)
     return -ENOMEM;
   }
 
-  fpgaDevice->dev_info = &directly_mappable_cdev_bdi;
+//  fpgaDevice->dev_info = &directly_mappable_cdev_bdi;
   mutex_init(&fpgaDevice->fops_lock);
 
   err = fpga_dev_init(fpgaDevice, DRIVER_NAME);
