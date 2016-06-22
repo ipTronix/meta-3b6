@@ -1,0 +1,13 @@
+Index: git/drivers/media/v4l2-core/videobuf2-core.c
+===================================================================
+--- git.orig/drivers/media/v4l2-core/videobuf2-core.c	2016-06-22 15:09:23.342995387 +0200
++++ git/drivers/media/v4l2-core/videobuf2-core.c	2016-06-22 15:18:33.898984754 +0200
+@@ -1245,7 +1245,7 @@
+ 		return;
+ 
+ 	__check_once = true;
+-	__WARN();
++//	__WARN();
+ 
+ 	pr_warn_once("use of bytesused == 0 is deprecated and will be removed in the future,\n");
+ 	if (vb->vb2_queue->allow_zero_bytesused)
