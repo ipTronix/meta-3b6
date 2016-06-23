@@ -30,7 +30,7 @@ int   fbPan(psFbHnd pHnd, uint32_t ypan);
 int   fbGlobalAlpha(psFbHnd pHnd, int ena, int val);
 int fbLocalAlpha(psFbHnd pHnd, int ena, int pix);
 
-int   fbColorKey(psFbHnd pHnd, uint16_t color);
+int   fbColorKey(psFbHnd pHnd, int ena, uint16_t color);
 void  fbVarShow(psFbHnd pHnd);
 
 #endif  /* __FB_H */

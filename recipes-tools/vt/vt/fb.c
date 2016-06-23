@@ -329,12 +329,14 @@ int fbLocalAlpha(psFbHnd pHnd, int ena, int pix)
  * Put global alpha
  * Set and Put 16 bits color key
  */
-int fbColorKey(psFbHnd pHnd, uint16_t color)
+int fbColorKey(psFbHnd pHnd, int ena, uint16_t color)
 {
   struct mxcfb_color_key  ck;
+/**/
   struct mxcfb_gbl_alpha  ga;
+/**/
   int                     ret;
-
+/**/
   ga.enable = 1;
   ga.alpha  = 0xFF;
   ret = ioctl(pHnd->fd, MXCFB_SET_GBL_ALPHA, &ga);
@@ -342,9 +344,9 @@ int fbColorKey(psFbHnd pHnd, uint16_t color)
     DBG_ERROR("ioctl MXCFB_SET_GBL_ALPHA\n");
     return -1;
   }
-
+/**/
   ck.color_key = RGB565TOCOLORKEY(color);
-  ck.enable    = 1;
+  ck.enable    = ena? 1: 0;
   ret = ioctl(pHnd->fd, MXCFB_SET_CLR_KEY, &ck);
   if(ret<0){
     DBG_ERROR("setting 16 bits color key\n");

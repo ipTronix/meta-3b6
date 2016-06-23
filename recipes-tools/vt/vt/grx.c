@@ -74,7 +74,7 @@ psGrxHnd grxOpen(char* device, uint32_t xres, uint32_t yres, uint32_t bpp)
 
   if(bpp==16){
     // set color key
-    ret = fbColorKey(pHnd->fbHnd, 0);
+    ret = fbColorKey(pHnd->fbHnd, 1, 0);
     if(ret){
       DBG_ERROR("fb set color key fail\n");
     }
@@ -84,6 +84,11 @@ psGrxHnd grxOpen(char* device, uint32_t xres, uint32_t yres, uint32_t bpp)
       DBG_ERROR("fb set color key fail\n");
     }
   }else{
+    // clear color key
+    ret = fbColorKey(pHnd->fbHnd, 0, 0);
+    if(ret){
+      DBG_ERROR("fb set color key fail\n");
+    }
     // set Global alpha
     ret = fbGlobalAlpha(pHnd->fbHnd, 0, 0);
     if(ret){

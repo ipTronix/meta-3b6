@@ -33,6 +33,7 @@ psBltHnd bltOpen(int bpp)
 
   pHnd = (psBltHnd)malloc(sizeof(sBltHnd));
   if(!pHnd){
+    DBG_ERROR("insufficent memory.\n");
     return NULL;
   }
   memset(pHnd, 0, sizeof(sBltHnd));
@@ -44,6 +45,7 @@ psBltHnd bltOpen(int bpp)
     free(pHnd);
     return NULL;
   }
+
   ret = g2d_make_current(pHnd->g2dHnd, G2D_HARDWARE_VG);
   if(ret){
     DBG_ERROR("g2d_make_current fail.\n");
@@ -164,6 +166,7 @@ int bltCopy(psBltHnd pHnd, int src_phys, int dst_phys,
 int bltUpdate(psBltHnd pHnd)
 {
   int ret;
+
   ret = g2d_finish(pHnd->g2dHnd);
   if(ret==-1){
     DBG_ERROR("g2d_finish FAIL\n");

@@ -184,6 +184,7 @@ int main(int argc, char **argv)
   }
 
   // Start keyboard event thread
+  DBG_PRINT("Start keyboard event thread\n");
   ret = pthread_create(&eventTid, NULL, eventThread, NULL);
   if(ret){
     DBG_ERROR("Start keyboard event thread FAIL\n");
@@ -191,6 +192,7 @@ int main(int argc, char **argv)
   }
 
   // Open fb1 DISP3 FG, graphic layer
+  DBG_PRINT("Open fb1 DISP3 FG, graphic layer\n");
   pGrx = grxOpen(config.fgfb, config.xres, config.yres, config.bpp);
   if(!pGrx){
     DBG_ERROR("grxOpen FAIL\n");
@@ -202,21 +204,25 @@ int main(int argc, char **argv)
   }
 
   // Open Blitter
+  DBG_PRINT("Open Blitter\n");
   pBlt = bltOpen(config.bpp);
-  if(!pGrx){
-    DBG_ERROR("bltOpenFAIL\n");
+  if(!pBlt){
+    DBG_ERROR("bltOpen FAIL\n");
     return -1;
   }
 
   // Open fb0 DISP3 BG, video stream layer
+  DBG_PRINT("Open fb0 DISP3 BG, video stream layer\n");
   fbHnd = fbOpen(config.bgfb);
   fbSet(fbHnd, config.xres, config.yres, config.bpp, 2);
   fbVarShow(fbHnd);
 
+DBG_PRINT("fbMemGet\n");
   void* bg_virt;
   bg_virt = fbMemGet(fbHnd);
   memset(bg_virt, 0, fbHnd->size*2);
 
+DBG_PRINT("fbPan\n");
   fbPan(fbHnd, config.yres);
   bg_frm_idx = 0;
   bg_frm_ptr = fbHnd->phys;
@@ -232,6 +238,7 @@ int main(int argc, char **argv)
         if(capArg[i].flag==0){
           continue;
         }
+
         bltCopy(pBlt,
                 capArg[i].pCap->buf[capArg[i].bufIdx].offset, bg_frm_ptr,
                 winpos[i].x, winpos[i].y,
