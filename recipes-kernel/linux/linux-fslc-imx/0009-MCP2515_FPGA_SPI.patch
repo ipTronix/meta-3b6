@@ -1,7 +1,7 @@
 Index: git/drivers/net/can/Kconfig
 ===================================================================
---- git.orig/drivers/net/can/Kconfig	2016-06-23 16:33:23.793229429 +0200
-+++ git/drivers/net/can/Kconfig	2016-06-23 16:33:26.325229381 +0200
+--- git.orig/drivers/net/can/Kconfig	2016-06-27 16:06:35.114586045 +0200
++++ git/drivers/net/can/Kconfig	2016-06-27 16:06:37.758585994 +0200
 @@ -63,6 +63,13 @@
  	  Say Y here if you are working on a system with led-class supported
  	  LEDs and you want to use them as canbus activity indicators.
@@ -18,20 +18,20 @@ Index: git/drivers/net/can/Kconfig
  	depends on (ARCH_AT91 || COMPILE_TEST) && HAS_IOMEM
 Index: git/drivers/net/can/Makefile
 ===================================================================
---- git.orig/drivers/net/can/Makefile	2016-06-23 16:33:23.793229429 +0200
-+++ git/drivers/net/can/Makefile	2016-06-23 16:33:26.325229381 +0200
-@@ -14,6 +14,7 @@
- obj-y				+= usb/
- obj-y				+= softing/
- 
+--- git.orig/drivers/net/can/Makefile	2016-06-27 16:06:35.114586045 +0200
++++ git/drivers/net/can/Makefile	2016-06-27 16:50:42.890534910 +0200
+@@ -28,6 +28,7 @@
+ obj-$(CONFIG_CAN_GRCAN)		+= grcan.o
+ obj-$(CONFIG_CAN_RCAR)		+= rcar_can.o
+ obj-$(CONFIG_CAN_XILINXCAN)	+= xilinx_can.o
 +obj-$(CONFIG_CAN_MCP2515)	+= mcp2515.o
- obj-$(CONFIG_CAN_SJA1000)	+= sja1000/
- obj-$(CONFIG_CAN_MSCAN)		+= mscan/
- obj-$(CONFIG_CAN_C_CAN)		+= c_can/
+ 
+ subdir-ccflags-y += -D__CHECK_ENDIAN__
+ subdir-ccflags-$(CONFIG_CAN_DEBUG_DEVICES) += -DDEBUG
 Index: git/drivers/net/can/mcp2515.c
 ===================================================================
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ git/drivers/net/can/mcp2515.c	2016-06-27 15:53:04.602601698 +0200
++++ git/drivers/net/can/mcp2515.c	2016-06-27 16:06:37.758585994 +0200
 @@ -0,0 +1,1308 @@
 +/**
 + * CAN bus driver for Microchip 251% CAN Controller with SPI Interface
