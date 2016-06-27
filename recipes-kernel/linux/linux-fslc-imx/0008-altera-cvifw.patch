@@ -1,7 +1,7 @@
 Index: git/drivers/media/platform/mxc/capture/altera-cvidi-hw.c
 ===================================================================
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ git/drivers/media/platform/mxc/capture/altera-cvidi-hw.c	2016-06-16 12:01:09.904356713 +0200
++++ git/drivers/media/platform/mxc/capture/altera-cvidi-hw.c	2016-06-23 16:06:47.497260258 +0200
 @@ -0,0 +1,171 @@
 +/**
 + * Altera CVI Decoder and Deinterlacer hardware specific functions
@@ -10,7 +10,7 @@ Index: git/drivers/media/platform/mxc/capture/altera-cvidi-hw.c
 +#include <linux/io.h>
 +#include <linux/mm.h>
 +
-+#define DEBUG
++//#define DEBUG
 +
 +#ifdef DEBUG
 +  #define DBG_PRINT(fmt, ...)   printk("%s:%s:"fmt, "cvidihw", __func__, ##__VA_ARGS__);
@@ -177,8 +177,8 @@ Index: git/drivers/media/platform/mxc/capture/altera-cvidi-hw.c
 Index: git/drivers/media/platform/mxc/capture/altera-cvifw-hw.c
 ===================================================================
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ git/drivers/media/platform/mxc/capture/altera-cvifw-hw.c	2016-06-15 15:00:10.177442315 +0200
-@@ -0,0 +1,224 @@
++++ git/drivers/media/platform/mxc/capture/altera-cvifw-hw.c	2016-06-23 16:06:57.201260071 +0200
+@@ -0,0 +1,226 @@
 +/**
 + * Altera CVI FW hardware specific functions
 + */
@@ -187,12 +187,14 @@ Index: git/drivers/media/platform/mxc/capture/altera-cvifw-hw.c
 +#include <linux/mm.h>
 +#include <linux/videodev2.h>
 +
-+#if 1
-+#define DBG_PRINT(fmt, ...)   printk("%s:%s:"fmt, "cvifwhw", __func__, ##__VA_ARGS__);
-+#define DBG_ERROR(fmt, ...)   printk("%s:%s:ERROR:"fmt, "cvifwhw", __func__, ##__VA_ARGS__);
++//#define DEBUG
++
++#ifdef DEBUG
++  #define DBG_PRINT(fmt, ...)   printk("%s:%s:"fmt, "cvifwhw", __func__, ##__VA_ARGS__);
++  #define DBG_ERROR(fmt, ...)   printk("%s:%s:ERROR:"fmt, "cvifwhw", __func__, ##__VA_ARGS__);
 +#else
-+#define DBG_PRINT(fmt, ...)
-+#define DBG_ERROR(fmt, ...)
++  #define DBG_PRINT(fmt, ...)
++  #define DBG_ERROR(fmt, ...)
 +#endif
 +
 +/* FPGA Frame Writer registers definition */
@@ -406,8 +408,8 @@ Index: git/drivers/media/platform/mxc/capture/altera-cvifw-hw.c
 Index: git/drivers/media/platform/mxc/capture/altera-cvifw.c
 ===================================================================
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ git/drivers/media/platform/mxc/capture/altera-cvifw.c	2016-06-16 11:56:38.612360605 +0200
-@@ -0,0 +1,2203 @@
++++ git/drivers/media/platform/mxc/capture/altera-cvifw.c	2016-06-23 16:07:01.985259978 +0200
+@@ -0,0 +1,2204 @@
 +/** ***************************************************************************
 + *       Altera Clocked Video Input and Frame Writer PCIe driver              *
 + **************************************************************************** */
@@ -435,8 +437,9 @@ Index: git/drivers/media/platform/mxc/capture/altera-cvifw.c
 +#include "v4l2-int-device.h"
 +#include "mxc_v4l2_capture.h"
 +
-+#if 1
-+  #define DEBUG
++//#define DEBUG
++
++#ifdef DEBUG
 +  //#define DEBUG_TIMESTAMP
 +  #ifndef DEBUG_TIMESTAMP
 +    #define DBG_PRINT(fmt, ...)   printk("%s:%s:"fmt, \
@@ -2613,8 +2616,8 @@ Index: git/drivers/media/platform/mxc/capture/altera-cvifw.c
 +
 Index: git/drivers/media/platform/mxc/capture/Makefile
 ===================================================================
---- git.orig/drivers/media/platform/mxc/capture/Makefile	2016-06-15 15:00:09.789442320 +0200
-+++ git/drivers/media/platform/mxc/capture/Makefile	2016-06-15 15:00:10.177442315 +0200
+--- git.orig/drivers/media/platform/mxc/capture/Makefile	2016-06-23 15:34:30.949297658 +0200
++++ git/drivers/media/platform/mxc/capture/Makefile	2016-06-23 15:34:31.325297651 +0200
 @@ -21,4 +21,7 @@
  tvp5150_tvin-objs := mxc_tvp5150.o
  obj-$(CONFIG_MXC_TVIN_TVP5150) += mxc_tvp5150.o
@@ -2625,8 +2628,8 @@ Index: git/drivers/media/platform/mxc/capture/Makefile
  obj-$(CONFIG_VIDEO_V4L2_MXC_INT_DEVICE) += v4l2-int-device.o
 Index: git/drivers/media/platform/mxc/capture/Kconfig
 ===================================================================
---- git.orig/drivers/media/platform/mxc/capture/Kconfig	2016-06-15 15:00:09.789442320 +0200
-+++ git/drivers/media/platform/mxc/capture/Kconfig	2016-06-15 15:00:10.177442315 +0200
+--- git.orig/drivers/media/platform/mxc/capture/Kconfig	2016-06-23 15:34:30.949297658 +0200
++++ git/drivers/media/platform/mxc/capture/Kconfig	2016-06-23 15:34:31.325297651 +0200
 @@ -9,6 +9,13 @@
  	depends on VIDEO_MXC_CAPTURE && MXC_IPU
  	default y

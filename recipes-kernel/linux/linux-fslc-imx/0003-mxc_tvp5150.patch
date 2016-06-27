@@ -39,7 +39,7 @@ Index: git/drivers/media/platform/mxc/capture/mxc_tvp5150.c
 + * This code is placed under the terms of the GNU General Public License v2
 + */
 +
-+#define DEBUG
++//#define DEBUG
 +
 +#ifdef DEBUG
 +  #define DRIVER_NAME "tvp5150"

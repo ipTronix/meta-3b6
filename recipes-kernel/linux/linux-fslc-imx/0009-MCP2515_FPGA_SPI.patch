@@ -1,7 +1,7 @@
 Index: git/drivers/net/can/Kconfig
 ===================================================================
---- git.orig/drivers/net/can/Kconfig	2016-04-06 12:05:10.863041254 +0200
-+++ git/drivers/net/can/Kconfig	2016-04-06 12:05:14.343041321 +0200
+--- git.orig/drivers/net/can/Kconfig	2016-06-23 16:33:23.793229429 +0200
++++ git/drivers/net/can/Kconfig	2016-06-23 16:33:26.325229381 +0200
 @@ -63,6 +63,13 @@
  	  Say Y here if you are working on a system with led-class supported
  	  LEDs and you want to use them as canbus activity indicators.
@@ -18,12 +18,12 @@ Index: git/drivers/net/can/Kconfig
  	depends on (ARCH_AT91 || COMPILE_TEST) && HAS_IOMEM
 Index: git/drivers/net/can/Makefile
 ===================================================================
---- git.orig/drivers/net/can/Makefile	2016-04-06 12:05:10.863041254 +0200
-+++ git/drivers/net/can/Makefile	2016-04-06 12:05:14.343041321 +0200
+--- git.orig/drivers/net/can/Makefile	2016-06-23 16:33:23.793229429 +0200
++++ git/drivers/net/can/Makefile	2016-06-23 16:33:26.325229381 +0200
 @@ -14,6 +14,7 @@
  obj-y				+= usb/
  obj-y				+= softing/
-
+ 
 +obj-$(CONFIG_CAN_MCP2515)	+= mcp2515.o
  obj-$(CONFIG_CAN_SJA1000)	+= sja1000/
  obj-$(CONFIG_CAN_MSCAN)		+= mscan/
@@ -31,8 +31,8 @@ Index: git/drivers/net/can/Makefile
 Index: git/drivers/net/can/mcp2515.c
 ===================================================================
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ git/drivers/net/can/mcp2515.c	2016-04-12 15:00:29.205273022 +0200
-@@ -0,0 +1,1357 @@
++++ git/drivers/net/can/mcp2515.c	2016-06-27 15:53:04.602601698 +0200
+@@ -0,0 +1,1308 @@
 +/**
 + * CAN bus driver for Microchip 251% CAN Controller with SPI Interface
 + * connected on Tera HE Altera FPGA.
@@ -69,10 +69,24 @@ Index: git/drivers/net/can/mcp2515.c
 +  #define DBG_ERROR(fmt, ...)   printk("%s:%s:ERROR:"fmt, DEVICE_NAME, __func__, ##__VA_ARGS__);
 +  #define DBG_IRQ_PRINT(x...) DBG_PRINT(x)
 +  //#define DBG_IRQ_PRINT(x...)
++	#define DBG_CAN_STATE(i, s) { \
++		char*des; \
++		switch(s){ \
++		case CAN_STATE_ERROR_ACTIVE : des = "is error active"; break; \
++		case CAN_STATE_ERROR_WARNING: des = "is error active, warning level is reached"; break; \
++		case CAN_STATE_ERROR_PASSIVE: des = "is error passive"; break; \
++		case CAN_STATE_BUS_OFF      : des = "went into Bus Off"; break; \
++		case CAN_STATE_STOPPED      : des = "is in stopped mode"; break; \
++		case CAN_STATE_SLEEPING     : des = "is in Sleep mode"; break; \
++		default                     : des = "is unknown state"; break; \
++		} \
++		DBG_PRINT("device %d:CAN State: %d CAN controller %s\n", i, s, des); \
++	}
 +#else
 +  #define DBG_PRINT(fmt, ...)
 +  #define DBG_ERROR(fmt, ...)
 +  #define DBG_IRQ_PRINT(x...)
++  #define DBG_CAN_STATE(i, s)
 +#endif
 +
 +/* SPI interface instruction set */
@@ -264,13 +278,6 @@ Index: git/drivers/net/can/mcp2515.c
 +#define MB_INT_DISABLE(b) __raw_writel(0, b + SPI_MCP2515_IMR_REG)
 +
 +/**
-+ * module parameters definition
-+ */
-+static int mcp2515_enable_dma; /* Enable SPI DMA. Default: 0 (Off) */
-+module_param(mcp2515_enable_dma, int, S_IRUGO);
-+MODULE_PARM_DESC(mcp2515_enable_dma, "Enable SPI DMA. Default: 0 (Off)");
-+
-+/**
 + * CAN bit timing
 + */
 +static const struct can_bittiming_const mcp2515_bittiming_const = {
@@ -442,16 +449,15 @@ Index: git/drivers/net/can/mcp2515.c
 +	return 0;
 +}
 +
++#define RXB0_VALID  0x01
++#define RXB1_VALID  0x02
++
++#ifdef DEBUG
++static int int_cnt_spi = 0;
++static int int_cnt_msg = 0;
++#endif
++
 +/**
-+#define MSG_FLAGS_OFFS    0
-+#define MSG_EFLG_OFFS     1
-+#define MSG_IFLG_OFFS     2
-+#define MSG_CANBUF1_OFFS  3
-+#define MSG_CANBUF2_OFFS 17
-+
-+#define RXB0_VALID      0x01
-+#define RXB1_VALID      0x02
-+
 + * prende il messaggio dalla coda
 + * verifica se è una notifica di fine transazione SPI
 + *  sblocca la routine di trasferimento SPI
@@ -469,15 +475,6 @@ Index: git/drivers/net/can/mcp2515.c
 + *  byte 17 CAN Messagge Buffer 1
 + *
 + */
-+
-+#define RXB0_VALID  0x01
-+#define RXB1_VALID  0x02
-+
-+#ifdef DEBUG
-+static int int_cnt_spi = 0;
-+static int int_cnt_msg = 0;
-+#endif
-+
 +static int mcp2515_isr_hook(void* arg)
 +{
 +	struct mcp2515_driver  *drv = (struct mcp2515_driver*)arg;
@@ -552,6 +549,7 @@ Index: git/drivers/net/can/mcp2515.c
 +			}
 +			eflag = buf[1];
 +			intf  = buf[2];
++DBG_IRQ_PRINT("index %d:EFLAG %02X, INTF %02X\n", index, eflag, intf);
 +
 +			/* Update can state */
 +			if (eflag & EFLG_TXBO) {
@@ -614,12 +612,7 @@ Index: git/drivers/net/can/mcp2515.c
 +
 +			if (dev->can.state == CAN_STATE_BUS_OFF) {
 +				if (dev->can.restart_ms == 0) {
-+					/*
-+					dev->force_quit = 1;
-+					can_bus_off(net);
-+					DBG_ERROR("CAN_STATE_BUS_OFF call hw_sleep\n");
-+					mcp2515_hw_sleep(dev); TODO deve farla chiamare da un task
-+					*/
++					DBG_PRINT("CAN_STATE_BUS_OFF\n");
 +					queue_work(dev->wq, &dev->tx_work);
 +					break;
 +				}
@@ -631,7 +624,6 @@ Index: git/drivers/net/can/mcp2515.c
 +				can_led_event(net, CAN_LED_EVENT_TX);
 +				if (dev->tx_len) {
 +					can_get_echo_skb(net, 0);
-+					/* TODO mod gest tx */			dev->tx_skb = NULL;
 +					dev->tx_len = 0;
 +				}
 +				netif_wake_queue(net);
@@ -684,7 +676,7 @@ Index: git/drivers/net/can/mcp2515.c
 +{
 +	u32   sid, eid, exide, rtr;
 +	u8   *buf;
-+
++DBG_PRINT("device %d:\n", dev->index);
 +	exide = (frame->can_id & CAN_EFF_FLAG) ? 1 : 0; /* Extended ID Enable */
 +	if (exide)
 +		sid = (frame->can_id & CAN_EFF_MASK) >> 18;
@@ -761,6 +753,7 @@ Index: git/drivers/net/can/mcp2515.c
 +
 +static void mcp2515_hw_sleep(struct mcp2515_device *dev)
 +{
++DBG_PRINT("\n");
 +	mcp2515_write_reg(dev, CANCTRL, CANCTRL_REQOP_SLEEP);
 +}
 +
@@ -769,7 +762,9 @@ Index: git/drivers/net/can/mcp2515.c
 +{
 +	struct mcp2515_device *priv = netdev_priv(net);
 +
-+	if (priv->tx_skb || priv->tx_len) {//TODO mod gest tx modificare in flag sent
++DBG_PRINT("device %d:net %p; priv %p\n", priv->index, net, priv);
++
++	if (priv->tx_skb || priv->tx_len) {
 +		DBG_ERROR("device %d:called while tx is busy tx_skb %p tx_len %d\n",
 +		          priv->index, priv->tx_skb, priv->tx_len);
 +		return NETDEV_TX_BUSY;
@@ -947,21 +942,7 @@ Index: git/drivers/net/can/mcp2515.c
 +DBG_PRINT("\n");
 +	for(i=0; i<MCP2515_NUM_DEV; i++){
 +		cs = ((struct mcp2515_device *)netdev_priv(mcp2515_drv.net[i]))->can.state;
-+#ifdef DEBUG
-+		{
-+		char*des;
-+		switch(cs){
-+		case CAN_STATE_ERROR_ACTIVE     : des = "CAN controller is error active"; break;
-+		case CAN_STATE_ERROR_WARNING    : des = "CAN controller is error active, warning level is reached"; break;
-+		case CAN_STATE_ERROR_PASSIVE    : des = "CAN controller is error passive"; break;
-+		case CAN_STATE_BUS_OFF          : des = "CAN controller went into Bus Off"; break;
-+		case CAN_STATE_STOPPED          : des = "CAN controller is in stopped mode"; break;
-+		case CAN_STATE_SLEEPING         : des = "CAN controller is in Sleep mode"; break;
-+		default                         : des = "CAN controller is unknown state"; break;
-+		}
-+		DBG_PRINT("device %d:CAN State: %d %s\n", i, cs, des);
-+		}
-+#endif
++		DBG_CAN_STATE(i, cs);
 +		if (cs != CAN_STATE_STOPPED) {
 +			break;
 +		}
@@ -1009,21 +990,7 @@ Index: git/drivers/net/can/mcp2515.c
 +		int cs;
 +		for(i=0; i<MCP2515_NUM_DEV; i++){
 +			cs = ((struct mcp2515_device *)netdev_priv(mcp2515_drv.net[i]))->can.state;
-+#ifdef DEBUG
-+			{
-+			char*des;
-+			switch(cs){
-+			case CAN_STATE_ERROR_ACTIVE     : des = "CAN controller is error active"; break;
-+			case CAN_STATE_ERROR_WARNING    : des = "CAN controller is error active, warning level is reached"; break;
-+			case CAN_STATE_ERROR_PASSIVE    : des = "CAN controller is error passive"; break;
-+			case CAN_STATE_BUS_OFF          : des = "CAN controller went into Bus Off"; break;
-+			case CAN_STATE_STOPPED          : des = "CAN controller is in stopped mode"; break;
-+			case CAN_STATE_SLEEPING         : des = "CAN controller is in Sleep mode"; break;
-+			default                         : des = "CAN controller is unknown state"; break;
-+			}
-+			DBG_PRINT("device %d:CAN State:%d %s\n", i, cs, des);
-+			}
-+#endif
++			DBG_CAN_STATE(i, cs);
 +			if (cs != CAN_STATE_STOPPED) {
 +				break;
 +			}
@@ -1059,27 +1026,31 @@ Index: git/drivers/net/can/mcp2515.c
 +	struct mcp2515_device *priv = container_of(ws, struct mcp2515_device, tx_work);
 +	struct net_device     *net = priv->net;
 +	struct can_frame      *frame;
++DBG_PRINT("\n");
 +
 +	mutex_lock(&priv->mcp_lock);
 +	if ( (priv->can.state == CAN_STATE_BUS_OFF) &&
 +				(priv->can.restart_ms == 0) ){
 +		priv->force_quit = 1;
++		priv->can.can_stats.bus_off++;
 +		can_bus_off(net);
-+		DBG_ERROR("CAN_STATE_BUS_OFF call hw_sleep\n");
++		DBG_PRINT("CAN_STATE_BUS_OFF call hw_sleep, priv->tx_skb %p\n", priv->tx_skb);
 +		mcp2515_hw_sleep(priv);
++		mutex_unlock(&priv->mcp_lock);
++		return;
 +	}
 +	if (priv->tx_skb) {
 +		if (priv->can.state == CAN_STATE_BUS_OFF) {
++			DBG_PRINT("mcp2515_clean\n");
 +			mcp2515_clean(net);
 +		} else {
 +			frame = (struct can_frame *)priv->tx_skb->data;
-+
 +			if (frame->can_dlc > CAN_FRAME_MAX_DATA_LEN)
 +				frame->can_dlc = CAN_FRAME_MAX_DATA_LEN;
 +			priv->tx_len = 1 + frame->can_dlc;
 +			can_put_echo_skb(priv->tx_skb, net, 0);
 +			mcp2515_hw_tx(priv, frame, 0);
-+//TODO mod gest tx			priv->tx_skb = NULL;
++			priv->tx_skb = NULL;
 +		}
 +	}
 +	mutex_unlock(&priv->mcp_lock);
@@ -1096,8 +1067,10 @@ Index: git/drivers/net/can/mcp2515.c
 +		mcp2515_hw_reset(priv);
 +		mcp2515_setup(net, priv);
 +		if (priv->after_suspend & AFTER_SUSPEND_RESTART) {
++			DBG_PRINT("AFTER_SUSPEND_RESTART mcp2515_set_normal_mode\n");
 +			mcp2515_set_normal_mode(priv);
 +		} else if (priv->after_suspend & AFTER_SUSPEND_UP) {
++			DBG_PRINT("AFTER_SUSPEND_UP netif_device_attach, mcp2515_clean, mcp2515_set_normal_mode\n");
 +			netif_device_attach(net);
 +			mcp2515_clean(net);
 +			mcp2515_set_normal_mode(priv);
@@ -1133,7 +1106,6 @@ Index: git/drivers/net/can/mcp2515.c
 +	mutex_lock(&priv->mcp_lock);
 +
 +	priv->force_quit = 0;
-+//TODO mod gest tx modificare in un unico flag
 +	priv->tx_skb = NULL;
 +	priv->tx_len = 0;
 +
@@ -1225,6 +1197,7 @@ Index: git/drivers/net/can/mcp2515.c
 +	.ndo_open = mcp2515_open,
 +	.ndo_stop = mcp2515_stop,
 +	.ndo_start_xmit = mcp2515_hard_start_xmit,
++	.ndo_change_mtu = can_change_mtu,
 +};
 +
 +static struct net_device* mcp2515_can_create(int index)
@@ -1263,38 +1236,19 @@ Index: git/drivers/net/can/mcp2515.c
 +	mutex_init(&priv->mcp_lock);
 +	init_waitqueue_head(&priv->spi_wait);
 +
-+	/* If requested, allocate DMA buffers */
-+	if (mcp2515_enable_dma) {
-+		DBG_PRINT("device %d:allocate DMA buffers\n", index);
-+		/* Minimum coherent DMA allocation is PAGE_SIZE, so allocate *
-+		 * that much and share it between Tx and Rx DMA buffers.     */
-+		priv->spi_tx_buf = dma_alloc_coherent(NULL,
-+		                                      PAGE_SIZE,
-+		                                      &priv->spi_tx_dma,
-+		                                      GFP_DMA);
-+		if (priv->spi_tx_buf) {
-+			priv->spi_rx_buf = (priv->spi_tx_buf + (PAGE_SIZE / 2));
-+			priv->spi_rx_dma = (dma_addr_t)(priv->spi_tx_dma + (PAGE_SIZE / 2));
-+		} else {
-+			/* Fall back to non-DMA */
-+			mcp2515_enable_dma = 0;
-+		}
++	/* Allocate non-DMA buffers */
++	DBG_PRINT("device %d:allocate SPI TX RX buffers\n", index);
++	priv->spi_tx_buf = kzalloc(SPI_MCP2515_BUF_SIZE, GFP_KERNEL);
++	if (!priv->spi_tx_buf) {
++		ret = -ENOMEM;
++		goto error_probe;
++	}
++	priv->spi_rx_buf = kzalloc(SPI_MCP2515_BUF_SIZE, GFP_KERNEL);
++	if (!priv->spi_rx_buf) {
++		ret = -ENOMEM;
++		goto error_probe;
 +	}
 +
-+	/* Allocate non-DMA buffers */
-+	if (!mcp2515_enable_dma) {
-+		DBG_PRINT("device %d:allocate non DMA buffers\n", index);
-+		priv->spi_tx_buf = kzalloc(SPI_MCP2515_BUF_SIZE, GFP_KERNEL);
-+		if (!priv->spi_tx_buf) {
-+			ret = -ENOMEM;
-+			goto error_probe;
-+		}
-+		priv->spi_rx_buf = kzalloc(SPI_MCP2515_BUF_SIZE, GFP_KERNEL);
-+		if (!priv->spi_rx_buf) {
-+			ret = -ENOMEM;
-+			goto error_probe;
-+		}
-+	}
 +	priv->index = index;
 +
 +	ret = register_candev(net);
@@ -1309,15 +1263,14 @@ Index: git/drivers/net/can/mcp2515.c
 +	return net;
 +
 +error_probe:
-+	if (mcp2515_enable_dma){
-+		DBG_ERROR("free dma buffers\n");
-+		dma_free_coherent(NULL,
-+		                  PAGE_SIZE,
-+		                  priv->spi_tx_buf, priv->spi_tx_dma);
-+	} else {
-+		DBG_ERROR("free buffers\n");
++	DBG_ERROR("free buffers\n");
++	if (priv->spi_tx_buf) {
 +		kfree(priv->spi_tx_buf);
++		priv->spi_tx_buf = 0;
++	}
++	if (priv->spi_rx_buf) {
 +		kfree(priv->spi_rx_buf);
++		priv->spi_rx_buf = 0;
 +	}
 +
 +	DBG_ERROR("free candev\n");
@@ -1332,16 +1285,14 @@ Index: git/drivers/net/can/mcp2515.c
 +	DBG_PRINT("unregister_candev\n");
 +	unregister_candev(net);
 +
-+	if (mcp2515_enable_dma) {
-+		DBG_PRINT("free DMA buffers\n");
-+		dma_free_coherent(NULL,
-+		                  PAGE_SIZE,
-+		                  dev->spi_tx_buf,
-+		                  dev->spi_tx_dma);
-+	} else {
-+		DBG_PRINT("free buffers\n");
++	DBG_PRINT("free buffers\n");
++	if (dev->spi_tx_buf) {
 +		kfree(dev->spi_tx_buf);
++		dev->spi_tx_buf = 0;
++	}
++	if (dev->spi_rx_buf) {
 +		kfree(dev->spi_rx_buf);
++		dev->spi_rx_buf = 0;
 +	}
 +
 +	DBG_PRINT("free_candev\n");
