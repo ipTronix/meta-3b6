@@ -24,4 +24,18 @@ SRC_URI_append_tera-he = " \
   file://0015-FIX_v4l2-videobuf2_core.patch \
 "
 
+SRC_URI_append_tera-he-dep = " \
+  file://0000-tera-he-dep-dts.patch \
+  file://0001-ltc3676.patch \
+  file://0002-lsm330.patch \
+  file://0003-mxc_tvp5150.patch \
+  file://0004-advancedsilicon_multitouch.patch \
+  file://0005-splashlogo.patch \
+  file://0006-Fix-flexcan-fifo-overrun.patch \
+  file://0006-mcp251x-spi-reduce-latency.patch \
+  file://0007-WDOG-Assert-WDOG_B-on-Time-out.patch \
+  file://0015-FIX_v4l2-videobuf2_core.patch \
+  file://defconfig \
+"
+
 KERNEL_IMAGE_BASE_NAME ?= "${KERNEL_IMAGETYPE}-${PKGE}-${PKGV}-${PKGR}"
