@@ -1,7 +1,7 @@
 Index: git/arch/arm/boot/dts/imx6q-tera-he.dts
 ===================================================================
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ git/arch/arm/boot/dts/imx6q-tera-he.dts	2016-06-22 13:28:40.003112100 +0200
++++ git/arch/arm/boot/dts/imx6q-tera-he.dts	2016-06-30 15:20:29.720221212 +0200
 @@ -0,0 +1,262 @@
 +/*
 + * Copyright 2012 Freescale Semiconductor, Inc.
@@ -268,8 +268,8 @@ Index: git/arch/arm/boot/dts/imx6q-tera-he.dts
 Index: git/arch/arm/boot/dts/imx6q-tera-he.dtsi
 ===================================================================
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ git/arch/arm/boot/dts/imx6q-tera-he.dtsi	2016-06-22 13:30:06.295110433 +0200
-@@ -0,0 +1,526 @@
++++ git/arch/arm/boot/dts/imx6q-tera-he.dtsi	2016-06-30 16:06:41.644300739 +0200
+@@ -0,0 +1,498 @@
 +/*
 + * Copyright 2012 Freescale Semiconductor, Inc.
 + * Copyright 2011 Linaro Ltd.
@@ -320,29 +320,6 @@ Index: git/arch/arm/boot/dts/imx6q-tera-he.dtsi
 +			224 225 226 227 228 229 230 231 232 233 234 235 236 237 238 239
 +			240 241 242 243 244 245 246 247 248 249 250 251 252 253 254 255>;
 +		default-brightness-level = <128>;
-+	};
-+
-+	buzzer {
-+		compatible = "pwm-backlight";
-+		pwms = <&pwm4 0 500000>;
-+		brightness-levels = <
-+			  0   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15
-+			 16  17  18  19  20  21  22  23  24  25  26  27  28  29  30  31
-+			 32  33  34  35  36  37  38  39  40  41  42  43  44  45  46  47
-+			 48  49  50  51  52  53  54  55  56  57  58  59  60  61  62  63
-+			 64  65  66  67  68  69  70  71  72  73  74  75  76  77  78  79
-+			 80  81  82  83  84  85  86  87  88  89  90  91  92  93  94  95
-+			 96  97  98  99 100 101 102 103 104 105 106 107 108 109 110 111
-+			112 113 114 115 116 117 118 119 120 121 122 123 124 125 126 127
-+			128 129 130 131 132 133 134 135 136 137 138 139 140 141 142 143
-+			144 145 146 147 148 149 150 151 152 153 154 155 156 157 158 159
-+			160 161 162 163 164 165 166 167 168 169 170 171 172 173 174 175
-+			176 177 178 179 180 181 182 183 184 185 186 187 188 189 190 191
-+			192 193 194 195 196 197 198 199 200 201 202 203 204 205 206 207
-+			208 209 210 211 212 213 214 215 216 217 218 219 220 221 222 223
-+			224 225 226 227 228 229 230 231 232 233 234 235 236 237 238 239
-+			240 241 242 243 244 245 246 247 248 249 250 251 252 253 254 255>;
-+		default-brightness-level = <0>;
 +	};
 +
 +	clocks {
@@ -661,12 +638,6 @@ Index: git/arch/arm/boot/dts/imx6q-tera-he.dtsi
 +	status = "okay";
 +};
 +
-+&pwm4 {
-+	pinctrl-names = "default";
-+	pinctrl-0 = <&pinctrl_pwm4>;
-+	status = "okay";
-+};
-+
 +&uart1 {
 +	pinctrl-names = "default";
 +	pinctrl-0 = <&pinctrl_uart1>;
@@ -714,8 +685,9 @@ Index: git/arch/arm/boot/dts/imx6q-tera-he.dtsi
 +&usdhc1 {
 +        pinctrl-names = "default";
 +        pinctrl-0 = <&pinctrl_usdhc1>;
-+/*        cd-gpios = <&gpio2 1 0>; */
-+/*        wp-gpios = <&gpio2 0 0>; */
++        bus-width = <4>;
++        cd-gpios = <&gpio1 1 GPIO_ACTIVE_LOW>;
++        wp-gpios = <&gpio1 9 GPIO_ACTIVE_HIGH>;
 +        no-1-8-v;
 +        keep-power-in-suspend;
 +        enable-sdio-wakeup;
@@ -798,8 +770,8 @@ Index: git/arch/arm/boot/dts/imx6q-tera-he.dtsi
 +};
 Index: git/arch/arm/boot/dts/Makefile
 ===================================================================
---- git.orig/arch/arm/boot/dts/Makefile	2016-06-22 13:19:33.439122655 +0200
-+++ git/arch/arm/boot/dts/Makefile	2016-06-22 13:19:36.795122591 +0200
+--- git.orig/arch/arm/boot/dts/Makefile	2016-06-30 15:20:25.996221106 +0200
++++ git/arch/arm/boot/dts/Makefile	2016-06-30 15:20:29.720221212 +0200
 @@ -322,6 +322,7 @@
  	imx6q-sabresd-ldo.dtb \
  	imx6q-sabresd-enetirq.dtb \
@@ -811,8 +783,8 @@ Index: git/arch/arm/boot/dts/Makefile
 Index: git/arch/arm/boot/dts/imx6q-tera-he-iomux.dtsi
 ===================================================================
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ git/arch/arm/boot/dts/imx6q-tera-he-iomux.dtsi	2016-06-22 13:28:36.483112168 +0200
-@@ -0,0 +1,394 @@
++++ git/arch/arm/boot/dts/imx6q-tera-he-iomux.dtsi	2016-06-30 16:06:44.992300835 +0200
+@@ -0,0 +1,393 @@
 +/*
 + * Copyright 2015
 + *
@@ -861,7 +833,6 @@ Index: git/arch/arm/boot/dts/imx6q-tera-he-iomux.dtsi
 +				MX6QDL_PAD_NANDF_D4__GPIO2_IO04      0x80000000		/* LVDS_SCAN_DIRECTION  */
 +				MX6QDL_PAD_NANDF_D5__GPIO2_IO05      0x80000000		/* GPS_RESET_B          */
 +				MX6QDL_PAD_NANDF_D6__GPIO2_IO06      0x80000000		/* USB_RESET            */
-+//				MX6QDL_PAD_NANDF_D7__GPIO2_IO07      0x80000000		/* L-OUT3               */
 +				MX6QDL_PAD_SD4_DAT0__GPIO2_IO08      0x80000000		/* CAN12_STB            */
 +				MX6QDL_PAD_SD4_DAT3__GPIO2_IO11      0x80000000		/* CAN34_STB            */
 +				MX6QDL_PAD_SD4_DAT4__GPIO2_IO12      0x80000000		/* CAN4_INT             */
@@ -871,6 +842,10 @@ Index: git/arch/arm/boot/dts/imx6q-tera-he-iomux.dtsi
 +				MX6QDL_PAD_ENET_RXD1__GPIO1_IO26     0x80000000		/* RGMII_INT            */
 +				MX6QDL_PAD_ENET_CRS_DV__GPIO1_IO25   0x80000000		/* RGMII_nRST           */
 +				MX6QDL_PAD_GPIO_0__CCM_CLKO1         0x1b0b0
++
++				MX6QDL_PAD_SD4_DAT2__GPIO2_IO10      0x80000000		/* BUZ_VOL1 */
++				MX6QDL_PAD_NANDF_D7__GPIO2_IO07      0x80000000		/* BUZ_VOL2 */
++				MX6QDL_PAD_GPIO_18__GPIO7_IO13       0x80000000		/* BUZ_VOL3 */
 +
 +				/* ECSPI2, ECSPI3 pins configuration to use CAN3 CAN4 with FPGA */
 +				MX6QDL_PAD_EIM_RW__GPIO2_IO26        0x100b1
@@ -882,6 +857,10 @@ Index: git/arch/arm/boot/dts/imx6q-tera-he-iomux.dtsi
 +				MX6QDL_PAD_DISP0_DAT2__GPIO4_IO23    0x100b1
 +				MX6QDL_PAD_DISP0_DAT1__GPIO4_IO22    0x100b1
 +				MX6QDL_PAD_DISP0_DAT0__GPIO4_IO21    0x100b1
++
++				/* ESDHC1 CD WP pins */
++				MX6QDL_PAD_GPIO_1__GPIO1_IO01      0x17071
++				MX6QDL_PAD_GPIO_9__GPIO1_IO09      0x17071
 +
 +			>;
 +		};
@@ -1072,12 +1051,6 @@ Index: git/arch/arm/boot/dts/imx6q-tera-he-iomux.dtsi
 +			>;
 +		};
 +
-+		pinctrl_pwm4: pwm4grp {
-+			fsl,pins = <
-+				MX6QDL_PAD_SD4_DAT2__PWM4_OUT        0x1b0b1		/* BUZ_PWM              */
-+			>;
-+		};
-+
 +		pinctrl_uart1: uart1grp {
 +			fsl,pins = <
 +				MX6QDL_PAD_CSI0_DAT10__UART1_TX_DATA   0x1b0b1
@@ -1135,8 +1108,6 @@ Index: git/arch/arm/boot/dts/imx6q-tera-he-iomux.dtsi
 +				MX6QDL_PAD_SD1_DAT1__SD1_DATA1   0x17071
 +				MX6QDL_PAD_SD1_DAT2__SD1_DATA2   0x17071
 +				MX6QDL_PAD_SD1_DAT3__SD1_DATA3   0x17071
-+				MX6QDL_PAD_GPIO_1__SD1_CD_B      0x17071
-+				MX6QDL_PAD_GPIO_9__SD1_WP        0x17071
 +			>;
 +		};
 +

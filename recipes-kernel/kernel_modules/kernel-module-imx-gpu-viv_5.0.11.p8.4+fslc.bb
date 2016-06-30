@@ -12,6 +12,7 @@ PV .= "+git${SRCPV}"
 SRCREV = "aa83874b916cf5655cb90498b1ea5691537fdbc8"
 SRC_URI = "git://github.com/Freescale/kernel-module-imx-gpu-viv.git;protocol=https \
            file://0001-Fix-gcc-6-build-error-Werror-misleading-indentation.patch \
+           file://0002-Add_max_fscale_to_sysfs.patch \
            file://COPYING"
 
 S = "${WORKDIR}/git"
