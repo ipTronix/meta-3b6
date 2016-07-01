@@ -10,7 +10,7 @@ IMAGE_INSTALL_append = " \
     firmware-imx-vpu-imx6q \
     firmware-imx-vpu-imx6d \
 "
- 
+
 IMAGE_OVERHEAD_FACTOR = "2.0"
 
 export IMAGE_BASENAME = "dev-fb-qt5"
@@ -22,8 +22,9 @@ IMAGE_INSTALL_append = " binutils libgcc libstdc++ \
     packagegroup-core-buildessential pkgconfig  \
     boost cmake zlib glib-2.0 \
     canutils libsocketcan \
+    nfc-tools \
     iproute2 \
-    packagegroup-qt5-qtcreator-debug \    
+    packagegroup-qt5-qtcreator-debug \
     cpufrequtils \
     gdb \
     gstreamer1.0 \
@@ -36,7 +37,7 @@ IMAGE_INSTALL_append = " binutils libgcc libstdc++ \
     gstreamer1.0-plugins-base \
     openssh-sftp-server \
     imx-vpu \
-    imx-test \    	
+    imx-test \
     qtbase-fonts \
     qtbase-plugins \
     qtbase-tools \
@@ -61,7 +62,7 @@ IMAGE_INSTALL_append = " binutils libgcc libstdc++ \
     cairo pango fontconfig freetype pulseaudio dbus \
     alsa-lib alsa-tools alsa-state fsl-alsa-plugins \
     tslib evtest tslib-conf tslib-tests tslib-calibrate \
-    i2c-tools \ 
+    i2c-tools \
     mtd-utils imx-kobs mtd-utils-ubifs \
     e2fsprogs \
     cinematicexperience \

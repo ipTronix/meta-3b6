@@ -41,23 +41,22 @@ int main(int argc, char** argv)
   if(cmd[0]){
     printf("Send command [%%%s$] to LPC\n", cmd);
     lpcCmdSend(lpc_uart, cmd);
-  }
-/*
-  do{
-    if(read(lpc_uart, &c, 1)>0){
-      if(c == '%'){
-        rxidx = 0;
-      }else if(c != '$'){
-        rxbuff[rxidx] = c;
-        if (rxidx<63)
-          rxidx++;
-      }else{
-        rxbuff[rxidx] = 0;
-        printf("%s\n", rxbuff);
+  } else {
+    do{
+      if(read(lpc_uart, &c, 1)>0){
+        if(c == '%'){
+          rxidx = 0;
+        }else if(c != '$'){
+          rxbuff[rxidx] = c;
+          if (rxidx<63)
+            rxidx++;
+        }else{
+          rxbuff[rxidx] = 0;
+          printf("%s\n", rxbuff);
+        }
       }
-    }
-  }while(1);
-*/
+    }while(1);
+  }
   uartClose(lpc_uart);
   return 0;
 }
