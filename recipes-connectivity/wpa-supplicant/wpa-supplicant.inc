@@ -16,7 +16,7 @@ DEFAULT_PREFERENCE = "-1"
 
 PR = "r9"
 
-SRC_URI = "git://git.ti.com/wilink8-wlan/hostap.git;protocol=git;branch=${BRANCH} \
+SRC_URI = "git://git.ti.com/wilink8-wlan/hostap.git;protocol=git;tag=${BRANCH};nobranch=1 \
            file://defconfig \
            file://wpa-supplicant.sh \
            file://wpa_supplicant.conf \

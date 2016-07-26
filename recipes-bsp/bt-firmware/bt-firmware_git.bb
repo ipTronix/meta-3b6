@@ -23,7 +23,6 @@ BRANCH = "master"
 SRC_URI = "git://git.ti.com/wilink8-bt/ti-bt-firmware.git;branch=${BRANCH} \
            file://0001-Makefile-allow-building-within-the-OE.patch \
            file://0001-bt-firmware-Remove-platform-check-and-install-defaul.patch \
-           file://0002-Makefile-install_in_lib_firmarware_ti-connectivity.patch \
            "
 
 PLATFORM = "unknown"
@@ -37,7 +36,7 @@ do_compile() {
 }
 
 do_install() {
-    install -d ${D}${base_libdir}/firmware/ti-connectivity
+    install -d ${D}${base_libdir}/firmware
     oe_runmake 'DEST_DIR=${D}' 'BASE_LIB_DIR=${base_libdir}' 'PLATFORM=${PLATFORM}' install
 }
 

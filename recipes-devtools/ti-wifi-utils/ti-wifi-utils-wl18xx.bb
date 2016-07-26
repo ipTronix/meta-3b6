@@ -5,14 +5,15 @@ LIC_FILES_CHKSUM = "file://COPYING;md5=4725015cb0be7be389cf06deeae3683d"
 DEPENDS = "libnl"
 RDEPENDS_${PN} = "wl18xx-firmware"
 
-PV = "R8.6+git${SRCPV}"
+PV = "R8.7+git${SRCPV}"
 
 PR = "r5"
 
-#Tag: R8.6
-SRCREV = "R8.6_SP1"
-#"cf8965aad73764022669647fa33852558a657930"
-SRC_URI = "git://git.ti.com/wilink8-wlan/18xx-ti-utils.git \
+#Tag: R8.7
+SRCREV = "R8.7"
+BRANCH = "R8.7"
+
+SRC_URI = "git://git.ti.com/wilink8-wlan/18xx-ti-utils.git;protocol=git;tag=${BRANCH};nobranch=1 \
 "
 
 PROVIDES += "ti-wifi-utils"

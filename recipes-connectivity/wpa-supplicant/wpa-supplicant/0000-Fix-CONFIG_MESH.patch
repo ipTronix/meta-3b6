@@ -1,0 +1,33 @@
+Index: wpa_supplicant/events.c
+===================================================================
+--- wpa_supplicant.orig/events.c	2016-07-12 14:52:49.537919538 +0200
++++ wpa_supplicant/events.c	2016-07-12 14:54:02.689921637 +0200
+@@ -2459,6 +2459,7 @@
+ 			wmm_ac_restore_tspecs(wpa_s);
+ 	}
+ 
++#ifdef CONFIG_MESH
+ 	/*
+ 	* after we finished handling the STA connection we can now remove the Mesh link
+ 	*/
+@@ -2469,6 +2470,7 @@
+ 			mesh_mpm_close_links(wpa_s->global->mesh_on_demand.mesh_wpa_s,
+ 								     wpa_s->global->mesh_on_demand.mesh_wpa_s->ifmsh);
+ 	}
++#endif
+ }
+ 
+ 
+@@ -4129,9 +4131,10 @@
+ 
+ 			hapd = wpa_s->ifmsh->bss[0];
+ 			sta = ap_get_sta(hapd,data->low_ack.addr);
+-
++#ifdef CONFIG_MESH
+ 			if (sta->plink_state == PLINK_ESTAB)
+-				mesh_mpm_plink_close(hapd,sta,wpa_s);		
++				mesh_mpm_plink_close(hapd,sta,wpa_s);
++#endif
+ 		}
+ #endif /* CONFIG_AP */
+ #ifdef CONFIG_TDLS
