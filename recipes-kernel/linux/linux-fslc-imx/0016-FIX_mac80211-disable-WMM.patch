@@ -1,0 +1,14 @@
+Index: git/net/mac80211/scan.c
+===================================================================
+--- git.orig/net/mac80211/scan.c	2016-07-28 10:12:09.864551644 +0200
++++ git/net/mac80211/scan.c	2016-07-28 10:13:16.296552592 +0200
+@@ -143,7 +143,8 @@
+ 
+ 	if (!elems->parse_error ||
+ 	    !(bss->valid_data & IEEE80211_BSS_VALID_WMM)) {
+-		bss->wmm_used = elems->wmm_param || elems->wmm_info;
++//		bss->wmm_used = elems->wmm_param || elems->wmm_info;
++		bss->wmm_used = 0;
+ 		bss->uapsd_supported = is_uapsd_supported(elems);
+ 		if (!elems->parse_error)
+ 			bss->valid_data |= IEEE80211_BSS_VALID_WMM;
