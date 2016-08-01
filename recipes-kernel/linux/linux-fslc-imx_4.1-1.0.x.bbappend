@@ -23,6 +23,7 @@ SRC_URI_append_tera-he = " \
   file://0014-TI_WL18xx.patch \
   file://0015-FIX_v4l2-videobuf2_core.patch \
   file://0016-FIX_mac80211-disable-WMM.patch \
+  file://0017-FIX-st_kim_fw_path.patch \
 "
 
 SRC_URI_append_tera-he-dep = " \
