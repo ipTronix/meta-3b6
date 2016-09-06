@@ -1,0 +1,115 @@
+Index: git/drivers/thermal/imx_thermal.c
+===================================================================
+--- git.orig/drivers/thermal/imx_thermal.c	2016-09-06 10:40:49.125916045 +0200
++++ git/drivers/thermal/imx_thermal.c	2016-09-06 10:44:57.277919588 +0200
+@@ -81,6 +81,10 @@
+ #define IMX6_OCOTP_ANA1		0x04e0
+ #define IMX7_OCOTP_ANA1		0x04f0
+ 
++
++#define DISABLE_COOLING_DEVICE
++
++
+ /* The driver supports 1 passive trip point and 1 critical trip point */
+ enum imx_thermal_trip {
+ 	IMX_TRIP_PASSIVE,
+@@ -219,7 +223,9 @@
+ 
+ struct imx_thermal_data {
+ 	struct thermal_zone_device *tz;
++#ifndef DISABLE_COOLING_DEVICE
+ 	struct thermal_cooling_device *cdev[2];
++#endif
+ 	enum thermal_device_mode mode;
+ 	struct regmap *tempmon;
+ 	u32 c1, c2; /* See formula in imx_get_sensor_data() */
+@@ -522,8 +528,13 @@
+ 	return 0;
+ }
+ static struct thermal_zone_device_ops imx_tz_ops = {
++#ifndef DISABLE_COOLING_DEVICE
+ 	.bind = imx_bind,
+ 	.unbind = imx_unbind,
++#else
++	.bind = NULL,
++	.unbind = NULL,
++#endif
+ 	.get_temp = imx_get_temp,
+ 	.get_mode = imx_get_mode,
+ 	.set_mode = imx_set_mode,
+@@ -632,7 +643,6 @@
+ 	 * than passive trip point. Can be changed from userspace.
+ 	 */
+ 	data->temp_critical = IMX_TEMP_PASSIVE + 20 * 1000;
+-
+ 	return 0;
+ }
+ 
+@@ -725,7 +735,6 @@
+ 	if (!data)
+ 		return -ENOMEM;
+ 	imx_thermal_data = data;
+-
+ 	map = syscon_regmap_lookup_by_phandle(pdev->dev.of_node, "fsl,tempmon");
+ 	if (IS_ERR(map)) {
+ 		ret = PTR_ERR(map);
+@@ -780,6 +789,7 @@
+ 	regmap_write(map, data->socdata->sensor_ctrl + REG_SET,
+ 		     data->socdata->power_down_mask);
+ 
++#ifndef DISABLE_COOLING_DEVICE
+ 	data->cdev[0] = cpufreq_cooling_register(cpu_present_mask);
+ 	if (IS_ERR(data->cdev[0])) {
+ 		ret = PTR_ERR(data->cdev[0]);
+@@ -801,6 +811,7 @@
+ 		}
+ 		return ret;
+ 	}
++#endif
+ 
+ 	data->thermal_clk = devm_clk_get(&pdev->dev, NULL);
+ 	if (IS_ERR(data->thermal_clk)) {
+@@ -808,7 +819,9 @@
+ 		if (ret != -EPROBE_DEFER)
+ 			dev_err(&pdev->dev,
+ 				"failed to get thermal clk: %d\n", ret);
++#ifndef DISABLE_COOLING_DEVICE
+ 		cpufreq_cooling_unregister(data->cdev[0]);
++#endif
+ 		return ret;
+ 	}
+ 
+@@ -822,8 +835,10 @@
+ 	ret = clk_prepare_enable(data->thermal_clk);
+ 	if (ret) {
+ 		dev_err(&pdev->dev, "failed to enable thermal clk: %d\n", ret);
++#ifndef DISABLE_COOLING_DEVICE
+ 		cpufreq_cooling_unregister(data->cdev[0]);
+ 		devfreq_cooling_unregister(data->cdev[1]);
++#endif
+ 		return ret;
+ 	}
+ 
+@@ -839,8 +854,10 @@
+ 		dev_err(&pdev->dev,
+ 			"failed to register thermal zone device %d\n", ret);
+ 		clk_disable_unprepare(data->thermal_clk);
++#ifndef DISABLE_COOLING_DEVICE
+ 		cpufreq_cooling_unregister(data->cdev[0]);
+ 		devfreq_cooling_unregister(data->cdev[1]);
++#endif
+ 		return ret;
+ 	}
+ 
+@@ -894,9 +911,10 @@
+ 		unregister_busfreq_notifier(&thermal_notifier);
+ 
+ 	thermal_zone_device_unregister(data->tz);
++#ifndef DISABLE_COOLING_DEVICE
+ 	cpufreq_cooling_unregister(data->cdev[0]);
+ 	devfreq_cooling_unregister(data->cdev[1]);
+-
++#endif
+ 	return 0;
+ }
+ 
