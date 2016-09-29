@@ -11,6 +11,7 @@ SRC_URI = " \
            file://80-usbdisk.rules \
            file://usbdevinserted \
            file://usbdevinserted_ \
+           file://libnfc.conf \
            file://COPYRIGHT \
 "
 
@@ -28,4 +29,6 @@ do_install () {
   install -d ${D}/bin
   install -m 0755 usbdevinserted ${D}/bin
   install -m 0755 usbdevinserted_ ${D}/bin
+  install -d ${D}${sysconfdir}/nfc
+  install -m 0755 libnfc.conf ${D}${sysconfdir}/nfc
 }

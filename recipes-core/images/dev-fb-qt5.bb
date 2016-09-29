@@ -21,6 +21,7 @@ IMAGE_INSTALL_append = " binutils libgcc libstdc++ \
     ccache chkconfig glib-networking glibmm \
     packagegroup-core-buildessential pkgconfig  \
     boost cmake zlib glib-2.0 \
+    fpga fram \
     canutils libsocketcan \
     nfc-tools \
     iproute2 \

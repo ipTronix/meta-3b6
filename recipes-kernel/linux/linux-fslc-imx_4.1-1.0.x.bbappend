@@ -24,6 +24,7 @@ SRC_URI_append_tera-he = " \
   file://0015-FIX_v4l2-videobuf2_core.patch \
   file://0016-FIX_mac80211-disable-WMM.patch \
   file://0017-imx_thermal-disable_thermal_zone_bind_cooling_device.patch \
+  file://0018-Added_F-RAM_in_dtb.patch \
 "
 
 SRC_URI_append_tera-he-dep = " \

@@ -1,0 +1,47 @@
+Index: git/arch/arm/boot/dts/imx6q-tera-he-iomux.dtsi
+===================================================================
+--- git.orig/arch/arm/boot/dts/imx6q-tera-he-iomux.dtsi	2016-09-29 15:19:49.900052095 +0200
++++ git/arch/arm/boot/dts/imx6q-tera-he-iomux.dtsi	2016-09-29 15:28:07.480059199 +0200
+@@ -19,7 +19,7 @@
+ 			fsl,pins = <
+ 				MX6QDL_PAD_EIM_A25__GPIO5_IO02       0x80000000		/* +12V_TFT_EN          */
+ 				MX6QDL_PAD_EIM_D16__GPIO3_IO16       0x80000000		/* TOUCH_R_IRQ          */
+-				MX6QDL_PAD_EIM_D28__GPIO3_IO28       0x80000000		/* RTC_INT              */
++//				MX6QDL_PAD_EIM_D28__GPIO3_IO28       0x80000000		/* RTC_INT              */
+ 				MX6QDL_PAD_EIM_BCLK__GPIO6_IO31      0x80000000		/* +3V3_TFT_EN          */
+ 				MX6QDL_PAD_DISP0_DAT4__GPIO4_IO25    0x80000000		/* LED_R                */
+ 				MX6QDL_PAD_DISP0_DAT5__GPIO4_IO26    0x80000000		/* LED_Y                */
+@@ -119,7 +119,7 @@
+ */
+ 		pinctrl_ecspi4_cs: ecspi4_cs_grp {
+ 			fsl,pins = <
+-				MX6QDL_PAD_EIM_D29__ECSPI4_SS0  0x100b1
++				MX6QDL_PAD_EIM_D29__GPIO3_IO29   0x100b1
+ 			>;
+ 		};
+ 		pinctrl_ecspi4: ecspi4grp {
+Index: git/arch/arm/boot/dts/imx6q-tera-he.dts
+===================================================================
+--- git.orig/arch/arm/boot/dts/imx6q-tera-he.dts	2016-09-29 15:19:49.900052095 +0200
++++ git/arch/arm/boot/dts/imx6q-tera-he.dts	2016-09-29 15:28:09.944059234 +0200
+@@ -238,6 +238,20 @@
+ 	};
+ };
+ */
++
++&ecspi4 {
++  status = "okay";
++
++  fram: fram@0 {
++    compatible = "Cypress,FM25W256";
++    reg = <0>;
++    spi-max-frequency = <5000000>;
++    spi-cpol;
++    spi-cpha;
++    status = "okay";
++  };
++};
++
+ &mxcfb1 {
+ 	status = "okay";
+ };
