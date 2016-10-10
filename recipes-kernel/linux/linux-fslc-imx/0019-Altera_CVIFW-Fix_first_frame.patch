@@ -1,0 +1,34 @@
+Index: git/drivers/media/platform/mxc/capture/altera-cvifw.c
+===================================================================
+--- git.orig/drivers/media/platform/mxc/capture/altera-cvifw.c	2016-10-10 15:25:00.279307888 +0200
++++ git/drivers/media/platform/mxc/capture/altera-cvifw.c	2016-10-10 15:28:01.047304397 +0200
+@@ -226,6 +226,7 @@
+   spinlock_t                queue_lock;
+   wait_queue_head_t         wait;
+   unsigned long             flags;
++  int                       skip_frames; // initial frame to skip
+ 
+   video_fmt_idx             video_idx; // Standard index of TV.
+ 
+@@ -928,6 +929,13 @@
+   //b->field = V4L2_FIELD_INTERLACED;
+   //DBG_PRINT("index %d pa %p\n", b->index, frame->buf_phys);
+ 
++  // skip initial frames to clean deinterlacer buffers
++  if ( dev->skip_frames>0 ) {
++    dev->skip_frames--;
++    qbuf(file, priv, b);
++    return -EAGAIN;
++  }
++
+ //DBG_PRINT("dev @%p index %d\n", (void*)dev, b->index);
+   return 0;
+ }
+@@ -1017,6 +1025,7 @@
+     DBG_PRINT("decoded resolution %d x %d\n", (res & 0xFFFF), (res >> 16));
+   }
+ 
++  dev->skip_frames = 4;
+ 
+   spin_lock(&dev->queue_lock);
+   frame = list_entry(dev->inqueue.next, struct altera_frame, frame);
