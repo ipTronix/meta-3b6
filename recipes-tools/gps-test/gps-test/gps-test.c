@@ -12,7 +12,7 @@
 
 #include "gpio.h"
 
-  
+
 int uartOpen(char* device, int bps);
 int uartClose(int uart);
 int uartLineGet(int uart, char* line, int size);
@@ -32,9 +32,9 @@ int main(int argc, char** argv)
   psGpioHnd gpio_GPS_RESET;
   int       bps;
   char      nmeacmd[80];
-  
+
   printf("gps test version 1.0 "__DATE__" "__TIME__"\n");
-  
+
   // init gpio pins
   gpio_GPS_PWR_EN = gpioInit(134, 0, 1);
   if(!gpio_GPS_PWR_EN){
@@ -54,7 +54,7 @@ int main(int argc, char** argv)
   gpioSet(gpio_GPS_PWR_EN, 1);
   gpioSet(gpio_GPS_RESET , 1);
   sleep(2);
-  
+
   // open UART
   bps = 9600;
   printf("Open uart %s @ %d bps\n", ttydev, bps);
@@ -208,6 +208,6 @@ int uartLineGet(int uart, char* line, int size)
         }
       }
     }
-  }  
+  }
   return len;
 }

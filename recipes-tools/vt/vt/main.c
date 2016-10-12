@@ -69,6 +69,7 @@ uint64_t msGet(void)
  */
 typedef struct {
   char      dev[32];
+  int       input;
 //  uint32_t  fmt;
 }sCfgCap, *psCfgCap;
 
@@ -87,6 +88,7 @@ typedef struct {
 /**
  */
 typedef struct {
+  char             *dev;
   int               capIdx;
   pthread_t         tid;
   psCapDev          pCap;
@@ -107,11 +109,12 @@ sConfig config = {
   .xres       = 1280,
   .yres       =  800,
   .bpp        =   16,
-  .capture[0] = { .dev = "/dev/video3"/*, V4L2_PIX_FMT_YVYU*/ },
-  .capture[1] = { .dev = "/dev/video2"/*, V4L2_PIX_FMT_YVYU*/ },
-  .capture[2] = { .dev = "/dev/video1"/*, V4L2_PIX_FMT_YUYV*/ },
-  .capture[3] = { .dev = "/dev/video0"/*, V4L2_PIX_FMT_YUYV*/ },
-  .event      = "/dev/input/event2",
+  .capture[0] = { .dev = "/dev/video0", 1},
+  .capture[1] = { .dev = "/dev/video1", 1},
+  .capture[2] = { .dev = "/dev/video2", 1},
+  .capture[3] = { .dev = "/dev/video3", 1},
+  //.event      = "/dev/input/event3",
+  .event      = "/dev/input/touchscreen0",
 };
 
 /**
@@ -124,7 +127,7 @@ sTaskArg    capArg[CAP_NUM];
 void*   eventThread(void* arg);
 void*   capThread(void* arg);
 int     capDevOpen(psTaskArg pTask);
-int     capBufGet(psTaskArg pTask, int input, int wait);
+int     capBufGet(psTaskArg pTask, int wait);
 int     capDevClose(psTaskArg pTask);
 
 /**
@@ -140,20 +143,22 @@ typedef struct {
  */
 int main(int argc, char **argv)
 {
-  int                 ret;
-  int                 d;
-  int                 i;
-  psFbHnd             fbHnd;
-  psGrxHnd            pGrx;
-  psBltHnd            pBlt;
-  sRect               winpos[] =  {
-                                    {100, 100, 720, 574},
-                                    {900,  50, 250, 200},
-                                    {900, 300, 250, 200},
-                                    {900, 550, 250, 200}
-                                  };
-  int                 bg_frm_idx;   // background frame index
-  int                 bg_frm_ptr;   // background frame memory pointer
+  int       ret;
+  int       d;
+  int       i;
+  psFbHnd   fbHnd;
+  psGrxHnd  pGrx;
+  psBltHnd  pBlt;
+  sRect     winpos[] =  {
+                          {140,  56, 360, 288},
+                          {780,  56, 360, 288},
+                          {140, 456, 360, 288},
+                          {780, 456, 360, 288}
+                        };
+  int       bg_frm_idx;   // background frame index
+  int       bg_frm_ptr;   // background frame memory pointer
+  int       bg_cnt[4] = {2, 2, 2, 2};
+  int       cnt;
 
   printf("%s "__DATE__" "__TIME__"\n", argv[0]);
 
@@ -166,11 +171,12 @@ int main(int argc, char **argv)
   // start capture threads
   for(i=0; i<CAP_NUM; i++){
     memset(&capArg[i], 0, sizeof(sTaskArg));
+    capArg[i].dev    = config.capture[i].dev;
     capArg[i].capIdx = i;
-    capArg[i].input  = CAP_DEF_INPUT;
+    capArg[i].input  = config.capture[i].input;
     capArg[i].width  = winpos[i].w;
     capArg[i].height = winpos[i].h;
-    capArg[i].pRng   = rngCreate(4);
+    capArg[i].pRng   = rngCreate(CAP_NUM_BUF/2);
     if(!capArg[i].pRng){
       DBG_ERROR("cap #%d creating rng queue fail\n", i);
       return -1;
@@ -198,9 +204,13 @@ int main(int argc, char **argv)
     DBG_ERROR("grxOpen FAIL\n");
     return -1;
   }
+  // draw graphic layer background
   grxVideoBg(pGrx);
-  for(i=0; i<4; i++){
-    grxVideoBox(pGrx, winpos[i].x, winpos[i].y, winpos[i].w, winpos[i].h);
+
+  // draw video windows graphic overlay
+  for(i=0; i<CAP_NUM; i++){
+    //grxVideoBox(pGrx, winpos[i].x, winpos[i].y, winpos[i].w, winpos[i].h);
+    grxBar(pGrx, winpos[i].x, winpos[i].y, winpos[i].w, winpos[i].h, 0x00000000);
   }
 
   // Open Blitter
@@ -228,24 +238,60 @@ DBG_PRINT("fbPan\n");
   bg_frm_ptr = fbHnd->phys;
 
   // main loop
+  cnt = 0;
   for(;;){
     for(i=0; i<CAP_NUM; i++){
       if(capArg[i].flag & CAP_FLG_STARTED){
-        ret = capBufGet(&capArg[i], CAP_DEF_INPUT, -1);
+        if(bg_cnt[i]<2){
+          grxBar(pGrx,
+                winpos[i].x, winpos[i].y, winpos[i].w, winpos[i].h,
+                0x00000000);
+          bg_cnt[i]++;
+        }
+        ret = capBufGet(&capArg[i], -1);
+/*
         if(ret){
           break;
         }
         if(capArg[i].flag==0){
           continue;
         }
-
+*/
+        if( ret || capArg[i].flag==0 ){
+          continue;
+        }
         bltCopy(pBlt,
                 capArg[i].pCap->buf[capArg[i].bufIdx].offset, bg_frm_ptr,
                 winpos[i].x, winpos[i].y,
                 winpos[i].w, winpos[i].h);
+      }else{
+        if(bg_cnt[i]){
+          uint32_t  xx;
+          uint32_t  yy;
+          uint32_t  tt;
+          uint16_t *p;
+
+          // clear graphic layer
+          grxBar(pGrx,
+                winpos[i].x, winpos[i].y, winpos[i].w, winpos[i].h,
+                0x0000A0A0);
+
+          // clear video layer
+          p = bg_virt;
+          for(yy=winpos[i].y; yy<winpos[i].y+winpos[i].h; yy++){
+            tt = yy * fbHnd->var.xres;
+            for(xx=winpos[i].x; xx<winpos[i].x+winpos[i].w; xx++){
+              p[xx + tt] = 0;
+              p[xx + tt + fbHnd->var.xres*fbHnd->var.yres] = 0;
+            }
+          }
+
+          bg_cnt[i]--;
+        }
       }
     }
-    // upddate frame buffer
+
+    // update frame buffer
     bltUpdate(pBlt);
     if(bg_frm_idx){
       fbPan(fbHnd, config.yres);
@@ -255,6 +301,16 @@ DBG_PRINT("fbPan\n");
       fbPan(fbHnd, 0);
       bg_frm_idx = 1;
       bg_frm_ptr = fbHnd->phys + fbHnd->size;
+    }
+
+    // update graphic
+    if(cnt==0){
+      grxBar(pGrx, 0, 390, 1280, 20, 0xFF808080);
+    }
+    grxBar(pGrx, cnt, 390, 80, 20, 0xFFFFFFFF);
+    cnt+=80;
+    if(cnt>=1280){
+      cnt=0;
     }
   }
   return 0;
@@ -273,16 +329,35 @@ void* capThread(void* arg)
 
   DBG_PRINT("#%d:started arg is %p Device %s\n",
             index, arg, config.capture[index].dev);
-  // TODO test per verificare utilizzo CPU DA TOGLIERE
   for(;;){
-    ret = capDevOpen(pTask);
-    if(ret){
+    // if is set CAP_FLG_STOP close capture device
+    if(pTask->flag & CAP_FLG_STOP){
+      DBG_PRINT("#%d:acquisition stopped close device.\n", index);
+      capDevClose(pTask);
+      pTask->flag = CAP_FLG_STOPPED;
+    }
+    // if is set CAP_FLG_STOPPED skip acquisition
+    if(pTask->flag & CAP_FLG_STOPPED){
+      continue;
+    }
+    // if capture device is close open it
+    if(pTask->pCap==NULL){
+      ret = capDevOpen(pTask);
+      if(ret){
+        usleep(20000);
+        continue;
+      }
+      DBG_PRINT("#%d:device %s, input %d opened.\n",
+                index, config.capture[index].dev, pTask->input);
+    }
+    // if capture device is no started (CAP_FLG_STARTED is clear) skip acquisition
+    if((pTask->flag & CAP_FLG_STARTED)==0){
+      DBG_ERROR("#%d:fd %d capture device %s not started\n",
+                  index, pTask->pCap->fd, pTask->pCap->name);
       usleep(20000);
       continue;
     }
-    break;
-  }
-  for(;;){
+
     // Dequeue capture buffer
     memset(&capture_buf, 0, sizeof(capture_buf));
     capture_buf.type   = V4L2_BUF_TYPE_VIDEO_CAPTURE;
@@ -313,6 +388,45 @@ void* capThread(void* arg)
 }
 
 /**
+ */
+void tsEvent(int x, int y)
+{
+  DBG_PRINT("x: %d, y: %d\n", x, y);
+  if( x<640 && y>  0 && y<200 && capArg[0].flag == CAP_FLG_STOPPED ) {
+    DBG_PRINT("Start capture device 0\n");
+    capArg[0].flag = 0;
+  }else
+  if( x>640 && y>  0 && y<200  && capArg[1].flag == CAP_FLG_STOPPED ) {
+    DBG_PRINT("Start capture device 1\n");
+    capArg[1].flag = 0;
+  }else
+  if( x<640 && y>400 && y<600 && capArg[2].flag == CAP_FLG_STOPPED ) {
+    DBG_PRINT("Start capture device 0\n");
+    capArg[2].flag = 0;
+  }else
+  if( x>640 && y>400 && y<600  && capArg[3].flag == CAP_FLG_STOPPED ) {
+    DBG_PRINT("Start capture device 1\n");
+    capArg[3].flag = 0;
+  }else
+  if( x<640 && y>200 && y<400  && capArg[0].flag & CAP_FLG_STARTED ) {
+    DBG_PRINT("Stop capture device 0\n");
+    capArg[0].flag = CAP_FLG_STOP;
+  }else
+  if( x>640 && y>200 && y<400 && capArg[1].flag & CAP_FLG_STARTED ) {
+    DBG_PRINT("Stop capture device 1\n");
+    capArg[1].flag = CAP_FLG_STOP;
+  }else
+  if( x<640 && y>600 && y<800  && capArg[2].flag & CAP_FLG_STARTED ) {
+    DBG_PRINT("Stop capture device 0\n");
+    capArg[2].flag = CAP_FLG_STOP;
+  }else
+  if( x>640 && y>600 && y<800 && capArg[3].flag & CAP_FLG_STARTED ) {
+    DBG_PRINT("Stop capture device 1\n");
+    capArg[3].flag = CAP_FLG_STOP;
+  }
+}
+
+/**
  * @brief Thread per l'acquisizione dell'evento da tastiera per la modifica
  *        dell'ingresso.
  */
@@ -321,6 +435,8 @@ void* eventThread(void* arg)
   char     *name = config.event;
   psEvHnd   pHnd;
   psEvent   pEve;
+  int       xe;
+  int       ye;
 
   DBG_PRINT("started arg is %p\n", arg);
 
@@ -328,12 +444,20 @@ void* eventThread(void* arg)
   if(!pHnd){
     return NULL;
   }
+  xe = -1;
+  ye = -1;
   for(;;){
     pEve = evGet(pHnd);
-    if(pEve){
-      DBG_PRINT("eventThread: time %ld.%06ld, type %d, code %d, value %d\n",
-                pEve->time.tv_sec, pEve->time.tv_usec,
-                pEve->type, pEve->code, pEve->value);
+    if(!pEve){
+      continue;
+    }
+/*
+    DBG_PRINT("eventThread: time %ld.%06ld, type %d, code %d, value %d\n",
+              pEve->time.tv_sec, pEve->time.tv_usec,
+              pEve->type, pEve->code, pEve->value);
+*/
+    switch(pEve->type){
+    case EV_KEY:
       if(pEve->code==3 && pEve->value==1){
         int i;
         DBG_PRINT("\n====================================\n"
@@ -358,6 +482,20 @@ void* eventThread(void* arg)
           }
         }
       }
+      break;
+
+    case EV_ABS:
+      switch(pEve->code){
+      case ABS_X: xe = pEve->value; break;
+      case ABS_Y: ye = pEve->value; break;
+      }
+      if(xe<0 || ye<0){
+        break;
+      }
+      if(pEve->code==ABS_MT_TRACKING_ID && pEve->value==-1){
+        tsEvent(1280*xe/32768, 800*ye/32768);
+      }
+      break;
     }
   }
   return NULL;
@@ -373,12 +511,15 @@ int capDevOpen(psTaskArg pTask)
     return 0;
   }
 
+//  DBG_PRINT("#%d:capOpen device %s.\n",
+//          pTask->capIdx, config.capture[pTask->capIdx].dev);
+//  pTask->pCap = capOpen(config.capture[pTask->capIdx].dev);
   DBG_PRINT("#%d:capOpen device %s.\n",
-          pTask->capIdx, config.capture[pTask->capIdx].dev);
-  pTask->pCap = capOpen(config.capture[pTask->capIdx].dev);
+          pTask->capIdx, pTask->dev);
+  pTask->pCap = capOpen(pTask->dev);
   if(!pTask->pCap){
     DBG_ERROR("#%d:capOpen device %s failed.\n",
-              pTask->capIdx, pTask->pCap->name);
+              pTask->capIdx, pTask->dev);
     return -1;
   }
   pTask->flag = CAP_FLG_OPENED;
@@ -387,7 +528,7 @@ int capDevOpen(psTaskArg pTask)
   // impostazione device
   pTask->pCap->width  = CAP_WIDTH;
   pTask->pCap->height = CAP_HEIGHT;
-  //pTask->pCap->fmt    = config.capture[pTask->capIdx].fmt;
+  //pTask->pCap->fmt    = pTask->fmt;
   pTask->pCap->fmt    = V4L2_PIX_FMT_YUYV;
   pTask->pCap->std    = CAP_STD;
   pTask->pCap->input  = pTask->input;
@@ -420,15 +561,12 @@ int capDevOpen(psTaskArg pTask)
 /**
  * @brief Get capture buffers from ring queue and enqueue last used buffer
  */
-int capBufGet(psTaskArg pTask, int input, int wait)
+int capBufGet(psTaskArg pTask, int wait)
 {
   int   temp;
   int   ret;
   int   retval = -1;
-
-  if(input<0 || input>1){
-    return -1;
-  }
+//int i=0;
   wait = wait? -1: 0;
   ret = wait;
   while(ret==wait){
@@ -450,7 +588,12 @@ int capBufGet(psTaskArg pTask, int input, int wait)
       pTask->flag |= CAP_FLG_FIRSTFRAME;
       retval = 0;
     }
+    usleep(1);
+//i++;
   }
+//if(i>1){
+//DBG_PRINT("#%d, loop count %d\n", pTask->capIdx, i);
+//}
   return retval;
 }
 
@@ -458,6 +601,7 @@ int capBufGet(psTaskArg pTask, int input, int wait)
  */
 int capDevClose(psTaskArg pTask)
 {
+  int i;
   if(!pTask->pCap){
     DBG_ERROR("#%d:capOpen already closed.\n", pTask->capIdx);
     return 0;

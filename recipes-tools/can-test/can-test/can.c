@@ -55,7 +55,15 @@ psCanHnd canOpen(char* device, int mode)
   return pCan;
 }
 
+/**
+ */
+int canClose(psCanHnd pCan)
+{
+  return 0;
+}
 
+/**
+ */
 int canRecv(psCanHnd pCan, psCanMsg pMsg)
 {
   int                 rb;
@@ -102,6 +110,8 @@ int canRecv(psCanHnd pCan, psCanMsg pMsg)
   return 0;
 }
 
+/**
+ */
 int canRead(psCanHnd pCan, psCanMsg pMsg)
 {
   fd_set          rdfs;

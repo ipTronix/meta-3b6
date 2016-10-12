@@ -1,8 +1,19 @@
 Index: git/drivers/media/platform/mxc/capture/altera-cvifw.c
 ===================================================================
---- git.orig/drivers/media/platform/mxc/capture/altera-cvifw.c	2016-10-10 15:25:00.279307888 +0200
-+++ git/drivers/media/platform/mxc/capture/altera-cvifw.c	2016-10-10 15:28:01.047304397 +0200
-@@ -226,6 +226,7 @@
+--- git.orig/drivers/media/platform/mxc/capture/altera-cvifw.c	2016-10-11 17:56:07.817464157 +0200
++++ git/drivers/media/platform/mxc/capture/altera-cvifw.c	2016-10-11 17:57:25.445462658 +0200
+@@ -81,6 +81,10 @@
+ 
+ #define BAR0_CTRL_OFS 0x4800    ///< SYS_ID [0x0000] = 0x1B8F0001
+ 
++/**
++ * defines cvifw timeout for start acquisition
++ */
++#define CVIFW_TIMEOUT  100000
+ 
+ 
+ //#define FLG_DEVICE_IN_USE    0x00000001
+@@ -226,6 +230,7 @@
    spinlock_t                queue_lock;
    wait_queue_head_t         wait;
    unsigned long             flags;
@@ -10,25 +21,415 @@ Index: git/drivers/media/platform/mxc/capture/altera-cvifw.c
  
    video_fmt_idx             video_idx; // Standard index of TV.
  
-@@ -928,6 +929,13 @@
+@@ -288,7 +293,8 @@
+                        int format);
+ void altera_fw_hw_stop(void *regb);
+ void altera_fw_hw_start(void *regb);
+-unsigned long altera_fw_hw_clearint(void *regb);
++void altera_fw_hw_int_ena(void *regb);
++unsigned long altera_fw_hw_int_clr(void *regb);
+ void altera_fw_hw_addr0(void *regb,
+                         unsigned long base,
+                         unsigned long size);
+@@ -316,13 +322,13 @@
+   res = request_mem_region(pIor->phys, pIor->size, pIor->des);
+   if (!res) {
+     DBG_ERROR("%s:Couldn't request memory region at 0x%08lX\n",
+-              pIor->des, pIor->phys);
++              pIor->des, (unsigned long)pIor->phys);
+     return -1;
+   }
+   pIor->virt= ioremap(pIor->phys, pIor->size);
+   if (!pIor->virt) {
+     DBG_ERROR("%s:Couldn't remap memory region at 0x%08lX\n",
+-              pIor->des, pIor->phys);
++              pIor->des, (unsigned long)pIor->phys);
+     return -1;
+   }
+ 
+@@ -333,7 +339,7 @@
+                                pIor->dir);
+     if (!pIor->dma) {
+       DBG_ERROR("%s:Couldn't dma_map_single at %p\n",
+-                pIor->des, (long unsigned int)pIor->virt);
++                pIor->des, (void*)pIor->virt);
+       return -ENODEV;
+     }
+     DBG_PRINT("%s:Memory region at %08lX size %08lX remapped to %08lX dma %p\n",
+@@ -840,19 +846,20 @@
+ 
+ //  DBG_PRINT("index %d\n", b->index);
+   if (!(dev->flags & FLAG_BUFFERS_AVAILABLE)) {
+-    DBG_ERROR("NO BUFFERS_AVAILABLE\n");
++    DBG_ERROR("csi_id: %d, NO BUFFERS_AVAILABLE\n", dev->csi_id);
+     return -ENOMEM;
+   }
+   if (b->type != V4L2_BUF_TYPE_VIDEO_CAPTURE || b->index >= dev->frames_num) {
+-    DBG_ERROR("Buffer type isn't VIDEO_CAPTURE  or index is greater than max\n");
++    DBG_ERROR("csi_id: %d, Buffer type isn't VIDEO_CAPTURE  or index is greater than max\n",
++              dev->csi_id);
+     return -EINVAL;
+   }
+   if (dev->frame[b->index].state != F_UNUSED) {
+-    DBG_ERROR("Buffer state isn't UNUSED\n");
++    DBG_ERROR("csi_id: %d, Buffer state isn't UNUSED\n", dev->csi_id);
+     return -EAGAIN;
+   }
+   if (b->memory != V4L2_MEMORY_MMAP) {
+-    DBG_ERROR("Memory type isn't MEMORY_MMAP\n");
++    DBG_ERROR("csi_id: %d, Memory type isn't MEMORY_MMAP\n", dev->csi_id);
+     return -EINVAL;
+   }
+   dma_sync_single_for_device(dev->dev,
+@@ -861,7 +868,7 @@
+                              DMA_TO_DEVICE);
+ 
+   dev->frame[b->index].state = F_QUEUED;
+-
++  DBG_PRINT("csi_id: %d, index: %d\n", dev->csi_id, b->index);
+   spin_lock(&dev->queue_lock);
+   list_add_tail(&dev->frame[b->index].frame, &dev->inqueue);
+   spin_unlock(&dev->queue_lock);
+@@ -901,11 +908,11 @@
+                                              HZ);
+     }
+     if (ret == 0) {
+-      DBG_ERROR("dev @%p Timeout expired\n", (void*)dev);
++      DBG_ERROR("csi_id: %d, Timeout expired\n", dev->csi_id);
+       return -ETIMEDOUT;
+     }
+     if (ret < 0) {
+-      DBG_ERROR("dev @%p Wait event\n", (void*)dev);
++      DBG_ERROR("csi_id: %d, Wait event\n", dev->csi_id);
+       return ret;
+     }
+   }
+@@ -928,6 +935,16 @@
    //b->field = V4L2_FIELD_INTERLACED;
    //DBG_PRINT("index %d pa %p\n", b->index, frame->buf_phys);
  
 +  // skip initial frames to clean deinterlacer buffers
 +  if ( dev->skip_frames>0 ) {
++    DBG_PRINT("csi_id: %d, skip initial buffer index: %d\n",
++              dev->csi_id, frame->buf.index);
 +    dev->skip_frames--;
 +    qbuf(file, priv, b);
 +    return -EAGAIN;
 +  }
-+
++  DBG_PRINT("csi_id: %d, index: %d\n",
++            dev->csi_id, frame->buf.index);
  //DBG_PRINT("dev @%p index %d\n", (void*)dev, b->index);
    return 0;
  }
-@@ -1017,6 +1025,7 @@
-     DBG_PRINT("decoded resolution %d x %d\n", (res & 0xFFFF), (res >> 16));
+@@ -936,15 +953,17 @@
+ {
+   struct cvifw_vdev    *dev = video_drvdata(file);
+   struct altera_frame  *frame;
+-DBG_PRINT();
++  int                   i;
++  unsigned long         reg;
++
+   dev_dbg(dev->v4l2_dev.dev, "%s()\n", __func__);
+ 
+   if (type != V4L2_BUF_TYPE_VIDEO_CAPTURE){
+-    DBG_ERROR("type != V4L2_BUF_TYPE_VIDEO_CAPTURE\n");
++    DBG_ERROR("csi_id: %d, type != V4L2_BUF_TYPE_VIDEO_CAPTURE\n", dev->csi_id);
+     return -EINVAL;
+   }
+   if (!(dev->flags & FLAG_BUFFERS_AVAILABLE)){
+-    DBG_ERROR("FLAG_BUFFERS_AVAILABLE)\n");
++    DBG_ERROR("csi_id: %d, FLAG_BUFFERS_AVAILABLE)\n", dev->csi_id);
+     return -ENOMEM;
+   }
+   if ( FLAG_ISSET(FLAG_STREAM_ON) ) {
+@@ -973,13 +992,16 @@
+ 
+   reinit_framequeues(dev);
+ 
++  /*
++   * get first buffer from inqueue, put it in the dma queue and
++   * write video buffer address where frame writer will stream data
++   */
+   spin_lock(&dev->queue_lock);
+-  /* write video buffer address where frame writer will stream data */
+   frame = list_entry(dev->inqueue.next, struct altera_frame, frame);
+-  /* remove the entry from the inqueue and put it in the dma queue */
+   list_move_tail(&frame->frame, &dev->dmaqueue);
+   spin_unlock(&dev->queue_lock);
+-DBG_PRINT("write base0 %p size %08X\n", frame->buf_phys, dev->frame_buf_size);
++  DBG_PRINT("csi_id: %d, write base0: %p, size: %08X, index: %d\n",
++            dev->csi_id, frame->buf_phys, dev->frame_buf_size, frame->buf.index);
+   altera_fw_hw_addr0(dev->fw_regs, frame->buf_phys, dev->frame_buf_size);
+ 
+   dev->capture_pid = current->pid;
+@@ -990,41 +1012,70 @@
+   FLAG_SET(FLAG_BUFFER_IN_SYNC);
+ //  FLAG_SET(FLAG_FIRST_FRAME);
+ 
+-DBG_PRINT("Start decoder and deinterlacer\n");
++  DBG_PRINT("csi_id: %d, Start decoder and deinterlacer\n", dev->csi_id);
+   altera_dcdi_hw_start(dev->dc_regs, dev->di_regs);
+-DBG_PRINT("Start frame writer\n");
++  DBG_PRINT("csi_id: %d, Start frame writer\n", dev->csi_id);
+   altera_fw_hw_start(dev->fw_regs);
+ 
+-  {
+-#define CVIFW_TIMEOUT  100000
+-    int i;
+-    unsigned long reg;
+-    for (i=0; i<CVIFW_TIMEOUT; i++) {
+-      reg = altera_fw_hw_clearint(dev->fw_regs);
+-      if (reg & FW_STS_BUSY ) {
+-        break;
+-      }
+-    }
+-    if (i>=CVIFW_TIMEOUT) {
+-      DBG_ERROR("frame writer first buffer loading timeout\n");
+-      return -1;
++  /*
++   * wait for framewriter start acquisition on first buffer
++   */
++  for (i=0; i<CVIFW_TIMEOUT; i++) {
++    reg = altera_fw_hw_int_clr(dev->fw_regs);
++    if (reg & FW_STS_BUSY ) {
++      break;
+     }
+   }
++  if (i>=CVIFW_TIMEOUT) {
++    DBG_ERROR("csi_id: %d, frame writer first buffer loading timeout\n",
++              dev->csi_id);
++    return -1;
++  }
+ 
+   {
+     unsigned long res;
+     res = altera_dc_hw_res_get(dev->dc_regs);
+-    DBG_PRINT("decoded resolution %d x %d\n", (res & 0xFFFF), (res >> 16));
++    DBG_PRINT("csi_id: %d, decoded resolution %d x %d\n",
++              dev->csi_id, (res & 0xFFFF), (res >> 16));
    }
  
+-
++  /*
++   * set initial frame to skip to clear deinterlacer buffers
++   */
 +  dev->skip_frames = 4;
- 
++
++  /*
++   * get next buffer from inqueue, put it in the dma queue and
++   * write video buffer address, where frame writer will stream data,
++   * the buffer will be dequeued from cvifw_isr function
++   */
    spin_lock(&dev->queue_lock);
    frame = list_entry(dev->inqueue.next, struct altera_frame, frame);
+   list_move_tail(&frame->frame, &dev->dmaqueue);
+   spin_unlock(&dev->queue_lock);
+-DBG_PRINT("write base0 %p size %08X\n", frame->buf_phys, dev->frame_buf_size);
++  DBG_PRINT("csi_id: %d, write base0: %p, size: %08X, index: %d\n",
++            dev->csi_id, frame->buf_phys, dev->frame_buf_size, frame->buf.index);
+   altera_fw_hw_addr0(dev->fw_regs, frame->buf_phys, dev->frame_buf_size);
+ 
++  /*
++   * wait for framewriter complete acquisition on first buffer
++   *//*
++  for (i=0; i<CVIFW_TIMEOUT; i++) {
++    reg = altera_fw_hw_int_clr(dev->fw_regs);
++    if ( (reg & FW_STS_BUSY)==0 ) {
++      break;
++    }
++  }
++  if (i>=CVIFW_TIMEOUT) {
++    DBG_ERROR("csi_id: %d, frame writer first buffer acquisition timeout\n",
++              dev->csi_id);
++    return -1;
++  }*/
++  /*
++   * Enable interrupt
++   */
++  altera_fw_hw_int_ena(dev->fw_regs);
++
+   return 0;
+ }
+ 
+@@ -1134,7 +1185,7 @@
+   vidioc_int_g_fmt_cap(dev->sensor, &slv_fmt);
+   if (dev->std_auto) {
+     if (dev->standard.id != slv_fmt.fmt.pix.pixelformat) {
+-      DBG_PRINT("Changing standard to %Lx\n", slv_fmt.fmt.pix.pixelformat);
++      DBG_PRINT("Changing standard to %lX\n", slv_fmt.fmt.pix.pixelformat);
+       s_std(file, NULL, slv_fmt.fmt.pix.pixelformat);
+     }
+   }
+@@ -1152,7 +1203,7 @@
+ 
+   sp->parm.capture.extendedmode = 0;
+   sp->parm.capture.readbuffers = dev->frames_num;
+-  */
++*/
+   if (!dev->sensor){
+     DBG_ERROR("Slave not found!\n");
+     return -ENODEV;
+@@ -1278,7 +1329,7 @@
+   case V4L2_CID_SATURATION: CALL_SENSOR_CTRL(); break;
+   case V4L2_CID_SHARPNESS : CALL_SENSOR_CTRL(); break;
+ 
+-    /*TODO
++/*TODO
+   case ALTERAFW_CONTROL_SYNC_TYPE:
+     dev->sync_type = ctrl->value;
+     regs_update(dev);
+@@ -1287,7 +1338,7 @@
+     dev->double_buf = ctrl->value;
+     regs_update(dev);
+     break;
+-    */
++*/
+   }
+   return ret;
+ }
+@@ -1385,46 +1436,56 @@
+  **************************************************************************** */
+ static irqreturn_t cvifw_isr(int irq, void *pdev)
+ {
+-  struct cvifw_vdev    *dev;// = (struct cvifw_vdev *)pdev;
++  struct cvifw_vdev    *dev;
+   unsigned long         reg;
+   struct altera_frame  *frame;
+   int                   i;
+ 
+   for(i=0; i<2; i++){
+     dev = &cvifwDevice->vdev[i];
+-    reg = altera_fw_hw_clearint(dev->fw_regs);
+-//DBG_PRINT("dev[%d] @ %p sts %08X\n", i, dev, reg);
++    reg = altera_fw_hw_int_clr(dev->fw_regs);
++//DBG_IRQ_PRINT("dev[%d] @ %p sts %08X\n", i, dev, reg);
+     if (reg & FW_STS_INT_S) {
+       if (FLAG_ISSET(FLAG_BUFFER_IN_SYNC)) {
+-        if (!list_empty(&dev->inqueue)) {
+-          spin_lock(&dev->queue_lock);
+-          frame = list_entry(dev->inqueue.next, struct altera_frame, frame);
+-          list_move_tail(&frame->frame, &dev->dmaqueue);
+-          spin_unlock(&dev->queue_lock);
+-          altera_fw_hw_addr0(dev->fw_regs, frame->buf_phys, dev->frame_buf_size);
+-DBG_IRQ_PRINT("altera_fw_hw_addr0 index %d %p\n", frame->buf.index, frame->buf_phys);
+-        } else {
+-          // input queue is empty go in out of sync
+-//DBG_PRINT("dev[%d] input queue is empty go in out of sync\n", i);
+-          FLAG_CLR(FLAG_BUFFER_IN_SYNC);
+-        }
++
+         if (!list_empty(&dev->dmaqueue)) {
++          /*
++           * remove the entry from the dmaqueue, set buffer's parameters
++           * and put it in the outqueue. Wake up dequeue function dqbuf.
++           */
+           spin_lock(&dev->queue_lock);
+           frame = list_entry(dev->dmaqueue.next, struct altera_frame, frame);
+           do_gettimeofday(&frame->buf.timestamp);
+           frame->buf.sequence++;
+           frame->state = F_DONE;
+           frame->buf.bytesused = frame->buf.length;
+-          // remove the entry from the dmaqueue and put it in the outqueue
+           list_move_tail(&frame->frame, &dev->outqueue);
+           spin_unlock(&dev->queue_lock);
+           wake_up(&dev->wait);
+-DBG_IRQ_PRINT("wake_up dev->wait frame index %d\n", frame->buf.index);
++//DBG_IRQ_PRINT("csi_id: %d, get frame %d\n", dev->csi_id, frame->buf.index);
+         }
++
++        if (!list_empty(&dev->inqueue)) {
++          /*
++           * get buffer from inqueue, move to dmaqueue, set framewriter
++           * address.
++           */
++          spin_lock(&dev->queue_lock);
++          frame = list_entry(dev->inqueue.next, struct altera_frame, frame);
++          list_move_tail(&frame->frame, &dev->dmaqueue);
++          spin_unlock(&dev->queue_lock);
++          altera_fw_hw_addr0(dev->fw_regs, frame->buf_phys, dev->frame_buf_size);
++//DBG_IRQ_PRINT("csi_id: %d, put frame %d\n", dev->csi_id, frame->buf.index);
++        } else {
++          // input queue is empty go in out of sync
++//DBG_IRQ_PRINT("csi_id: %d input queue is empty go in out of sync\n", dev->csi_id);
++          FLAG_CLR(FLAG_BUFFER_IN_SYNC);
++        }
++
+       } else {
+         // out of sync
+         if (!list_empty(&dev->inqueue)) {
+-//DBG_PRINT("dev[%d] resync\n", i);
++//DBG_IRQ_PRINT("csi_id: %d resync\n", dev->csi_id);
+           FLAG_SET(FLAG_BUFFER_IN_SYNC);
+         }
+       }
+@@ -1588,7 +1649,8 @@
+   }
+   size = vma->vm_end - vma->vm_start;
+   if (size != PAGE_ALIGN(dev->frame[0].buf.length)) {
+-    DBG_ERROR("Size page align error, requested size id %08X\n", size);
++    DBG_ERROR("Size page align error, requested size id %08X\n",
++              (unsigned int)size);
+     goto error_unlock;
+   }
+ 
+@@ -1799,7 +1861,7 @@
+   }
+   dev->dcdi_buf0_p = virt_to_phys(dev->dcdi_buf0_v);
+   DBG_PRINT("buffer0 for decoder/deinterlacer @ v: %p, p: %p\n",
+-            dev->dcdi_buf0_v, dev->dcdi_buf0_p );
++            dev->dcdi_buf0_v, (void*)dev->dcdi_buf0_p );
+ 
+   dev->dcdi_buf1_v = kmalloc(ret, GFP_KERNEL);
+   if(!dev->dcdi_buf1_v){
+@@ -1808,7 +1870,7 @@
+   }
+   dev->dcdi_buf1_p = virt_to_phys(dev->dcdi_buf1_v);
+   DBG_PRINT("buffer1 for decoder/deinterlacer @ v: %p, p: %p\n",
+-            dev->dcdi_buf1_v, dev->dcdi_buf1_p );
++            dev->dcdi_buf1_v, (void*)dev->dcdi_buf1_p );
+ 
+   ret = v4l2_device_register(&dev->pci_dev->dev, v4l2_dev);
+   if (ret < 0) {
+Index: git/drivers/media/platform/mxc/capture/altera-cvifw-hw.c
+===================================================================
+--- git.orig/drivers/media/platform/mxc/capture/altera-cvifw-hw.c	2016-10-11 17:56:07.817464157 +0200
++++ git/drivers/media/platform/mxc/capture/altera-cvifw-hw.c	2016-10-11 17:57:34.473462484 +0200
+@@ -175,21 +175,35 @@
+ }
+ 
+ /**
++ * @brief Start framewriter wint int disabled
+  */
+ void altera_fw_hw_start(void *regb)
+ {
+   unsigned long reg;
+ 
+   reg = __raw_readl(regb + FW_CTRL_OFS);
+-//  reg |= FW_CTRL_GO | FW_CTRL_INTENA_E | FW_CTRL_INTENA_S;
++  reg &= ~(FW_CTRL_INTENA_E | FW_CTRL_INTENA_S);
++  reg |= FW_CTRL_GO;
++  __raw_writel(reg, regb + FW_CTRL_OFS);
++}
++
++/**
++ * @brief Enable interrupt of framewriter
++ */
++void altera_fw_hw_int_ena(void *regb)
++{
++  unsigned long reg;
++
++  reg = __raw_readl(regb + FW_CTRL_OFS);
+   reg |= FW_CTRL_GO | FW_CTRL_INTENA_S;
+   __raw_writel(reg, regb + FW_CTRL_OFS);
+ }
+ 
+ /**
+- * Read frame writer status register and clear int
++ * @brief Read frame writer status register and clear int
++ * @return Status register
+  */
+-unsigned long altera_fw_hw_clearint(void *regb)
++unsigned long altera_fw_hw_int_clr(void *regb)
+ {
+   return __raw_readl(regb + FW_STS_OFS);
+ }

@@ -97,7 +97,7 @@ int fbClose(psFbHnd pHnd)
 }
 
 /**
- * Calculate the size to mmap and Now mmap the framebuffer.
+ * Calculate the size to mmap and mmap the framebuffer.
  *
  */
 void* fbMemGet(psFbHnd pHnd)

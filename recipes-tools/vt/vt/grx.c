@@ -153,10 +153,6 @@ int grxVideoBg(psGrxHnd pHnd)
  */
 int grxVideoBox(psGrxHnd pHnd, uint32_t x, uint32_t y, uint32_t w, uint32_t h)
 {
-  uint16_t *p;
-  uint32_t  xx;
-  uint32_t  yy;
-
   if( ( (x+w) >= pHnd->xres) || ((y+h) >= pHnd->yres) ){
     return -1;
   }
@@ -175,6 +171,26 @@ int grxVideoBox(psGrxHnd pHnd, uint32_t x, uint32_t y, uint32_t w, uint32_t h)
 
   return 0;
 }
+
+
+/**
+ */
+void grxBar(psGrxHnd pHnd, uint32_t x, uint32_t y, uint32_t w, uint32_t h, uint32_t c)
+{
+  uint16_t c16;
+  switch(pHnd->bpp){
+  case 16:
+    c16 = ((c>>8) & 0xF800) |
+          ((c>>5) & 0x07E0) |
+          ((c>>3) & 0x001F) ;
+    rect16(pHnd, x, y, w, h, c16);
+    break;
+  case 32:
+    rect32(pHnd, x, y, w, h, c);
+    break;
+  }
+}
+
 
 /**
  */

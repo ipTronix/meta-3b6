@@ -24,10 +24,15 @@ typedef struct {
   char                  iffrom[16];
 }sCanMsg, *psCanMsg;
 
+/**
+ */
+#define CAN_MODE_RAW 0
+#define CAN_MODE_BCM 1
 
 /**
  */
 psCanHnd canOpen(char* device, int mode);
+int canClose(psCanHnd pCan);
 int canRead(psCanHnd pCan, psCanMsg pMsg);
 
 

@@ -46,7 +46,7 @@ psCapDev capOpen(char* name)
 //  pCap->fd = open(name, O_RDWR | O_NONBLOCK, 0);
   pCap->fd = open(name, O_RDWR, 0);
   if(pCap->fd<0){
-    DBG_ERROR("Unable to open %s\n", name);
+    DBG_ERROR("Unable to open %s (%d) %s\n", name, errno, strerror(errno));
     free(pCap);
     return NULL;
   }
