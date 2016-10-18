@@ -1,0 +1,49 @@
+Index: git/drivers/net/can/flexcan.c
+===================================================================
+--- git.orig/drivers/net/can/flexcan.c	2016-10-18 12:28:13.762163825 +0200
++++ git/drivers/net/can/flexcan.c	2016-10-18 12:30:58.758160638 +0200
+@@ -595,7 +595,7 @@
+ 	flexcan_write(reg, &regs->mcr);
+ 
+ 	while (timeout-- && (flexcan_read(&regs->mcr) & FLEXCAN_MCR_LPM_ACK))
+-		usleep_range(10, 20);
++		udelay(10);
+ 
+ 	if (flexcan_read(&regs->mcr) & FLEXCAN_MCR_LPM_ACK)
+ 		return -ETIMEDOUT;
+@@ -614,7 +614,7 @@
+ 	flexcan_write(reg, &regs->mcr);
+ 
+ 	while (timeout-- && !(flexcan_read(&regs->mcr) & FLEXCAN_MCR_LPM_ACK))
+-		usleep_range(10, 20);
++		udelay(10);
+ 
+ 	if (!(flexcan_read(&regs->mcr) & FLEXCAN_MCR_LPM_ACK))
+ 		return -ETIMEDOUT;
+@@ -633,7 +633,7 @@
+ 	flexcan_write(reg, &regs->mcr);
+ 
+ 	while (timeout-- && !(flexcan_read(&regs->mcr) & FLEXCAN_MCR_FRZ_ACK))
+-		usleep_range(100, 200);
++		udelay(100);
+ 
+ 	if (!(flexcan_read(&regs->mcr) & FLEXCAN_MCR_FRZ_ACK))
+ 		return -ETIMEDOUT;
+@@ -652,7 +652,7 @@
+ 	flexcan_write(reg, &regs->mcr);
+ 
+ 	while (timeout-- && (flexcan_read(&regs->mcr) & FLEXCAN_MCR_FRZ_ACK))
+-		usleep_range(10, 20);
++		udelay(10);
+ 
+ 	if (flexcan_read(&regs->mcr) & FLEXCAN_MCR_FRZ_ACK)
+ 		return -ETIMEDOUT;
+@@ -667,7 +667,7 @@
+ 
+ 	flexcan_write(FLEXCAN_MCR_SOFTRST, &regs->mcr);
+ 	while (timeout-- && (flexcan_read(&regs->mcr) & FLEXCAN_MCR_SOFTRST))
+-		usleep_range(10, 20);
++		udelay(10);
+ 
+ 	if (flexcan_read(&regs->mcr) & FLEXCAN_MCR_SOFTRST)
+ 		return -ETIMEDOUT;
