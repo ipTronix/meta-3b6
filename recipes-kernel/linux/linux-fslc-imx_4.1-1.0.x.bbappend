@@ -27,6 +27,7 @@ SRC_URI_append_tera-he = " \
   file://0018-Added_F-RAM_in_dtb.patch \
   file://0019-Altera_CVIFW-Fix_first_frame.patch \
   file://0020-Fix_BUG_flexcan_scheduling_while_atomic.patch \
+  file://0021-mxc_tvp5150-Add_contrast.patch \
 "
 
 SRC_URI_append_tera-he-dep = " \

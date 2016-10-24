@@ -1,0 +1,24 @@
+Index: git/drivers/media/platform/mxc/capture/mxc_tvp5150.c
+===================================================================
+--- git.orig/drivers/media/platform/mxc/capture/mxc_tvp5150.c	2016-10-18 12:34:56.030156056 +0200
++++ git/drivers/media/platform/mxc/capture/mxc_tvp5150.c	2016-10-24 16:09:23.788010264 +0200
+@@ -1058,6 +1058,9 @@
+ 		break;
+ 	case V4L2_CID_CONTRAST:
+ 		dev_dbg(&core->sen.i2c_client->dev, "   V4L2_CID_CONTRAST\n");
++		tmp = vc->value;
++		tvp5150_write(core->sen.i2c_client, TVP5150_CONTRAST_CTL, tmp);
++		core->sen.contrast = vc->value;
+ 		break;
+ 	case V4L2_CID_SATURATION:
+ 		dev_dbg(&core->sen.i2c_client->dev, "   V4L2_CID_SATURATION\n");
+@@ -1067,6 +1070,9 @@
+ 		break;
+ 	case V4L2_CID_HUE:
+ 		dev_dbg(&core->sen.i2c_client->dev, "   V4L2_CID_HUE\n");
++		tmp = vc->value;
++		tvp5150_write(core->sen.i2c_client, TVP5150_HUE_CTL, tmp);
++		core->sen.hue = vc->value;
+ 		break;
+ 	case V4L2_CID_AUTO_WHITE_BALANCE:
+ 		dev_dbg(&core->sen.i2c_client->dev, "   V4L2_CID_AUTO_WHITE_BALANCE\n");
