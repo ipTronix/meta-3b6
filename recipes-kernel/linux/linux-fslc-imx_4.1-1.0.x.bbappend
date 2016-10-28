@@ -28,6 +28,7 @@ SRC_URI_append_tera-he = " \
   file://0019-Altera_CVIFW-Fix_first_frame.patch \
   file://0020-Fix_BUG_flexcan_scheduling_while_atomic.patch \
   file://0021-mxc_tvp5150-Add_contrast.patch \
+  file://0022-DTB_display_timing_to_1280x800-60.patch \
 "
 
 SRC_URI_append_tera-he-dep = " \
