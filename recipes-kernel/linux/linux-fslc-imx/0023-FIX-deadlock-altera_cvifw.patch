@@ -1,0 +1,142 @@
+Index: git/drivers/media/platform/mxc/capture/altera-cvifw.c
+===================================================================
+--- git.orig/drivers/media/platform/mxc/capture/altera-cvifw.c	2016-11-09 11:45:06.060623402 +0100
++++ git/drivers/media/platform/mxc/capture/altera-cvifw.c	2016-11-09 11:45:59.344622373 +0100
+@@ -404,9 +404,10 @@
+  */
+ static void empty_framequeues(struct cvifw_vdev *dev)
+ {
++  unsigned long flags;
+   int i;
+ 
+-  spin_lock(&dev->queue_lock);
++  spin_lock_irqsave(&dev->queue_lock, flags);
+ 
+   INIT_LIST_HEAD(&dev->inqueue);
+   INIT_LIST_HEAD(&dev->dmaqueue);
+@@ -417,7 +418,7 @@
+     dev->frame[i].buf.bytesused = 0;
+   }
+ 
+-  spin_unlock(&dev->queue_lock);
++  spin_unlock_irqrestore(&dev->queue_lock, flags);
+ }
+ 
+ /**
+@@ -425,9 +426,10 @@
+  */
+ static void reinit_framequeues(struct cvifw_vdev *dev)
+ {
++  unsigned long flags;
+   int i;
+ 
+-  spin_lock(&dev->queue_lock);
++  spin_lock_irqsave(&dev->queue_lock, flags);
+ 
+   INIT_LIST_HEAD(&dev->inqueue);
+   INIT_LIST_HEAD(&dev->dmaqueue);
+@@ -439,7 +441,7 @@
+     dev->frame[i].buf.bytesused = 0;
+   }
+ 
+-  spin_unlock(&dev->queue_lock);
++  spin_unlock_irqrestore(&dev->queue_lock, flags);
+ }
+ 
+ /**
+@@ -842,7 +844,8 @@
+ 
+ static int qbuf(struct file *file, void  *priv, struct v4l2_buffer *b)
+ {
+-  struct cvifw_vdev    *dev = video_drvdata(file);
++  struct cvifw_vdev  *dev = video_drvdata(file);
++  unsigned long       flags;
+ 
+ //  DBG_PRINT("index %d\n", b->index);
+   if (!(dev->flags & FLAG_BUFFERS_AVAILABLE)) {
+@@ -869,9 +872,9 @@
+ 
+   dev->frame[b->index].state = F_QUEUED;
+   DBG_PRINT("csi_id: %d, index: %d\n", dev->csi_id, b->index);
+-  spin_lock(&dev->queue_lock);
++  spin_lock_irqsave(&dev->queue_lock, flags);
+   list_add_tail(&dev->frame[b->index].frame, &dev->inqueue);
+-  spin_unlock(&dev->queue_lock);
++  spin_unlock_irqrestore(&dev->queue_lock, flags);
+ //DBG_PRINT("dev @%p index %d\n", (void*)dev, b->index);
+   return 0;
+ }
+@@ -880,6 +883,7 @@
+ {
+   struct cvifw_vdev    *dev = video_drvdata(file);
+   struct altera_frame  *frame;
++  unsigned long         flags;
+   int                   ret = 0;
+ 
+ //  DBG_PRINT("index %d\n", b->index);
+@@ -917,10 +921,10 @@
+     }
+   }
+ 
+-  spin_lock(&dev->queue_lock);
++  spin_lock_irqsave(&dev->queue_lock, flags);
+   frame = list_entry(dev->outqueue.next, struct altera_frame, frame);
+   list_del(dev->outqueue.next);
+-  spin_unlock(&dev->queue_lock);
++  spin_unlock_irqrestore(&dev->queue_lock, flags);
+ 
+   dma_sync_single_for_cpu(dev->dev,
+                           frame->buf_dmaa,
+@@ -953,6 +957,7 @@
+ {
+   struct cvifw_vdev    *dev = video_drvdata(file);
+   struct altera_frame  *frame;
++  unsigned long         flags;
+   int                   i;
+   unsigned long         reg;
+ 
+@@ -970,14 +975,14 @@
+     return 0;
+   }
+   if (!list_empty(&dev->outqueue)){
+-    spin_lock(&dev->queue_lock);
++    spin_lock_irqsave(&dev->queue_lock, flags);
+     INIT_LIST_HEAD(&dev->outqueue);
+-    spin_unlock(&dev->queue_lock);
++    spin_unlock_irqrestore(&dev->queue_lock, flags);
+   }
+   if (!list_empty(&dev->dmaqueue)){
+-    spin_lock(&dev->queue_lock);
++    spin_lock_irqsave(&dev->queue_lock, flags);
+     INIT_LIST_HEAD(&dev->dmaqueue);
+-    spin_unlock(&dev->queue_lock);
++    spin_unlock_irqrestore(&dev->queue_lock, flags);
+   }
+ 
+   altera_dcdi_hw_init(dev->dc_regs, dev->di_regs,
+@@ -996,10 +1001,10 @@
+    * get first buffer from inqueue, put it in the dma queue and
+    * write video buffer address where frame writer will stream data
+    */
+-  spin_lock(&dev->queue_lock);
++  spin_lock_irqsave(&dev->queue_lock, flags);
+   frame = list_entry(dev->inqueue.next, struct altera_frame, frame);
+   list_move_tail(&frame->frame, &dev->dmaqueue);
+-  spin_unlock(&dev->queue_lock);
++  spin_unlock_irqrestore(&dev->queue_lock, flags);
+   DBG_PRINT("csi_id: %d, write base0: %p, size: %08X, index: %d\n",
+             dev->csi_id, frame->buf_phys, dev->frame_buf_size, frame->buf.index);
+   altera_fw_hw_addr0(dev->fw_regs, frame->buf_phys, dev->frame_buf_size);
+@@ -1049,10 +1054,10 @@
+    * write video buffer address, where frame writer will stream data,
+    * the buffer will be dequeued from cvifw_isr function
+    */
+-  spin_lock(&dev->queue_lock);
++  spin_lock_irqsave(&dev->queue_lock, flags);
+   frame = list_entry(dev->inqueue.next, struct altera_frame, frame);
+   list_move_tail(&frame->frame, &dev->dmaqueue);
+-  spin_unlock(&dev->queue_lock);
++  spin_unlock_irqrestore(&dev->queue_lock, flags);
+   DBG_PRINT("csi_id: %d, write base0: %p, size: %08X, index: %d\n",
+             dev->csi_id, frame->buf_phys, dev->frame_buf_size, frame->buf.index);
+   altera_fw_hw_addr0(dev->fw_regs, frame->buf_phys, dev->frame_buf_size);
