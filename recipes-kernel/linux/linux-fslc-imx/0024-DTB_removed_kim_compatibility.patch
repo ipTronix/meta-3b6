@@ -1,0 +1,13 @@
+Index: git/arch/arm/boot/dts/imx6q-tera-he.dtsi
+===================================================================
+--- git.orig/arch/arm/boot/dts/imx6q-tera-he.dtsi	2016-11-10 11:03:41.303002776 +0100
++++ git/arch/arm/boot/dts/imx6q-tera-he.dtsi	2016-11-10 11:28:30.930974007 +0100
+@@ -282,7 +282,7 @@
+ 	};
+ 
+ 	tibt {
+-		compatible = "tibt", "kim";
++		compatible = "tibt";
+ 		nshutdown_gpio = <135>;  /* GPIO5_7 */
+ 		dev_name = "/dev/ttymxc2";
+ 		flow_cntrl = <1>;
