@@ -24,6 +24,32 @@
 #endif
 
 /**
+ *
+ * Video format
+ *   G2D_RGB565
+ *   G2D_RGBA8888
+ *   G2D_RGBX8888
+ *   G2D_BGRA8888
+ *   G2D_BGRX8888
+ *   G2D_NV12
+ *   G2D_I420
+ *   G2D_YV12
+ *   G2D_NV21
+ *   G2D_YUYV
+ *   G2D_YVYU
+ *   G2D_UYVY
+ *   G2D_NV16
+ *
+ *  g2d_blend_func enumeration
+ *  The Enumeration describes the blend factor for source and destination.
+ *  Name                    Numeric Description
+ *  G2D_ZERO                0       Blend factor with 0
+ *  G2D_ONE                 1       Blend factor with 1
+ *  G2D_SRC_ALPHA           2       Blend factor with source alpha
+ *  G2D_ONE_MINUS_SRC_ALPHA 3       Blend factor with 1 - source alpha
+ *  G2D_DST_ALPHA           4       Blend factor with destination alpha
+ *  G2D_ONE_MINUS_DST_ALPHA 5       Blend factor with 1 - destination alpha
+ *
  */
 psBltHnd bltOpen(int bpp)
 {
@@ -53,22 +79,6 @@ psBltHnd bltOpen(int bpp)
     free(pHnd);
     return NULL;
   }
-/*
- * Video format
- *   G2D_RGB565
- *   G2D_RGBA8888
- *   G2D_RGBX8888
- *   G2D_BGRA8888
- *   G2D_BGRX8888
- *   G2D_NV12
- *   G2D_I420
- *   G2D_YV12
- *   G2D_NV21
- *   G2D_YUYV
- *   G2D_YVYU
- *   G2D_UYVY
- *   G2D_NV16
- */
 
   pHnd->cap = 0;
   ret = g2d_query_cap(pHnd->g2dHnd, G2D_BLEND, &tmp);
@@ -97,6 +107,7 @@ psBltHnd bltOpen(int bpp)
   pHnd->dst_yres =  800;
 
   pHnd->blend    = G2D_ZERO;
+
   return pHnd;
 }
 

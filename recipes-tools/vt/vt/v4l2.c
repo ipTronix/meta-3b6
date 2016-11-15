@@ -136,3 +136,45 @@ int v4l2InfoShow(psV4l2Info pInf)
   }
   return 0;
 }
+
+/**
+ */
+static inline int v4l2CtrlSet(int fd, uint32_t id, int32_t value)
+{
+  struct v4l2_control   ctrl;
+  int                   ret;
+
+  ctrl.id    = id   ;
+  ctrl.value = value;
+  ret = ioctl(fd, VIDIOC_S_CTRL, &ctrl);
+  if (ret) {
+    DBG_ERROR("VIDIOC_S_CTRL failed\n");
+    return -1;
+  }
+  DBG_PRINT("VIDIOC_S_CTRL id:%08X, value:%08X\n", id, value);
+  return 0;
+}
+
+int v4l2Brightness(int fd, int32_t value)
+{
+  return v4l2CtrlSet(fd, V4L2_CID_BRIGHTNESS, value);
+}
+int v4l2Hue       (int fd, int32_t value)
+{
+  return v4l2CtrlSet(fd, V4L2_CID_HUE       , value);
+}
+int v4l2Contrast  (int fd, int32_t value)
+{
+  return v4l2CtrlSet(fd, V4L2_CID_CONTRAST  , value);
+}
+int v4l2Saturation(int fd, int32_t value)
+{
+  return v4l2CtrlSet(fd, V4L2_CID_SATURATION, value);
+}
+int v4l2Sharpness (int fd, int32_t value)
+{
+  return v4l2CtrlSet(fd, V4L2_CID_SHARPNESS , value);
+}
+
+
+

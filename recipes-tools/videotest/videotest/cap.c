@@ -352,7 +352,6 @@ v4l2_std_id capStdGet(psCapDev pCap)
   if( id & V4L2_STD_PAL_D       ){ printf("PAL_D      \n"); }
   if( id & V4L2_STD_PAL_D1      ){ printf("PAL_D1     \n"); }
   if( id & V4L2_STD_PAL_K       ){ printf("PAL_K      \n"); }
-
   if( id & V4L2_STD_PAL_M       ){ printf("PAL_M      \n"); }
   if( id & V4L2_STD_PAL_N       ){ printf("PAL_N      \n"); }
   if( id & V4L2_STD_PAL_Nc      ){ printf("PAL_Nc     \n"); }

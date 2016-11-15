@@ -32,8 +32,6 @@ typedef struct {
 }sEvHnd, *psEvHnd;
 */
 
-
-
 char *events[EV_MAX + 1] = {
   [0 ... EV_MAX] = NULL,
   [EV_SYN]       = "Sync"               , [EV_KEY] = "Key",
@@ -226,9 +224,9 @@ char *absval[5] = { "Value", "Min  ", "Max  ", "Fuzz ", "Flat " };
 
 char *relatives[REL_MAX + 1] = {
   [0 ... REL_MAX] = NULL,
-  [REL_X] = "X",      [REL_Y] = "Y",
-  [REL_Z] = "Z",      [REL_HWHEEL] = "HWheel",
-  [REL_DIAL] = "Dial",    [REL_WHEEL] = "Wheel",
+  [REL_X]    = "X"   , [REL_Y]      = "Y"     ,
+  [REL_Z]    = "Z"   , [REL_HWHEEL] = "HWheel",
+  [REL_DIAL] = "Dial", [REL_WHEEL]  = "Wheel" ,
   [REL_MISC] = "Misc",
 };
 

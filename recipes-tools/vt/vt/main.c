@@ -82,7 +82,7 @@ typedef struct {
   uint32_t  yres;
   uint32_t  bpp ;
   sCfgCap   capture[ 4];
-  char      event  [32];
+  char      event  [4][32];
 }sConfig, *psConfig;
 
 /**
@@ -113,8 +113,10 @@ sConfig config = {
   .capture[1] = { .dev = "/dev/video1", 1},
   .capture[2] = { .dev = "/dev/video2", 1},
   .capture[3] = { .dev = "/dev/video3", 1},
-  //.event      = "/dev/input/event3",
-  .event      = "/dev/input/touchscreen0",
+  .event[0]   = "/dev/input/touchscreen0",
+  .event[1]   = "/dev/input/event3",
+  .event[2]   = "",
+  .event[3]   = "",
 };
 
 /**
@@ -189,12 +191,14 @@ int main(int argc, char **argv)
     }
   }
 
-  // Start keyboard event thread
-  DBG_PRINT("Start keyboard event thread\n");
-  ret = pthread_create(&eventTid, NULL, eventThread, NULL);
-  if(ret){
-    DBG_ERROR("Start keyboard event thread FAIL\n");
-    return -1;
+  // Start event thread
+  for(i=0; i<2; i++){
+    DBG_PRINT("Start %s event thread\n", config.event[i]);
+    ret = pthread_create(&eventTid, NULL, eventThread, config.event[i]);
+    if(ret){
+      DBG_ERROR("Start %s event thread FAIL\n");
+      return -1;
+    }
   }
 
   // Open fb1 DISP3 FG, graphic layer
@@ -249,14 +253,6 @@ DBG_PRINT("fbPan\n");
           bg_cnt[i]++;
         }
         ret = capBufGet(&capArg[i], -1);
-/*
-        if(ret){
-          break;
-        }
-        if(capArg[i].flag==0){
-          continue;
-        }
-*/
         if( ret || capArg[i].flag==0 ){
           continue;
         }
@@ -364,12 +360,11 @@ void* capThread(void* arg)
     capture_buf.memory = V4L2_MEMORY_MMAP;
     ret = ioctl(pTask->pCap->fd, VIDIOC_DQBUF, &capture_buf);
     if(ret<0){
-      if(errno==11){
-        continue;
+      if(errno!=11){
+        DBG_ERROR("#%d:fd %d VIDIOC_DQBUF capture %s failed (%d) %d %s.\n",
+                  index, pTask->pCap->fd, pTask->pCap->name, ret,
+                  errno, strerror(errno));
       }
-      DBG_ERROR("#%d:fd %d VIDIOC_DQBUF capture %s failed (%d) %d %s.\n",
-                index, pTask->pCap->fd, pTask->pCap->name, ret,
-                errno, strerror(errno));
       continue;
     }
 
@@ -387,11 +382,99 @@ void* capThread(void* arg)
   return NULL;
 }
 
+
+/** ***************************************************************************
+ *
+ *************************************************************************** */
+
+/**
+ */
+static void capOn(int arg)
+{
+  if ( capArg[arg].flag == CAP_FLG_STOPPED ) {
+    DBG_PRINT("Start capture device %d\n", arg);
+    capArg[arg].flag = 0;
+  }
+}
+/**
+ */
+static void capOff(int arg)
+{
+  if ( capArg[arg].flag & CAP_FLG_STARTED ) {
+    DBG_PRINT("Stop capture device %d\n", arg);
+    capArg[arg].flag = CAP_FLG_STOP;
+  }
+}
+
+/**
+ */
+//typedef struct {
+  int32_t   Brightness = 128;
+  int32_t   Hue        = 128;
+  int32_t   Contrast   = 128;
+  int32_t   Saturation = 128;
+  int32_t   Sharpness  = 128;
+//}sV4l2Ctrl, *psV4l2Ctrl;
+
+//sV4l2Ctrl v4l2Ctrl = {128, 128, 128, 128, 128};
+
+void ctrlset(int arg)
+{
+  DBG_PRINT("arg %d\n", arg);
+  switch(arg){
+  case 0: Brightness -= (Brightness==  0)? 0: 1; v4l2Brightness(capArg[2].pCap->fd, Brightness); break;
+  case 1: Brightness += (Brightness==255)? 0: 1; v4l2Brightness(capArg[2].pCap->fd, Brightness); break;
+  case 2: Contrast   -= (Contrast  ==  0)? 0: 1; v4l2Contrast(capArg[2].pCap->fd, Contrast);break;
+  case 3: Contrast   += (Contrast  ==255)? 0: 1; v4l2Contrast(capArg[2].pCap->fd, Contrast);break;
+  }
+  DBG_PRINT("New value Brightness: %d, Contrast: %d\n", Brightness, Contrast);
+}
+
+typedef struct {
+  int   x;
+  int   y;
+  int   w;
+  int   h;
+  void(*f)(int);
+  int   a;
+}sEveBox, *psEveBox;
+
+#if 1
+sEveBox evebox[] = {
+  {  0,   0, 640, 200, capOn , 0},
+  {  0, 200, 640, 200, capOff, 0},
+  {640,   0, 640, 200, capOn , 1},
+  {640, 200, 640, 200, capOff, 1},
+  {  0, 400, 640, 200, capOn , 2},
+  {  0, 600, 640, 200, capOff, 2},
+  {640, 400, 640, 200, capOn , 3},
+  {640, 600, 640, 200, capOff, 3},
+};
+#else
+sEveBox evebox[] = {
+  {  0, 400, 640, 200, ctrlset, 0},
+  {  0, 600, 640, 200, ctrlset, 1},
+  {640, 400, 640, 200, ctrlset, 2},
+  {640, 600, 640, 200, ctrlset, 3},
+};
+#endif
+
 /**
  */
 void tsEvent(int x, int y)
 {
+  int i;
   DBG_PRINT("x: %d, y: %d\n", x, y);
+  for(i=0; i<sizeof(evebox)/sizeof(sEveBox); i++){
+    if( x>evebox[i].x && x<(evebox[i].x + evebox[i].w) &&
+        y>evebox[i].y && y<(evebox[i].y + evebox[i].h) ){
+      if(evebox[i].f){
+        evebox[i].f(evebox[i].a);
+        break;
+      }
+    }
+  }
+  /*
   if( x<640 && y>  0 && y<200 && capArg[0].flag == CAP_FLG_STOPPED ) {
     DBG_PRINT("Start capture device 0\n");
     capArg[0].flag = 0;
@@ -401,11 +484,11 @@ void tsEvent(int x, int y)
     capArg[1].flag = 0;
   }else
   if( x<640 && y>400 && y<600 && capArg[2].flag == CAP_FLG_STOPPED ) {
-    DBG_PRINT("Start capture device 0\n");
+    DBG_PRINT("Start capture device 2\n");
     capArg[2].flag = 0;
   }else
   if( x>640 && y>400 && y<600  && capArg[3].flag == CAP_FLG_STOPPED ) {
-    DBG_PRINT("Start capture device 1\n");
+    DBG_PRINT("Start capture device 3\n");
     capArg[3].flag = 0;
   }else
   if( x<640 && y>200 && y<400  && capArg[0].flag & CAP_FLG_STARTED ) {
@@ -417,13 +500,14 @@ void tsEvent(int x, int y)
     capArg[1].flag = CAP_FLG_STOP;
   }else
   if( x<640 && y>600 && y<800  && capArg[2].flag & CAP_FLG_STARTED ) {
-    DBG_PRINT("Stop capture device 0\n");
+    DBG_PRINT("Stop capture device 2\n");
     capArg[2].flag = CAP_FLG_STOP;
   }else
   if( x>640 && y>600 && y<800 && capArg[3].flag & CAP_FLG_STARTED ) {
-    DBG_PRINT("Stop capture device 1\n");
+    DBG_PRINT("Stop capture device 3\n");
     capArg[3].flag = CAP_FLG_STOP;
   }
+  */
 }
 
 /**
@@ -432,13 +516,13 @@ void tsEvent(int x, int y)
  */
 void* eventThread(void* arg)
 {
-  char     *name = config.event;
+  char     *name = (char*)arg;//config.event;
   psEvHnd   pHnd;
   psEvent   pEve;
   int       xe;
   int       ye;
 
-  DBG_PRINT("started arg is %p\n", arg);
+  DBG_PRINT("started input device is %s\n", name);
 
   pHnd = evOpen(name);
   if(!pHnd){
@@ -458,32 +542,39 @@ void* eventThread(void* arg)
 */
     switch(pEve->type){
     case EV_KEY:
-      if(pEve->code==3 && pEve->value==1){
-        int i;
-        DBG_PRINT("\n====================================\n"
-                  "Stop acquisition\n");
-        for(i=0; i<CAP_NUM; i++){
-          if(!capArg[i].chgin){
-            capArg[i].flag = CAP_FLG_STOP;
-          }
+      if(pEve->value==1){
+        switch(pEve->code){
+        case 6:
+          system("md5sum /usr/apps/3b6/* > /tmp/load1");
+          /*{
+            int i;
+            DBG_PRINT("\n====================================\n"
+                      "Stop acquisition\n");
+            for(i=0; i<CAP_NUM; i++){
+              if(!capArg[i].chgin){
+                capArg[i].flag = CAP_FLG_STOP;
+              }
+            }
+          }*/
+          break;
+        case 4:
+          /*{
+            int i;
+            int in;
+            in = capArg[0].input? 0: 1;
+            DBG_PRINT("\n====================================\n"
+                      "Change input to %d\n", in);
+            for(i=0; i<CAP_NUM; i++){
+              if(!capArg[i].chgin){
+                capArg[i].input = in;
+                capArg[i].chgin = 1;
+                capArg[i].flag  = 0;
+              }
+            }
+          }*/
+          break;
         }
       }
-      if(pEve->code==4 && pEve->value==1){
-        int i;
-        int in;
-        in = capArg[0].input? 0: 1;
-        DBG_PRINT("\n====================================\n"
-                  "Change input to %d\n", in);
-        for(i=0; i<CAP_NUM; i++){
-          if(!capArg[i].chgin){
-            capArg[i].input = in;
-            capArg[i].chgin = 1;
-            capArg[i].flag  = 0;
-          }
-        }
-      }
-      break;
-
     case EV_ABS:
       switch(pEve->code){
       case ABS_X: xe = pEve->value; break;
@@ -560,13 +651,16 @@ int capDevOpen(psTaskArg pTask)
 
 /**
  * @brief Get capture buffers from ring queue and enqueue last used buffer
+ * @param pTask pointer to task definition structure
+ * @param wait  0 loop until there are buffers in pTask->pRng queue
+ *             -1 wait for a buffer in pTask->pRng queue
  */
 int capBufGet(psTaskArg pTask, int wait)
 {
   int   temp;
   int   ret;
   int   retval = -1;
-//int i=0;
+
   wait = wait? -1: 0;
   ret = wait;
   while(ret==wait){
@@ -588,12 +682,8 @@ int capBufGet(psTaskArg pTask, int wait)
       pTask->flag |= CAP_FLG_FIRSTFRAME;
       retval = 0;
     }
-    usleep(1);
-//i++;
+//    usleep(1);
   }
-//if(i>1){
-//DBG_PRINT("#%d, loop count %d\n", pTask->capIdx, i);
-//}
   return retval;
 }
 

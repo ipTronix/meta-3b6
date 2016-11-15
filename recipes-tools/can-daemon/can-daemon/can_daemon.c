@@ -896,7 +896,7 @@ static int open_canport(const char * canport)
 
 int read_can_msg(int soc,long long timeout_usec,canmsg_t * can_msg)
 {
-	// wait until 
+    // wait until
     int tout_sec = timeout_usec / 1000000;
     int tout_usec = timeout_usec % 1000000;
     struct timeval timeout = {tout_sec, tout_usec};
@@ -964,7 +964,7 @@ static void open_can_devices(void)
                 printf("Using CAN device %s\n", portname);
             }
 
-            
+
             hal_bringup_canbus_interface(port, bitrate_Slave[port] * 1000);
             CanSoc[port] = open_canport(portname);
 
@@ -1583,7 +1583,7 @@ static void candaemon_loop(void)
   int ret;
   int maxs;
   int i;
-  
+
   int tout_sec  = 1;//Sleep_Time*1000LL / 1000000;
   int tout_usec = 0;//Sleep_Time*1000LL % 1000000;
   struct timeval timeout = {tout_sec, tout_usec};
@@ -1595,7 +1595,7 @@ static void candaemon_loop(void)
 
   //  Enabe the vt3 application watchdog
   vt3_app_watchdog_state = VT3_APP_WATCHDOG_ENABLE;
-  
+
   FD_ZERO(&readSet);
   for(CanActive=0; CanActive<N_CAN; CanActive++){
     if(bitrate_Slave[CanActive]){
@@ -1607,7 +1607,7 @@ static void candaemon_loop(void)
     }
   }
   printf("maxs = %d  rdfs = %08X\n", maxs, readSet);
-  
+
   // forever
   while(1){
     rs = readSet;

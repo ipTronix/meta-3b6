@@ -24,9 +24,13 @@ typedef struct {
   sV4l2Input  input[32];
 }sV4l2Info, *psV4l2Info;
 
-
-
 int v4l2InfoGet(char* dev, psV4l2Info pInf);
 int v4l2InfoShow(psV4l2Info pInf);
+
+int v4l2Brightness(int fd, int32_t value);
+int v4l2Hue       (int fd, int32_t value);
+int v4l2Contrast  (int fd, int32_t value);
+int v4l2Saturation(int fd, int32_t value);
+int v4l2Sharpness (int fd, int32_t value);
 
 #endif  /* __V4L2_H */
