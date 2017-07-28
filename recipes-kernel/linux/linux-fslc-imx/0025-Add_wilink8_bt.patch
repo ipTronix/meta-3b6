@@ -1,0 +1,72 @@
+Index: git/arch/arm/boot/dts/imx6q-tera-he.dtsi
+===================================================================
+--- git.orig/arch/arm/boot/dts/imx6q-tera-he.dtsi	2017-07-25 11:25:16.608681621 +0200
++++ git/arch/arm/boot/dts/imx6q-tera-he.dtsi	2017-07-25 11:31:43.076684511 +0200
+@@ -248,6 +248,20 @@
+ 		mux-ext-port = <6>;
+ 	};
+ 
++	wilink8_pcm: wilink8_pcm {
++		compatible = "ti,wilink_bt";
++		status = "okay";
++	};
++
++	sound-bt {
++		compatible = "fsl,imx-audio-bt";
++		model = "imxwilink-bt";
++		ssi-controller = <&ssi2>;
++		audio-codec = <&wilink8_pcm>;
++		mux-int-port = <2>;
++		mux-ext-port = <4>;
++	};
++
+ 	v4l2_cap_0 {
+ 		compatible = "fsl,imx6q-v4l2-capture";
+ 		ipu_id = <0>;
+Index: git/arch/arm/boot/dts/imx6q-tera-he.dts
+===================================================================
+--- git.orig/arch/arm/boot/dts/imx6q-tera-he.dts	2017-07-25 11:25:16.276681619 +0200
++++ git/arch/arm/boot/dts/imx6q-tera-he.dts	2017-07-25 11:30:12.244683832 +0200
+@@ -265,6 +265,14 @@
+ 	status = "okay";
+ };
+ 
++&ssi2 {
++	assigned-clocks = <&clks IMX6QDL_CLK_SSI2_SEL>,
++	                  <&clks IMX6QDL_CLK_SSI2>;
++	assigned-clock-rates = <0>, <24000000>;
++	fsl,mode = "i2s-master";
++	status = "okay";
++};
++
+ &wdog1 {
+ 	status = "disabled";
+ };
+Index: git/arch/arm/boot/dts/imx6q-tera-he-iomux.dtsi
+===================================================================
+--- git.orig/arch/arm/boot/dts/imx6q-tera-he-iomux.dtsi	2017-07-25 11:25:16.276681619 +0200
++++ git/arch/arm/boot/dts/imx6q-tera-he-iomux.dtsi	2017-07-25 11:27:57.724682826 +0200
+@@ -36,7 +36,7 @@
+ 				MX6QDL_PAD_DISP0_DAT16__GPIO5_IO10   0x80000000		/* ACCL_INT_IN          */
+ 				MX6QDL_PAD_DISP0_DAT17__GPIO5_IO11   0x80000000		/* Gyroscope_Error_FIFO */
+ //				MX6QDL_PAD_DISP0_DAT20__GPIO5_IO14   0x80000000		/* NFC_RST              */
+-				MX6QDL_PAD_DISP0_DAT22__GPIO5_IO16   0x80000000		/* PMIC_IRQ             */
++//				MX6QDL_PAD_DISP0_DAT22__GPIO5_IO16   0x80000000		/* PMIC_IRQ             */
+ 				MX6QDL_PAD_GPIO_2__GPIO1_IO02        0x80000000		/* SENSOR_LIGHT_INT     */
+ 				MX6QDL_PAD_NANDF_RB0__GPIO6_IO10     0x80000000		/* BUZZER_EXT           */
+ 				MX6QDL_PAD_NANDF_D0__GPIO2_IO00      0x80000000		/* LCD_ON_C             */
+@@ -132,10 +132,10 @@
+ 
+ 		pinctrl_audmux_4: audmux-4 {
+ 			fsl,pins = <
+-				MX6QDL_PAD_DISP0_DAT21__AUD4_TXD  0x130b0
+-				MX6QDL_PAD_DISP0_DAT19__AUD4_RXC  0x130b0
+-				MX6QDL_PAD_DISP0_DAT23__AUD4_RXD  0x100b0
+-				MX6QDL_PAD_DISP0_DAT18__AUD4_RXFS 0x110b0
++				MX6QDL_PAD_DISP0_DAT20__AUD4_TXC  0x130b0
++				MX6QDL_PAD_DISP0_DAT21__AUD4_TXD  0x110b0
++				MX6QDL_PAD_DISP0_DAT22__AUD4_TXFS 0x130b0
++				MX6QDL_PAD_DISP0_DAT23__AUD4_RXD  0x130b0
+ 			>;
+ 		};
+ 

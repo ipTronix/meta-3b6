@@ -31,6 +31,7 @@ SRC_URI_append_tera-he = " \
   file://0022-DTB_display_timing_to_1280x800-60.patch \
   file://0023-FIX-deadlock-altera_cvifw.patch \
   file://0024-DTB_removed_kim_compatibility.patch \
+  file://0025-Add_wilink8_bt.patch \
 "
 
 SRC_URI_append_tera-he-dep = " \
