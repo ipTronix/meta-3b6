@@ -18,3 +18,6 @@ SRC_URI_append_tera-he-dep = " \
    file://0002-Imx-boot-control.patch \
    file://0003-Add_Tera_HE_dep_target.patch \
 "
+
+UBOOT_LOCALVERSION_append_tera-he = "[1.0_rc10]"
+UBOOT_LOCALVERSION_append_tera-he-dep = "[1.0.dep_rc10]"

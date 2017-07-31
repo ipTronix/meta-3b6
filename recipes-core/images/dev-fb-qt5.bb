@@ -57,6 +57,9 @@ IMAGE_INSTALL_append = " binutils libgcc libstdc++ \
     qtsystems \
     qtsystems-tools \
     qtsystems-qmlplugins \
+    qtwebkit \
+    qtwebkit-examples-examples \
+    qtwebkit-qmlplugins \
     qtscript \
     qtgraphicaleffects-qmlplugins \
     qtconnectivity-qmlplugins \
@@ -78,3 +81,11 @@ IMAGE_INSTALL_append = " binutils libgcc libstdc++ \
     "
 
 DISTRO_FEATURES_remove = "x11 wayland"
+
+removefiles_postprocess_function() {
+   rm -rf ${IMAGE_ROOTFS}/etc/timestamp
+}
+
+ROOTFS_POSTPROCESS_COMMAND_append = " \
+  removefiles_postprocess_function; \
+"

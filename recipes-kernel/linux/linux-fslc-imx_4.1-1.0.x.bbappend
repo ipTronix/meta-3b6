@@ -27,10 +27,10 @@ SRC_URI_append_tera-he = " \
   file://0018-Added_F-RAM_in_dtb.patch \
   file://0019-Altera_CVIFW-Fix_first_frame.patch \
   file://0020-Fix_BUG_flexcan_scheduling_while_atomic.patch \
+  file://defconfig \
   file://0021-mxc_tvp5150-Add_contrast.patch \
   file://0022-DTB_display_timing_to_1280x800-60.patch \
   file://0023-FIX-deadlock-altera_cvifw.patch \
-  file://0024-DTB_removed_kim_compatibility.patch \
   file://0025-Add_wilink8_bt.patch \
 "
 
@@ -47,5 +47,13 @@ SRC_URI_append_tera-he-dep = " \
   file://0015-FIX_v4l2-videobuf2_core.patch \
   file://defconfig \
 "
+do_configure_append_tera-he-dep() {
+    install -m 0755 ${WORKDIR}/defconfig .config
+}
+
+do_configure_append_tera-he() {
+    install -m 0755 ${WORKDIR}/defconfig .config
+}
+
 
 KERNEL_IMAGE_BASE_NAME ?= "${KERNEL_IMAGETYPE}-${PKGE}-${PKGV}-${PKGR}"
