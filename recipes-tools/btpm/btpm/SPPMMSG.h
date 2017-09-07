@@ -13,22 +13,16 @@
 /*   mm/dd/yy  F. Lastname    Description of Modification                     */
 /*   --------  -----------    ------------------------------------------------*/
 /*   08/13/10  D. Lange       Initial creation.                               */
-/*   03/02/16  D. Keren       Add the ISPP_Configuration_Params_t to the MFi  */
-/*                            configuration message data                      */
 /******************************************************************************/
 #ifndef __SPPMMSGH__
 #define __SPPMMSGH__
 
 #include "BTAPITyp.h"            /* Bluetooth API Type Definitions.           */
 #include "SS1BTPS.h"             /* BTPS Protocol Stack Prototypes/Constants. */
+
 #include "BTPMMSGT.h"            /* BTPM Message Type Definitions/Constants.  */
+
 #include "SPPMType.h"            /* BTPM Serial Port Manager Type Definitions.*/
-
-#if BTPM_CONFIGURATION_SERIAL_PORT_MANAGER_SUPPORT_MFI
-
-#include "SS1BTISP.h"            /* Bluetopia MFi API Prototypes/Constants.   */
-
-#endif
 
    /* The following Message Group constant represents the Bluetopia     */
    /* Platform Manager Message Group that specifies the Serial Port     */
@@ -59,8 +53,7 @@
 #define SPPM_MESSAGE_FUNCTION_OPEN_SESSION_REQUEST_RESPONSE    0x00001103
 #define SPPM_MESSAGE_FUNCTION_SEND_SESSION_DATA                0x00001104
 #define SPPM_MESSAGE_FUNCTION_SEND_NON_SESSION_DATA            0x00001105
-#define SPPM_MESSAGE_FUNCTION_SEND_CONTROL_MESSAGE             0x00001106
-#define SPPM_MESSAGE_FUNCTION_CANCEL_PACKET                    0x00001107
+#define SPPM_MESSAGE_FUNCTION_CANCEL_PACKET                    0x00001106
 
    /* Serial Port Profile (SPP) Manager Asynchronous Events.            */
 #define SPPM_MESSAGE_FUNCTION_SERVER_PORT_OPEN_REQUEST         0x00010001
@@ -630,9 +623,6 @@ typedef struct _tagSPPM_Change_Buffer_Size_Response_t
 
 #define SPPM_CHANGE_BUFFER_SIZE_RESPONSE_SIZE                  (sizeof(SPPM_Change_Buffer_Size_Response_t))
 
-
-#if BTPM_CONFIGURATION_SERIAL_PORT_MANAGER_SUPPORT_MFI
-
    /* The following structure is used with the                          */
    /* SPPM_Configure_MFi_Settings_Request_t request message.  This      */
    /* structure represents the format of each individual FID token that */
@@ -675,7 +665,6 @@ typedef struct _tagSPPM_Configure_MFi_Settings_Request_t
    BTPM_Message_Header_t         MessageHeader;
    unsigned int                  MaximumReceivePacketSize;
    unsigned int                  DataPacketTimeout;
-   ISPP_Configuration_Params_t   ISPPConfigurationParams;
    Byte_t                        NumberSupportedLingos;
    Byte_t                        SupportedLingoList[SPPM_MFI_MAXIMUM_SUPPORTED_LINGOS];
    SPPM_MFi_Accessory_Info_t     AccessoryInfo;
@@ -731,9 +720,6 @@ typedef struct _tagSPPM_Configure_MFi_Settings_Response_t
 } SPPM_Configure_MFi_Settings_Response_t;
 
 #define SPPM_CONFIGURE_MFI_SETTINGS_RESPONSE_SIZE              (sizeof(SPPM_Configure_MFi_Settings_Response_t))
-
-
-#endif // BTPM_CONFIGURATION_SERIAL_PORT_MANAGER_SUPPORT_MFI
 
    /* The following structure represents the Message definition for a   */
    /* Serial Port Profile (SPP) Manager Message to query the current    */
@@ -854,56 +840,6 @@ typedef struct _tagSPPM_Send_Session_Data_Response_t
 } SPPM_Send_Session_Data_Response_t;
 
 #define SPPM_SEND_SESSION_DATA_RESPONSE_SIZE                   (sizeof(SPPM_Send_Session_Data_Response_t))
-
-   /* The following structure represents the Message definition for a   */
-   /* Serial Port Profile (SPP) Manager Message to send MFi iAP2        */
-   /* control message.                                                  */
-   /* * NOTE * This is the message format for the                       */
-   /*                                                                   */
-   /*             SPPM_MESSAGE_FUNCTION_SEND_CONTROL_MESSAGE            */
-   /*                                                                   */
-   /*          Message Function ID.                                     */
-typedef struct _tagSPPM_Send_Control_Message_t
-{
-   BTPM_Message_Header_t MessageHeader;
-   unsigned int          PortID;
-   Word_t                ControlMessageID;
-   Word_t                DataLength;
-   unsigned char         VariableData[1];
-} SPPM_Send_Control_Message_t;
-
-   /* The following MACRO is provided to allow the programmer a very    */
-   /* simple means of quickly determining the total number of Bytes that*/
-   /* will be required to hold a an entire Serial Port Profile (SPP)    */
-   /* Manager Send Control Message given the total                      */
-   /* number of Control Message bytes that are to be written in the     */
-   /* request.  This function accepts as it's input the total number    */
-   /* individual Data bytes that are present in the request starting    */
-   /* from the VariableData member of the                               */
-   /* SPPM_Send_Control_Message_t structure and returns the             */
-   /* total number of bytes required to hold the entire message.        */
-   /* * NOTE * The value for this MACRO *MUST* be the same as the value */
-   /*          that is specified in the DataLength member of the        */
-   /*          SPPM_Send_Control_Message_t message.                     */
-#define SPPM_SEND_CONTROL_MESSAGE_SIZE(_x)   (STRUCTURE_OFFSET(SPPM_Send_Control_Message_t, VariableData) + (unsigned int)(_x))
-
-/* The following structure represents the Message definition for a   */
-/* Serial Port Profile (SPP) Manager Message to send MFi iAP2        */
-/* control message to a currently connected Port - either Local or   */
-/* Remote (Response).                                                */
-/* * NOTE * This is the message format for the                       */
-/*                                                                   */
-/*             SPPM_MESSAGE_FUNCTION_SEND_CONTROL_MESSAGE            */
-/*                                                                   */
-/*          Message Function ID.                                     */
-typedef struct _tagSPPM_Send_Control_Message_Response_t
-{
-BTPM_Message_Header_t MessageHeader;
-int                   Status;
-unsigned int          PacketID;
-} SPPM_Send_Control_Message_Response_t;
-
-#define SPPM_SEND_CONTROL_MESSAGE_RESPONSE_SIZE               (sizeof(SPPM_Send_Control_Message_Response_t))
 
    /* The following structure represents the Message definition for a   */
    /* Serial Port Profile (SPP) Manager Message to send non MFi session */

@@ -12,13 +12,12 @@
 /*   mm/dd/yy  F. Lastname    Description of Modification                     */
 /*   --------  -----------    ------------------------------------------------*/
 /*   08/16/10  D. Lange       Initial creation.                               */
-/*   03/02/16  D. Keren       Add the ISPP_Configuration_Params_t to the MFi  */
-/*                            configuration function                          */
 /******************************************************************************/
 #ifndef __SPPMAPIH__
 #define __SPPMAPIH__
 
 #include "BTAPITyp.h"            /* Bluetooth API Type Definitions.           */
+
 #include "SPPMMSG.h"             /* BTPM SPP Manager Message Formats.         */
 
    /* The following structure is used with the                          */
@@ -511,8 +510,6 @@ BTPSAPI_DECLARATION int BTPSAPI SPPM_ChangeBufferSize(unsigned int PortHandle, u
    /* change the Buffer Size.                                           */
 #define SPPM_BUFFER_SIZE_CURRENT                               0
 
-#if BTPM_CONFIGURATION_SERIAL_PORT_MANAGER_SUPPORT_MFI
-
    /* The following function is provided to allow a mechanism to enable */
    /* MFi support in the Serial Port Profile Manager (SPPM).  This      */
    /* function returns zero if MFi was configured within the Serial Port*/
@@ -525,13 +522,11 @@ BTPSAPI_DECLARATION int BTPSAPI SPPM_ChangeBufferSize(unsigned int PortHandle, u
    /*          configured.  Each port that is specified by this module  */
    /*          can specify whether or not MFi is allowed/requested      */
    /*          when it is configured/opened.                            */
-BTPSAPI_DECLARATION int BTPSAPI SPPM_ConfigureMFiSettings(SPPM_MFi_Configuration_Settings_t *MFiConfigurationSettings, ISPP_Configuration_Params_t *ispp_conf_params);
+BTPSAPI_DECLARATION int BTPSAPI SPPM_ConfigureMFiSettings(SPPM_MFi_Configuration_Settings_t *MFiConfigurationSettings);
 
 #ifdef INCLUDE_BLUETOOTH_API_PROTOTYPES
-   typedef int (BTPSAPI *PFN_SPPM_ConfigureMFiSettings_t)(SPPM_MFi_Configuration_Settings_t *MFiConfigurationSettings, ISPP_Configuration_Params_t *ispp_conf_params);
+   typedef int (BTPSAPI *PFN_SPPM_ConfigureMFiSettings_t)(SPPM_MFi_Configuration_Settings_t *MFiConfigurationSettings);
 #endif
-
-#endif // BTPM_CONFIGURATION_SERIAL_PORT_MANAGER_SUPPORT_MFI
 
    /* The following function is provided to allow a mechanism to        */
    /* determine if the specified, connected, port is operating in either*/
@@ -592,22 +587,6 @@ BTPSAPI_DECLARATION int BTPSAPI SPPM_SendNonSessionData(unsigned int PortHandle,
 
 #ifdef INCLUDE_BLUETOOTH_API_PROTOTYPES
    typedef int (BTPSAPI *PFN_SPPM_SendNonSessionData_t)(unsigned int PortHandle, Byte_t Lingo, Byte_t CommandID, Word_t TransactionID, Word_t DataLength, unsigned char *DataBuffer);
-#endif
-
-   /* The following function is provided to allow a mechanism to send   */
-   /* preformatted iAP2 control message packet to a currently MFi       */
-   /* device. This function accepts the Port ID, control message ID,    */
-   /* control message length and the data, and the           			 */
-   /* This function returns a positive, non-zero, value if       		 */
-   /* successful, or a negative return error code if there was an error.*/
-   /* * NOTE * A successful return value from this function represents  */
-   /*          the Packet ID of the packet that can be used to track the*/
-   /*          confirmation status (as well as the ability to cancel the*/
-   /*          queued packet via the SPPM_CancelPacket() function.      */
-BTPSAPI_DECLARATION int SPPM_Send_Control_Message(unsigned int PortID, Word_t ControlMessageID, Word_t DataLength, unsigned char *DataBuffer);
-
-#ifdef INCLUDE_BLUETOOTH_API_PROTOTYPES
-  typedef int (BTPSAPI *PFN_SPPM_Send_Control_Message_t)(unsigned int PortID, Word_t ControlMessageID, Word_t DataLength, unsigned char *DataBuffer);
 #endif
 
    /* The following function is provided to allow a mechanism to cancel */

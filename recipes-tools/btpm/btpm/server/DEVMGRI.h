@@ -2,9 +2,6 @@
 /*      Copyright 2010 - 2014 Stonestreet One.                                */
 /*      All Rights Reserved.                                                  */
 /*                                                                            */
-/*      Copyright (C) 2016 Texas Instruments Incorporated -  	              */
-/*      http://www.ti.com/ All Rights Reserved.  							  */
-/*                                                                            */
 /*  DEVMGRI - Internal Local Device Manager Interface Implementation for      */
 /*            Stonestreet One Bluetooth Protocol Stack Platform Manager.      */
 /*                                                                            */
@@ -15,10 +12,6 @@
 /*   mm/dd/yy  F. Lastname    Description of Modification                     */
 /*   --------  -----------    ------------------------------------------------*/
 /*   07/21/10  D. Lange       Initial creation.                               */
-/*   04/19/16  L. Gersi       Adding support for LE SC pairing.               */
-/*   07/25/16  D. Horowitz    Adding Link Layer Topology feature.			  */
-/*   07/25/16  D. Horowitz    Adding Low duty cycle feature.			      */
-/*   07/25/16  D. Horowitz    Adding Bonding and Non Bonding options.		  */
 /******************************************************************************/
 #ifndef __DEVMGRIH__
 #define __DEVMGRIH__
@@ -113,7 +106,6 @@ typedef struct _tagAdvertising_Process_t
    unsigned long        CurrentAdvertisingFlags;
    unsigned int         AdvertisingDataLength;
    Advertising_Data_t   AdvertisingData;
-   BD_ADDR_t            Peer_BD_ADDR;
    unsigned int         ScanResponseDataLength;
    Scan_Response_Data_t ScanResponseData;
 } Advertising_Process_t;
@@ -150,8 +142,6 @@ typedef struct _tagLocal_Device_Info_t
    unsigned int                        ScanningTimeout;
    unsigned int                        ConnectionDurationTimerID;
    unsigned int                        ConnectionTimeout;
-   Word_t                              ConnectionScanInterval;
-   Word_t                              ConnectionScanWindow;
    Word_t                              ScanInterval;
    Word_t                              ScanWindow;
    Word_t                              AdvertisingIntervalMin;
@@ -174,6 +164,7 @@ typedef struct _tagLocal_Device_Info_t
 #define LOCAL_DEVICE_FLAGS_DEVICE_SUPPORTS_LOW_ENERGY       0x00000004
 #define LOCAL_DEVICE_FLAGS_LE_SCANNING_IN_PROGRESS          0x00000008
 #define LOCAL_DEVICE_FLAGS_LE_ADVERTISING_IN_PROGRESS       0x00000010
+#define LOCAL_DEVICE_FLAGS_LE_ROLE_IS_CURRENTLY_SLAVE       0x00000020
 #define LOCAL_DEVICE_FLAGS_LE_CONNECTION_IN_PROGRESS        0x00000040
 #define LOCAL_DEVICE_FLAGS_LE_SCANNING_FOR_CONNECTION       0x00000080
 #define LOCAL_DEVICE_FLAGS_DEVICE_SUPPORTS_ANT              0x00000100
@@ -221,8 +212,6 @@ typedef struct _tagRemote_LE_Device_Info_t
 #define REMOTE_LE_DEVICE_SECURITY_FLAGS_REESTABLISHING_SEC   0x00000004
 #define REMOTE_LE_DEVICE_SECURITY_FLAGS_ENCRYPTION_IN_PROGR  0x00000008
 #define REMOTE_LE_DEVICE_SECURITY_FLAGS_PAIR_REQ_RESP_PEND   0x00000010
-#define REMOTE_LE_DEVICE_SECURITY_FLAGS_PAIRING_IN_PROG_SC 	 0x00000020
-#define REMOTE_LE_DEVICE_SECURITY_FLAGS_BONDING_ALLOWED      0x00000040
 
    /* The following constants are used with the DeviceFlags member of   */
    /* the Remote_LE_Device_Info_t to denote information about the       */
@@ -232,9 +221,7 @@ typedef struct _tagRemote_LE_Device_Info_t
 #define REMOTE_LE_DEVICE_FLAGS_CURRENTLY_PAIRED              0x00040000
 #define REMOTE_LE_DEVICE_FLAGS_PAIRED_WITH_MITM              0x00080000
 #define REMOTE_LE_DEVICE_FLAGS_RETRIEVING_SERVICES           0x00100000
-#define REMOTE_LE_DEVICE_FLAGS_LOCAL_DEVICE_INITIATED        0x00200000 /* When This flag is set, that means that */
-                                                                        /* the local device is Master and the     */
-                                                                        /* remote device is Slave.                */
+#define REMOTE_LE_DEVICE_FLAGS_LOCAL_DEVICE_INITIATED        0x00200000
 #define REMOTE_LE_DEVICE_FLAGS_UPDATING_DEVICE_INFORMATION   0x00400000
 #define REMOTE_LE_DEVICE_FLAGS_UPDATING_DEVICE_LOCK          0x00800000
 #define REMOTE_LE_DEVICE_FLAGS_REPORTED_IN_CURRENT_SCAN      0x01000000
@@ -242,8 +229,6 @@ typedef struct _tagRemote_LE_Device_Info_t
 #define REMOTE_LE_DEVICE_FLAGS_REMOTE_CONN_PARAMS_IN_USE     0x04000000
 #define REMOTE_LE_DEVICE_FLAGS_CONNECTION_UPDATE_IN_PROGRESS 0x08000000
 #define REMOTE_LE_DEVICE_FLAGS_CONNECTION_UPDATE_RMT_INIT    0x10000000
-#define REMOTE_LE_DEVICE_FLAGS_PAIRED_WITH_SC              	 0x20000000
-#define REMOTE_LE_DEVICE_FLAGS_NOT_FIRST_ENCRYPTION          0x40000000
 
 #define REMOTE_LE_DEVICE_FLAGS_LAST_RESOLVABLE_VALID         0x00000001
 #define REMOTE_LE_DEVICE_FLAGS_PREFERRED_PARAMETERS_VALID    0x00000002

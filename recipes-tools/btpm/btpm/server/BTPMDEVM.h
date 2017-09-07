@@ -2,9 +2,6 @@
 /*      Copyright 2010 - 2014 Stonestreet One.                                */
 /*      All Rights Reserved.                                                  */
 /*                                                                            */
-/*      Copyright (C) 2016 Texas Instruments Incorporated -  	              */
-/*      http://www.ti.com/ All Rights Reserved.  							  */
-/*                                                                            */
 /*  BTPMDEVM - Local Device Manager for Stonestreet One Bluetooth Protocol    */
 /*             Stack Platform Manager.                                        */
 /*                                                                            */
@@ -15,8 +12,6 @@
 /*   mm/dd/yy  F. Lastname    Description of Modification                     */
 /*   --------  -----------    ------------------------------------------------*/
 /*   06/26/10  D. Lange       Initial creation.                               */
-/*   04/19/16  L. Gersi       Adding support for LE SC pairing.               */
-/*   07/25/16  D. Horowitz    Adding Ping feature.			      			  */
 /******************************************************************************/
 #ifndef __BTPMDEVMH__
 #define __BTPMDEVMH__
@@ -42,10 +37,7 @@ typedef enum
    utAuthenticationStatus,
    utEncryptionStatus,
    utConnectionStatus,
-   utAdvertisingTimeout,
-   utConnectionParameterUpdateResponse,
-   utConnectionParametersUpdated,
-   utAuthenticatedPayloadTimeoutExpired   
+   utAdvertisingTimeout
 } DEVM_Update_Type_t;
 
    /* The following is the event data that is used with the             */
@@ -130,7 +122,6 @@ typedef struct _tagDEVM_Low_Energy_Authentication_Event_Data_t
       GAP_LE_Confirmation_Request_t            Confirmation_Request;
       GAP_LE_Pairing_Status_t                  Pairing_Status;
       GAP_LE_Security_Establishment_Complete_t Security_Establishment_Complete;
-      GAP_LE_Keypress_t                        KeypressType;
    } EventData;
 } DEVM_Low_Energy_Authentication_Event_Data_t;
 
@@ -178,30 +169,6 @@ typedef struct _tagDEVM_Advertising_Timeout_Event_Data_t
    unsigned int ClientID;
 } DEVM_Advertising_Timeout_Event_Data_t;
 
-   /* The following is the event data that is used with the             */
-   /* utConnectionParameterUpdateResponse Type.                               */
-typedef struct _tagDEVM_Connection_Parameter_Update_Response_Event_Data_t
-{
-   BD_ADDR_t RemoteDeviceAddress;
-   Boolean_t Accepted;
-} DEVM_Connection_Parameter_Update_Response_Event_Data_t;
-
-   /* The following is the event data that is used with the             */
-   /* utConnectionParametersUpdated Type.                               */
-typedef struct _tagDDEVM_Connection_Parameters_Updated_Event_Data_t
-{
-   int                                    Status;
-   BD_ADDR_t                              RemoteDeviceAddress;
-   GAP_LE_Current_Connection_Parameters_t Current_Connection_Parameters;
-} DEVM_Connection_Parameters_Updated_Event_Data_t;
-
-   /* The following is the event data that is used with the             */
-   /* utAuthenticatedPayloadTimeoutExpired Type.                        */
-typedef struct _tagDEVM_Authentication_Payload_Timeout_Expired_Event_Data_t
-{
-   BD_ADDR_t    BD_ADDR;
-} DEVM_Authentication_Payload_Timeout_Expired_Event_Data_t;
-
    /* The following structure is the container structure that holds the */
    /* information about what type of Update needs to be dispatched (used*/
    /* with the DEVM_NotifyUpdate() function).                           */
@@ -210,21 +177,18 @@ typedef struct _tagDEVM_Update_Data_t
    DEVM_Update_Type_t UpdateType;
    union
    {
-      DEVM_Local_Device_Properties_Changed_Data_t               LocalDevicePropertiesChangedData;
-      DEVM_Remote_Device_Status_Data_t                          RemoteDeviceStatusData;
-      DEVM_Remote_Device_Address_Changed_Data_t                 RemoteDeviceAddressChangedData;
-      DEVM_Remote_Device_Name_Status_Data_t                     RemoteDeviceNameStatusData;
-      DEVM_Service_Discovery_Event_Data_t                       ServiceDiscoveryEventData;
-      DEVM_Authentication_Event_Data_t                          AuthenticationEventData;
-      DEVM_Pairing_Status_Event_Data_t                          PairingStatusEventData;
-      DEVM_Authentication_Status_Event_Data_t                   AuthenticationStatusEventData;
-      DEVM_Low_Energy_Authentication_Event_Data_t               LowEnergyAuthenticationEventData;
-      DEVM_Encryption_Status_Event_Data_t                       EncryptionStatusEventData;
-      DEVM_Connection_Status_Event_Data_t                       ConnectionStatusEventData;
-      DEVM_Advertising_Timeout_Event_Data_t                     AdvertisingTimeoutEventData;
-      DEVM_Connection_Parameter_Update_Response_Event_Data_t    ConnectionParameterUpdateResponse;
-      DEVM_Connection_Parameters_Updated_Event_Data_t           ConnectionParametersUpdatedEventData;
-      DEVM_Authentication_Payload_Timeout_Expired_Event_Data_t  AuthenticationPayloadTimeoutExpiredEventData;      
+      DEVM_Local_Device_Properties_Changed_Data_t LocalDevicePropertiesChangedData;
+      DEVM_Remote_Device_Status_Data_t            RemoteDeviceStatusData;
+      DEVM_Remote_Device_Address_Changed_Data_t   RemoteDeviceAddressChangedData;
+      DEVM_Remote_Device_Name_Status_Data_t       RemoteDeviceNameStatusData;
+      DEVM_Service_Discovery_Event_Data_t         ServiceDiscoveryEventData;
+      DEVM_Authentication_Event_Data_t            AuthenticationEventData;
+      DEVM_Pairing_Status_Event_Data_t            PairingStatusEventData;
+      DEVM_Authentication_Status_Event_Data_t     AuthenticationStatusEventData;
+      DEVM_Low_Energy_Authentication_Event_Data_t LowEnergyAuthenticationEventData;
+      DEVM_Encryption_Status_Event_Data_t         EncryptionStatusEventData;
+      DEVM_Connection_Status_Event_Data_t         ConnectionStatusEventData;
+      DEVM_Advertising_Timeout_Event_Data_t       AdvertisingTimeoutEventData;
    } UpdateData;
 } DEVM_Update_Data_t;
 

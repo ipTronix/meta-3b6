@@ -2,9 +2,6 @@
 /*      Copyright 2010 - 2014 Stonestreet One.                                */
 /*      All Rights Reserved.                                                  */
 /*                                                                            */
-/*      Copyright (C) 2016 Texas Instruments Incorporated -  	              */
-/*      http://www.ti.com/ All Rights Reserved.  							  */
-/*                                                                            */
 /*  DEVMMSG - Defined Interprocess Communication Messages for the Local       */
 /*            Device Manager for Stonestreet One Bluetopia Protocol Stack     */
 /*            Platform Manager.                                               */
@@ -16,9 +13,6 @@
 /*   mm/dd/yy  F. Lastname    Description of Modification                     */
 /*   --------  -----------    ------------------------------------------------*/
 /*   06/26/10  D. Lange       Initial creation.                               */
-/*   04/19/16  L. Gersi       Adding support for LE SC pairing.               */
-/*   07/25/16  D. Horowitz    Adding Low duty cycle feature.			      */
-/*   07/25/16  D. Horowitz    Adding Ping feature.			      			  */
 /******************************************************************************/
 #ifndef __DEVMMSGH__
 #define __DEVMMSGH__
@@ -51,7 +45,6 @@
 #define DEVM_MESSAGE_FUNCTION_STOP_DEVICE_SCAN                      0x00001104
 #define DEVM_MESSAGE_FUNCTION_START_ADVERTISING                     0x00001105
 #define DEVM_MESSAGE_FUNCTION_STOP_ADVERTISING                      0x00001106
-#define DEVM_MESSAGE_FUNCTION_SET_ADVERTISING_INTERVALS             0x00001107
 
 #define DEVM_MESSAGE_FUNCTION_QUERY_REMOTE_DEVICE_LIST              0x00001201
 #define DEVM_MESSAGE_FUNCTION_QUERY_REMOTE_DEVICE_PROPERTIES        0x00001202
@@ -75,13 +68,6 @@
 #define DEVM_MESSAGE_FUNCTION_DISCONNECT_REMOTE_DEVICE              0x0000130B
 #define DEVM_MESSAGE_FUNCTION_SET_REMOTE_DEVICE_LINK_ACTIVE         0x0000130C
 #define DEVM_MESSAGE_FUNCTION_SET_REMOTE_DEVICE_LINK_SNIFF          0x0000130D
-#define DEVM_MESSAGE_FUNCTION_ENABLE_SC_ONLY                        0x0000130E
-#define DEVM_MESSAGE_FUNCTION_REGENERATE_P256_LOCAL_KEYS            0x0000130F
-#define DEVM_MESSAGE_FUNCTION_SC_OOB_GENERATE_LOCAL_PARAMS          0x00001310
-#define DEVM_MESSAGE_FUNCTION_SC_SEND_KEYPRESS_NOTIFICATION         0x00001311
-#define DEVM_MESSAGE_FUNCTION_SET_AUTHENTICATED_PAYLOAD_TIMEOUT     0x00001312
-#define DEVM_MESSAGE_FUNCTION_QUERY_AUTHENTICATED_PAYLOAD_TIMEOUT   0x00001313
-#define DEVM_MESSAGE_FUNCTION_SET_AND_UPDATE_CONNECTION_PARAMETERS  0x00001314
 
 #define DEVM_MESSAGE_FUNCTION_CREATE_SERVICE_RECORD                 0x00001400
 #define DEVM_MESSAGE_FUNCTION_DELETE_SERVICE_RECORD                 0x00001401
@@ -121,9 +107,6 @@
 #define DEVM_MESSAGE_FUNCTION_DEVICE_ADVERTISING_STARTED            0x00010011
 #define DEVM_MESSAGE_FUNCTION_DEVICE_ADVERTISING_STOPPED            0x00010012
 #define DEVM_MESSAGE_FUNCTION_ADVERTISING_TIMEOUT                   0x00010013
-#define DEVM_MESSAGE_FUNCTION_AUTHENTICATED_PAYLOAD_TIMEOUT_EXPIRED 0x00010014
-#define DEVM_MESSAGE_FUNCTION_CONNECTION_PARAMETER_UPDATE_RESPONSE  0x00010015
-#define DEVM_MESSAGE_FUNCTION_CONNECTION_PARAMETERS_UPDATED         0x00010016
 
 #define DEVM_MESSAGE_FUNCTION_AUTHENTICATION_EVENT                  0x00011001
 
@@ -462,7 +445,6 @@ typedef struct _tagDEVM_Start_Advertising_Request_t
    unsigned long         AdvertisingFlags;
    unsigned long         AdvertisingDuration;
    unsigned int          AdvertisingDataLength;
-   BD_ADDR_t             Peer_BD_ADDR;
    Byte_t                AdvertisingData[1];
 } DEVM_Start_Advertising_Request_t;
 
@@ -1149,127 +1131,6 @@ typedef struct _tagDEVM_UnPair_Remote_Device_Response_t
 #define DEVM_UNPAIR_REMOTE_DEVICE_RESPONSE_SIZE                (sizeof(DEVM_UnPair_Remote_Device_Response_t))
 
    /* The following structure represents the Message definition for a   */
-   /* Device Manager Message to enable\disable SC Only mode request     */
-   /* * NOTE * This is the message format for the                       */
-   /*                                                                   */
-   /*             DEVM_MESSAGE_FUNCTION_ENABLE_SC_ONLY                  */
-   /*                                                                   */
-   /*          Message Function ID.                                     */
-typedef struct _tagDEVM_Enable_SC_Only_Request_t
-{
-   BTPM_Message_Header_t MessageHeader;
-   Boolean_t EnableSCOnly;
-} DEVM_Enable_SC_Only_Request_t;
-
-#define DEVM_ENABLE_SC_ONLY_REQUEST_SIZE                 (sizeof(DEVM_Enable_SC_Only_Request_t))
-
-   /* The following structure represents the Message definition for a   */
-   /* Device Manager Message to enable\disable SC Only mode response    */
-   /* * NOTE * This is the message format for the                       */
-   /*                                                                   */
-   /*             DEVM_MESSAGE_FUNCTION_ENABLE_SC_ONLY                  */
-   /*                                                                   */
-   /*          Message Function ID.                                     */
-typedef struct _tagDEVM_Enable_SC_Only_Response_t
-{
-   BTPM_Message_Header_t MessageHeader;
-   int                   Status;
-} DEVM_Enable_SC_Only_Response_t;
-
-#define DEVM_ENABLE_SC_ONLY_RESPONSE_SIZE                (sizeof(DEVM_Enable_SC_Only_Response_t))
-
-   /* The following structure represents the Message definition for a   */
-   /* Device Manager Message to regenerate P256 local keys request      */
-   /* * NOTE * This is the message format for the                       */
-   /*                                                                   */
-   /*            DEVM_MESSAGE_FUNCTION_REGENERATE_P256_LOCAL_KEYS       */
-   /*                                                                   */
-   /*          Message Function ID.                                     */
-typedef struct _tagDEVM_Regenerate_P256_Local_Keys_Request_t
-{
-   BTPM_Message_Header_t MessageHeader;
-} DEVM_Regenerate_P256_Local_Keys_Request_t;
-
-#define DEVM_REGENERATE_P256_LOCAL_KEYS_REQUEST_SIZE                 (sizeof(DEVM_Regenerate_P256_Local_Keys_Request_t))
-
-   /* The following structure represents the Message definition for a   */
-   /* Device Manager Message to regenerate P256 local keys response     */
-   /* * NOTE * This is the message format for the                       */
-   /*                                                                   */
-   /*             DEVM_MESSAGE_FUNCTION_REGENERATE_P256_LOCAL_KEYS      */
-   /*                                                                   */
-   /*          Message Function ID.                                     */
-typedef struct _tagDEVM_Regenerate_P256_Local_Keys_Response_t
-{
-   BTPM_Message_Header_t MessageHeader;
-   int                   Status;
-} DEVM_Regenerate_P256_Local_Keys_Response_t;
-
-#define DEVM_REGENERATE_P256_LOCAL_KEYS_RESPONSE_SIZE                (sizeof(DEVM_Regenerate_P256_Local_Keys_Response_t))
-
-   /* The following structure represents the Message definition for a   */
-   /* Device Manager Message to generate OOB local params request       */
-   /* * NOTE * This is the message format for the                       */
-   /*                                                                   */
-   /*             DEVM_MESSAGE_FUNCTION_SC_OOB_GENERATE_LOCAL_PARAMS    */
-   /*                                                                   */
-   /*          Message Function ID.                                     */
-typedef struct _tagDEVM_SC_OOB_Generate_Parameters_Request_t
-{
-   BTPM_Message_Header_t MessageHeader;
-} DEVM_SC_OOB_Generate_Parameters_Request_t;
-
-#define DEVM_SC_OOB_GENERATE_PARAMS_REQUEST_SIZE                 (sizeof(DEVM_SC_OOB_Generate_Parameters_Request_t))
-
-   /* The following structure represents the Message definition for a   */
-   /* Device Manager Message to generate OOB local params response      */
-   /* * NOTE * This is the message format for the                       */
-   /*                                                                   */
-   /*            DEVM_MESSAGE_FUNCTION_SC_OOB_GENERATE_LOCAL_PARAMS     */
-   /*                                                                   */
-   /*          Message Function ID.                                     */
-typedef struct _tagDEVM_SC_OOB_Generate_Parameters_Response_t
-{
-   BTPM_Message_Header_t MessageHeader;
-   int                   Status;
-   SM_Random_Value_t OOB_Local_Rand_Result;
-   SM_Confirm_Value_t OOB_Local_Confirm_Result;
-} DEVM_SC_OOB_Generate_Parameters_Response_t;
-
-#define DEVM_SC_OOB_GENERATE_PARAMS_RESPONSE_SIZE                (sizeof(DEVM_SC_OOB_Generate_Parameters_Response_t))
-
-   /* The following structure represents the Message definition for a   */
-   /* Device Manager Message to send keypress notification request      */
-   /* * NOTE * This is the message format for the                       */
-   /*                                                                   */
-   /*             DEVM_MESSAGE_FUNCTION_SC_SEND_KEYPRESS_NOTIFICATION   */
-   /*                                                                   */
-   /*          Message Function ID.                                     */
-typedef struct _tagDEVM_SC_Send_Keypress_Notification_Request_t
-{
-   BTPM_Message_Header_t MessageHeader;
-   BD_ADDR_t                             BD_ADDR;
-   GAP_LE_Keypress_t 		  Keypress_Notification_Type;
-} DEVM_SC_Send_Keypress_Notification_Request_t;
-
-#define DEVM_SC_SEND_KEYPRESS_NOTIFICATION_REQUEST_SIZE                 (sizeof(DEVM_SC_Send_Keypress_Notification_Request_t))
-
-   /* The following structure represents the Message definition for a   */
-   /* Device Manager Message to send keypress notification response     */
-   /* * NOTE * This is the message format for the                       */
-   /*                                                                   */
-   /*             DEVM_MESSAGE_FUNCTION_SC_SEND_KEYPRESS_NOTIFICATION   */
-   /*                                                                   */
-   /*          Message Function ID.                                     */
-typedef struct _tagDEVM_SC_Send_Keypress_Notification_Response_t
-{
-   BTPM_Message_Header_t MessageHeader;
-   int                   Status;
-} DEVM_SC_Send_Keypress_Notification_Response_t;
-
-#define DEVM_SC_SEND_KEYPRESS_NOTIFICATION_RESPONSE_SIZE                (sizeof(DEVM_SC_Send_Keypress_Notification_Response_t))
-
-   /* The following structure represents the Message definition for a   */
    /* Device Manager Message to Authenticate with the specified Remote  */
    /* Device (Request).                                                 */
    /* * NOTE * This is a legacy message format.  It exists only to      */
@@ -1401,11 +1262,10 @@ typedef struct _tagDEVM_Connect_With_Remote_Device_Request_t
    /* The following constants are used with the ConnectFlags member of  */
    /* the DEVM_Connect_With_Remote_Device_Request_t message to specify  */
    /* various flags to apply to the connection process.                 */
-#define DEVM_CONNECT_WITH_REMOTE_DEVICE_FLAGS_AUTHENTICATE              0x00000001
-#define DEVM_CONNECT_WITH_REMOTE_DEVICE_FLAGS_ENCRYPT                   0x00000002
-#define DEVM_CONNECT_WITH_REMOTE_DEVICE_FLAGS_USE_RANDOM_ADDRESS        0x00000004
-#define DEVM_CONNECT_WITH_REMOTE_DEVICE_FLAGS_USE_PEER_RANDOM_ADDRESS   0x00000008
-#define DEVM_CONNECT_WITH_REMOTE_DEVICE_FORCE_LOW_ENERGY                0x80000000
+#define DEVM_CONNECT_WITH_REMOTE_DEVICE_FLAGS_AUTHENTICATE        0x00000001
+#define DEVM_CONNECT_WITH_REMOTE_DEVICE_FLAGS_ENCRYPT             0x00000002
+#define DEVM_CONNECT_WITH_REMOTE_DEVICE_FLAGS_USE_RANDOM_ADDRESS  0x00000004
+#define DEVM_CONNECT_WITH_REMOTE_DEVICE_FORCE_LOW_ENERGY          0x80000000
 
    /* The following structure represents the Message definition for a   */
    /* Device Manager Message to Connect to the specified Remote Device  */
@@ -2389,195 +2249,5 @@ typedef struct _tagDEVM_Authentication_Event_Message_t
 } DEVM_Authentication_Event_Message_t;
 
 #define DEVM_AUTHENTICATION_EVENT_MESSAGE_SIZE                 (sizeof(DEVM_Authentication_Event_Message_t))
-
-   /* The following structure represents the Message definition for a   */
-   /* Device Manager Message that informs the client a authenticated    */
-   /* authenticated payload timeout expired event has occurred          */
-   /* (asynchronously).                                                 */
-   /* * NOTE * This is the message format for the                       */
-   /*                                                                   */
-   /*      DEVM_MESSAGE_FUNCTION_AUTHENTICATED_PAYLOAD_TIMEOUT_EXPIRED  */
-   /*                                                                   */
-   /*          Message Function ID.                                     */
-typedef struct _tagDEVM_Authenticated_Payload_Timeout_Expired_Message_t
-{
-   BTPM_Message_Header_t MessageHeader;
-   BD_ADDR_t             RemoteDeviceAddress;   
-} DEVM_Authenticated_Payload_Timeout_Expired_Message_t;
-
-#define DEVM_AUTHENTICATED_PAYLOAD_TIMEOUT_EXPIRED_MESSAGE_SIZE (sizeof(DEVM_Authenticated_Payload_Timeout_Expired_Message_t))
-
-   /* The following structure represents the Message definition for a   */
-   /* Device Manager Message to send set authenticated payload timeout  */
-   /* request.                                                          */
-   /* * NOTE * This is the message format for the                       */
-   /*                                                                   */
-   /*          DEVM_MESSAGE_FUNCTION_SET_AUTHENTICATED_PAYLOAD_TIMEOUT  */
-   /*                                                                   */
-   /*          Message Function ID.                                     */
-typedef struct _tagDEVM_Set_Authenticated_Payload_Timeout_Request_t
-{
-   BTPM_Message_Header_t MessageHeader;
-   BD_ADDR_t             BD_ADDR;
-   unsigned int 		 Authenticated_Payload_Timeout;
-} DEVM_Set_Authenticated_Payload_Timeout_Request_t;
-
-#define DEVM_SET_AUTHENTICATED_PAYLOAD_TIMEOUT_REQUEST_SIZE                 (sizeof(DEVM_Set_Authenticated_Payload_Timeout_Request_t))
-
-   /* The following structure represents the Message definition for a   */
-   /* Device Manager Message to send set authenticated payload timeout  */
-   /* response.                                                         */
-   /* * NOTE * This is the message format for the                       */
-   /*                                                                   */
-   /*          DEVM_MESSAGE_FUNCTION_SET_AUTHENTICATED_PAYLOAD_TIMEOUT  */
-   /*                                                                   */
-   /*          Message Function ID.                                     */
-typedef struct _tagDEVM_Set_Authenticated_Payload_Timeout_Response_t
-{
-   BTPM_Message_Header_t MessageHeader;
-   int                   Status;
-} DEVM_Set_Authenticated_Payload_Timeout_Response_t;
-
-#define DEVM_SET_AUTHENTICATED_PAYLOAD_TIMEOUT_RESPONSE_SIZE                (sizeof(DEVM_Set_Authenticated_Payload_Timeout_Response_t))
-
-
-   /* The following structure represents the Message definition for a   */
-   /* Device Manager Message to send query authenticated payload timeout*/
-   /* request.                                                          */
-   /* * NOTE * This is the message format for the                       */
-   /*                                                                   */
-   /*          DEVM_MESSAGE_FUNCTION_QUERY_AUTHENTICATED_PAYLOAD_TIMEOUT*/
-   /*                                                                   */
-   /*          Message Function ID.                                     */
-typedef struct _tagDEVM_Query_Authenticated_Payload_Timeout_Request_t
-{
-   BTPM_Message_Header_t MessageHeader;
-   BD_ADDR_t             BD_ADDR;
-} DEVM_Query_Authenticated_Payload_Timeout_Request_t;
-
-#define DEVM_QUERY_AUTHENTICATED_PAYLOAD_TIMEOUT_REQUEST_SIZE                 (sizeof(DEVM_Query_Authenticated_Payload_Timeout_Request_t))
-
-   /* The following structure represents the Message definition for a   */
-   /* Device Manager Message to send query authenticated payload timeout*/
-   /* response.                                                         */
-   /* * NOTE * This is the message format for the                       */
-   /*                                                                   */
-   /*          DEVM_MESSAGE_FUNCTION_QUERY_AUTHENTICATED_PAYLOAD_TIMEOUT*/
-   /*                                                                   */
-   /*          Message Function ID.                                     */
-typedef struct _tagDEVM_Query_Authenticated_Payload_Timeout_Response_t
-{
-   BTPM_Message_Header_t MessageHeader;
-   unsigned int 		 Authenticated_Payload_Timeout;   
-   int                   Status;
-} DEVM_Query_Authenticated_Payload_Timeout_Response_t;
-
-#define DEVM_QUERY_AUTHENTICATED_PAYLOAD_TIMEOUT_RESPONSE_SIZE                (sizeof(DEVM_Query_Authenticated_Payload_Timeout_Response_t))
-
-   /* The following structure represents the Message definition for a   */
-   /* Device Manager Message to set advertising intervals request       */
-   /* * NOTE * This is the message format for the                       */
-   /*                                                                   */
-   /*          DEVM_MESSAGE_FUNCTION_SET_ADVERTISING_INTERVALS          */    
-   /*                                                                   */
-   /*          Message Function ID.                                     */
-typedef struct _tagDEVM_Set_Advertising_Intervals_Request_t
-{
-   BTPM_Message_Header_t MessageHeader;
-   Word_t 		         Advertising_Interval_Min;   
-   Word_t                Advertising_Interval_Max;
-} DEVM_Set_Advertising_Intervals_Request_t;
-
-#define DEVM_SET_ADVERTISING_INTERVALS_REQUEST_SIZE                         (sizeof(DEVM_Set_Advertising_Intervals_Request_t))
-
-
-   /* The following structure represents the Message definition for a   */
-   /* Device Manager Message to set advertising intervals response      */
-   /* * NOTE * This is the message format for the                       */
-   /*                                                                   */
-   /*          DEVM_MESSAGE_FUNCTION_SET_ADVERTISING_INTERVALS          */    
-   /*                                                                   */
-   /*          Message Function ID.                                     */
-typedef struct _tagDEVM_Set_Advertising_Intervals_Response_t
-{
-   BTPM_Message_Header_t MessageHeader;
-   int                   Status;
-} DEVM_Set_Advertising_Intervals_Response_t;
-
-#define DEVM_SET_ADVERTISING_INTERVALS_RESPONSE_SIZE                         (sizeof(DEVM_Set_Advertising_Intervals_Response_t))
-
-
-   /* The following structure represents the Message definition for a   */
-   /* Device Manager Message that informs the client a Connetion        */
-   /* Parameter Updated event has occurred (asynchronously).            */
-   /* * NOTE * This is the message format for the                       */
-   /*                                                                   */
-   /*      DEVM_MESSAGE_FUNCTION_CONNECTION_PARAMETER_UPDATE_RESPONSE   */
-   /*                                                                   */
-   /*      Message Function ID.                                         */
-typedef struct _tagDEVM_Remote_Device_Connection_Parameter_Update_Response_Message_t
-{
-   BTPM_Message_Header_t    MessageHeader;
-   BD_ADDR_t                RemoteDeviceAddress;
-   Boolean_t                Accepted;
-} DEVM_Remote_Device_Connection_Parameter_Update_Response_Message_t;
-
-#define DEVM_CONNECTION_PARAMETER_UPDATE_RESPONSE_MESSAGE_SIZE (sizeof(DEVM_Remote_Device_Connection_Parameter_Update_Response_Message_t))
-
-   /* The following structure represents the Message definition for a   */
-   /* Device Manager Message to set and update connection parameters    */
-   /* request.                                                          */
-   /* * NOTE * This is the message format for the                       */
-   /*                                                                   */
-   /*        DEVM_MESSAGE_FUNCTION_SET_AND_UPDATE_CONNECTION_PARAMETERS */
-   /*                                                                   */
-   /*        Message Function ID.                                       */
-typedef struct _tagDEVM_Set_And_Update_Connection_Parameters_Request_t
-{
-   BTPM_Message_Header_t          MessageHeader;
-   AddressType_t                  AddressType;
-   BD_ADDR_t                      BD_ADDR;
-   GAP_LE_Connection_Parameters_t ConnectionParameters;
-   Word_t                         ConnectionScanInterval;
-   Word_t                         ConnectionScanWindow;
-   Word_t                         ScanInterval;
-   Word_t                         ScanWindow;   
-} DEVM_Set_And_Update_Connection_Parameters_Request_t;
-
-#define DEVM_SET_AND_UPDATE_CONNECTION_PARAMETERS_REQUEST_SIZE (sizeof(DEVM_Set_And_Update_Connection_Parameters_Request_t))
-
-   /* The following structure represents the Message definition for a   */
-   /* Device Manager Message to set and update connection parameters    */
-   /* response.                                                          */
-   /* * NOTE * This is the message format for the                       */
-   /*                                                                   */
-   /*        DEVM_MESSAGE_FUNCTION_SET_AND_UPDATE_CONNECTION_PARAMETERS */
-   /*                                                                   */
-   /*        Message Function ID.                                       */
-typedef struct _tagDEVM_Set_And_Update_Connection_Parameters_Response_t
-{
-   BTPM_Message_Header_t MessageHeader;
-   int                   Status;
-} DEVM_Set_And_Update_Connection_Parameters_Response_t;
-
-#define DEVM_SET_AND_UPDATE_CONNECTION_PARAMETERS_RESPONSE_SIZE (sizeof(DEVM_Set_And_Update_Connection_Parameters_Response_t))
-
-   /* The following structure represents the Message definition for a   */
-   /* Device Manager Message that informs the client a Connetion        */
-   /* Parameter Updated event has occurred (asynchronously).            */
-   /* * NOTE * This is the message format for the                       */
-   /*                                                                   */
-   /*      DEVM_MESSAGE_FUNCTION_CONNECTION_PARAMETERS_UPDATED          */
-   /*                                                                   */
-   /*      Message Function ID.                                         */
-typedef struct _tagDEVM_Connection_Parameters_Updated_Message_t
-{
-   BTPM_Message_Header_t                  MessageHeader;
-   int                                    Status;
-   BD_ADDR_t                              RemoteDeviceAddress;
-   GAP_LE_Current_Connection_Parameters_t Current_Connection_Parameters;
-} DEVM_Connection_Parameters_Updated_Message_t;
-
-#define DEVM_CONNECTION_PARAMETERS_UPDATED_MESSAGE_SIZE (sizeof(DEVM_Connection_Parameters_Updated_Message_t))
 
 #endif

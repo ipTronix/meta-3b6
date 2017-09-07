@@ -2,9 +2,6 @@
 /*      Copyright 2010 - 2014 Stonestreet One.                                */
 /*      All Rights Reserved.                                                  */
 /*                                                                            */
-/*      Copyright (C) 2016 Texas Instruments Incorporated -  	              */
-/*      http://www.ti.com/ All Rights Reserved.  							  */
-/*                                                                            */
 /*  DEVMAPI - Local Device Manager API for Stonestreet One Bluetooth Protocol */
 /*            Stack Platform Manager.                                         */
 /*                                                                            */
@@ -15,9 +12,6 @@
 /*   mm/dd/yy  F. Lastname    Description of Modification                     */
 /*   --------  -----------    ------------------------------------------------*/
 /*   06/26/10  D. Lange       Initial creation.                               */
-/*   04/19/16  L. Gersi       Adding support for LE SC pairing.               */
-/*   07/25/16  D. Horowitz    Adding Low duty cycle feature.			      */
-/*   07/25/16  D. Horowitz    Adding Ping feature.			      			  */
 /******************************************************************************/
 #ifndef __DEVMAPIH__
 #define __DEVMAPIH__
@@ -165,8 +159,6 @@ typedef struct _tagDEVM_Default_Initialization_Data_t
    DEVM_Device_ID_Information_t                 DefaultDeviceIDInformation;
    Word_t                                       DefaultDeviceAppearance;
    GAP_LE_Connection_Parameters_t               DefaultLEConnectionParameters;
-   Word_t                                       DefaultLEConnectionScanInterval;
-   Word_t                                       DefaultLEConnectionScanWindow;
    Word_t                                       DefaultLEScanInterval;
    Word_t                                       DefaultLEScanWindow;
    Word_t                                       DefaultLEAdvertisingIntervalMin;
@@ -189,26 +181,24 @@ typedef struct _tagDEVM_Default_Initialization_Data_t
    /* DEVM_Default_Initialization_Data_t structure to denote which      */
    /* fields are present in the structure that should override the      */
    /* compiled default values.                                          */
-#define DEVM_INITIALIZATION_DATA_OVERRIDE_FLAGS_DEVICE_NAME                 0x00000001
-#define DEVM_INITIALIZATION_DATA_OVERRIDE_FLAGS_CLASS_OF_DEVICE             0x00000002
-#define DEVM_INITIALIZATION_DATA_OVERRIDE_FLAGS_CONNECTABLE_MODE            0x00000004
-#define DEVM_INITIALIZATION_DATA_OVERRIDE_FLAGS_DISCOVERABLE_MODE           0x00000008
-#define DEVM_INITIALIZATION_DATA_OVERRIDE_FLAGS_PAIRING_ALLOWED_STATE       0x00000010
-#define DEVM_INITIALIZATION_DATA_OVERRIDE_FLAGS_PAIRABILITY_MODE_SSP        0x00000020
-#define DEVM_INITIALIZATION_DATA_OVERRIDE_FLAGS_DEVICE_ID_INFO_VALID        0x00000040
-#define DEVM_INITIALIZATION_DATA_OVERRIDE_FLAGS_DEVICE_ID_INFO              0x00000080
-#define DEVM_INITIALIZATION_DATA_OVERRIDE_FLAGS_DEVICE_APPEARANCE           0x00000100
-#define DEVM_INITIALIZATION_DATA_OVERRIDE_FLAGS_LE_CONNECT_PARAMS           0x00000200
-#define DEVM_INITIALIZATION_DATA_OVERRIDE_FLAGS_LE_SCAN_INTERVAL            0x00000400
-#define DEVM_INITIALIZATION_DATA_OVERRIDE_FLAGS_LE_SCAN_WINDOW              0x00000800
-#define DEVM_INITIALIZATION_DATA_OVERRIDE_FLAGS_LE_CONNECT_TIMEOUT          0x00001000
-#define DEVM_INITIALIZATION_DATA_OVERRIDE_FLAGS_LE_ADVERTISING_INTV         0x00002000
-#define DEVM_INITIALIZATION_DATA_OVERRIDE_FLAGS_MANUFACTURER_DATA           0x00004000
-#define DEVM_INITIALIZATION_DATA_OVERRIDE_FLAGS_ADVERTISING_DATA            0x00008000
-#define DEVM_INITIALIZATION_DATA_OVERRIDE_FLAGS_DEVM_ALLOW_LE_PARAM_DATA    0x00010000
-#define DEVM_INITIALIZATION_DATA_OVERRIDE_FLAGS_SCO_ENHANCED_PARAMETERS     0x00020000
-#define DEVM_INITIALIZATION_DATA_OVERRIDE_FLAGS_LE_CONNECTION_SCAN_INTERVAL 0x00040000
-#define DEVM_INITIALIZATION_DATA_OVERRIDE_FLAGS_LE_CONNECTION_SCAN_WINDOW   0x00080000
+#define DEVM_INITIALIZATION_DATA_OVERRIDE_FLAGS_DEVICE_NAME              0x00000001
+#define DEVM_INITIALIZATION_DATA_OVERRIDE_FLAGS_CLASS_OF_DEVICE          0x00000002
+#define DEVM_INITIALIZATION_DATA_OVERRIDE_FLAGS_CONNECTABLE_MODE         0x00000004
+#define DEVM_INITIALIZATION_DATA_OVERRIDE_FLAGS_DISCOVERABLE_MODE        0x00000008
+#define DEVM_INITIALIZATION_DATA_OVERRIDE_FLAGS_PAIRING_ALLOWED_STATE    0x00000010
+#define DEVM_INITIALIZATION_DATA_OVERRIDE_FLAGS_PAIRABILITY_MODE_SSP     0x00000020
+#define DEVM_INITIALIZATION_DATA_OVERRIDE_FLAGS_DEVICE_ID_INFO_VALID     0x00000040
+#define DEVM_INITIALIZATION_DATA_OVERRIDE_FLAGS_DEVICE_ID_INFO           0x00000080
+#define DEVM_INITIALIZATION_DATA_OVERRIDE_FLAGS_DEVICE_APPEARANCE        0x00000100
+#define DEVM_INITIALIZATION_DATA_OVERRIDE_FLAGS_LE_CONNECT_PARAMS        0x00000200
+#define DEVM_INITIALIZATION_DATA_OVERRIDE_FLAGS_LE_SCAN_INTERVAL         0x00000400
+#define DEVM_INITIALIZATION_DATA_OVERRIDE_FLAGS_LE_SCAN_WINDOW           0x00000800
+#define DEVM_INITIALIZATION_DATA_OVERRIDE_FLAGS_LE_CONNECT_TIMEOUT       0x00001000
+#define DEVM_INITIALIZATION_DATA_OVERRIDE_FLAGS_LE_ADVERTISING_INTV      0x00002000
+#define DEVM_INITIALIZATION_DATA_OVERRIDE_FLAGS_MANUFACTURER_DATA        0x00004000
+#define DEVM_INITIALIZATION_DATA_OVERRIDE_FLAGS_ADVERTISING_DATA         0x00008000
+#define DEVM_INITIALIZATION_DATA_OVERRIDE_FLAGS_DEVM_ALLOW_LE_PARAM_DATA 0x00010000
+#define DEVM_INITIALIZATION_DATA_OVERRIDE_FLAGS_SCO_ENHANCED_PARAMETERS  0x00020000
 
    /* The following structure is the structure that is used to pass     */
    /* initialization information when the Message Sub-system is         */
@@ -248,10 +238,7 @@ typedef enum
    detRemoteDeviceAddressChanged,
    detDeviceAdvertisingStarted,
    detDeviceAdvertisingStopped,
-   detAdvertisingTimeout,
-   detConnectionParameterUpdateResponse,
-   detConnectionParametersUpdated,
-   detAuthenticationPayloadTimeoutExpired
+   detAdvertisingTimeout
 } DEVM_Event_Type_t;
 
    /* The following structure is a container structure that holds the   */
@@ -382,39 +369,6 @@ typedef struct _tagDEVM_Remote_Device_Address_Change_Event_Data_t
 #define DEVM_REMOTE_DEVICE_ADDRESS_CHANGE_EVENT_DATA_SIZE      (sizeof(DEVM_Remote_Device_Address_Change_Event_Data_t))
 
    /* The following structure is a container structure that holds the   */
-   /* information that is returned in a                                 */
-   /* detConnectionParameterUpdateResponse event.                       */
-typedef struct _tagDEVM_Remote_Device_Connection_Parameter_Update_Response_Event_Data_t
-{
-   BD_ADDR_t RemoteDeviceAddress;
-   Boolean_t Accepted;;
-} DEVM_Remote_Device_Connection_Parameter_Update_Response_Event_Data_t;
-
-#define DEVM_REMOTE_DEVICE_CONNECTION_PARAMETER_UPDATE_RESPONSE_DATA_SIZE   (sizeof(DEVM_Remote_Device_Connection_Parameter_Update_Response_Event_Data_t))
-
-   /* The following structure is a container structure that holds the   */
-   /* information that is returned in a                                 */      
-   /* detConnectionParametersUpdated event.                             */
-typedef struct _tagDEVM_Remote_Device_Connection_Parameters_Updated_Event_Data_t
-{
-   int                                    Status;
-   BD_ADDR_t                              RemoteDeviceAddress;
-   GAP_LE_Current_Connection_Parameters_t Current_Connection_Parameters;
-} DEVM_Remote_Device_Connection_Parameters_Updated_Event_Data_t;
-
-#define DEVM_REMOTE_DEVICE_CONNECTION_PARAMETERS_UPDATED_EVENT_DATA_SIZE   (sizeof(DEVM_Remote_Device_Connection_Parameters_Updated_Event_Data_t))
-
-   /* The following structure is a container structure that holds the   */
-   /* information that is returned in a                                 */
-   /* detAuthenticationPayloadTimeoutExpired event.                     */
-typedef struct _tagDEVM_Remote_Device_Authenticated_Payload_Timeout_Expired_Event_Data_t
-{
-   BD_ADDR_t RemoteDeviceAddress;
-} DEVM_Remote_Device_Authenticated_Payload_Timeout_Expired_Event_Data_t;
-
-#define DEVM_REMOTE_DEVICE_AUTHENTICATED_PAYLOAD_TIMEOUT_EXPIRED_EVENT_DATA_SIZE   (sizeof(DEVM_Remote_Device_Authenticated_Payload_Timeout_Expired_Event_Data_t))
-
-   /* The following structure is a container structure that holds the   */
    /* Local Device Manager Event (and Event Data) of a Local Device     */
    /* Manager Event.                                                    */
 typedef struct _tagDEVM_Event_Data_t
@@ -423,21 +377,18 @@ typedef struct _tagDEVM_Event_Data_t
    unsigned int      EventLength;
    union
    {
-      DEVM_Device_Powering_Off_Event_Data_t                                 DevicePoweringOffEventData;
-      DEVM_Local_Device_Properties_Changed_Event_Data_t                     LocalDevicePropertiesChangedEventData;
-      DEVM_Remote_Device_Found_Event_Data_t                                 RemoteDeviceFoundEventData;
-      DEVM_Remote_Device_Deleted_Event_Data_t                               RemoteDeviceDeletedEventData;
-      DEVM_Remote_Device_Properties_Changed_Event_Data_t                    RemoteDevicePropertiesChangedEventData;
-      DEVM_Remote_Device_Properties_Status_Event_Data_t                     RemoteDevicePropertiesStatusEventData;
-      DEVM_Remote_Device_Services_Status_Event_Data_t                       RemoteDeviceServicesStatusEventData;
-      DEVM_Remote_Device_Pairing_Status_Event_Data_t                        RemoteDevicePairingStatusEventData;
-      DEVM_Remote_Device_Authentication_Status_Event_Data_t                 RemoteDeviceAuthenticationStatusEventData;
-      DEVM_Remote_Device_Encryption_Status_Event_Data_t                     RemoteDeviceEncryptionStatusEventData;
-      DEVM_Remote_Device_Connection_Status_Event_Data_t                     RemoteDeviceConnectionStatusEventData;
-      DEVM_Remote_Device_Address_Change_Event_Data_t                        RemoteDeviceAddressChangeEventData;
-      DEVM_Remote_Device_Connection_Parameter_Update_Response_Event_Data_t  RemoteDeviceConnectionParameterUpdateResponseEventData;
-      DEVM_Remote_Device_Connection_Parameters_Updated_Event_Data_t         RemoteDeviceConnectionParametersUpdatedEventData;
-      DEVM_Remote_Device_Authenticated_Payload_Timeout_Expired_Event_Data_t RemoteDeviceAuthenticatedPayloadTimeoutExpiredEventData;
+      DEVM_Device_Powering_Off_Event_Data_t                 DevicePoweringOffEventData;
+      DEVM_Local_Device_Properties_Changed_Event_Data_t     LocalDevicePropertiesChangedEventData;
+      DEVM_Remote_Device_Found_Event_Data_t                 RemoteDeviceFoundEventData;
+      DEVM_Remote_Device_Deleted_Event_Data_t               RemoteDeviceDeletedEventData;
+      DEVM_Remote_Device_Properties_Changed_Event_Data_t    RemoteDevicePropertiesChangedEventData;
+      DEVM_Remote_Device_Properties_Status_Event_Data_t     RemoteDevicePropertiesStatusEventData;
+      DEVM_Remote_Device_Services_Status_Event_Data_t       RemoteDeviceServicesStatusEventData;
+      DEVM_Remote_Device_Pairing_Status_Event_Data_t        RemoteDevicePairingStatusEventData;
+      DEVM_Remote_Device_Authentication_Status_Event_Data_t RemoteDeviceAuthenticationStatusEventData;
+      DEVM_Remote_Device_Encryption_Status_Event_Data_t     RemoteDeviceEncryptionStatusEventData;
+      DEVM_Remote_Device_Connection_Status_Event_Data_t     RemoteDeviceConnectionStatusEventData;
+      DEVM_Remote_Device_Address_Change_Event_Data_t        RemoteDeviceAddressChangeEventData;
    } EventData;
 } DEVM_Event_Data_t;
 
@@ -1174,46 +1125,6 @@ BTPSAPI_DECLARATION int BTPSAPI DEVM_UnPairRemoteDevice(BD_ADDR_t RemoteDevice, 
 #endif
 
    /* The following function is provided to allow a mechanism for local */
-   /* modules to enable/disable SC Only mode. 							*/
-   /* This function returns zero if           							*/
-   /* successful, or a negative return error code if there was an error.*/
-BTPSAPI_DECLARATION int BTPSAPI DEVM_EnableSCOnly( Boolean_t EnableSCOnly);
-
-#ifdef INCLUDE_BLUETOOTH_API_PROTOTYPES
-   typedef int (BTPSAPI *PFN_DEVM_EnableSCOnly_t)(Boolean_t EnableSCOnly);
-#endif
-
-   /* The following function is provided to allow a mechanism for local */
-   /* modules to generate new local public and private P256 keys. 		*/
-   /* This function returns zero if           							*/
-   /* successful, or a negative return error code if there was an error.*/
-BTPSAPI_DECLARATION int BTPSAPI DEVM_RegenerateP256LocalKeys(void);
-
-#ifdef INCLUDE_BLUETOOTH_API_PROTOTYPES
-   typedef int (BTPSAPI *PFN_DEVM_RegenerateP256LocalKeys_t)(void);
-#endif
-
-   /* The following function is provided to allow a mechanism for local */
-   /* modules to generate OOB local parameters. Used in LE SC pairing.	*/
-   /* This function returns zero if           							*/
-   /* successful, or a negative return error code if there was an error.*/
-BTPSAPI_DECLARATION int BTPSAPI DEVM_SC_OOB_Generate_Parameters(SM_Random_Value_t *OOB_Local_Rand_Result, SM_Confirm_Value_t *OOB_Local_Confirm_Result);
-
-#ifdef INCLUDE_BLUETOOTH_API_PROTOTYPES
-   typedef int (BTPSAPI *PFN_DEVM_SC_OOB_Generate_Parameters_t)(SM_Random_Value_t *OOB_Local_Rand_Result, SM_Confirm_Value_t *OOB_Local_Confirm_Result);
-#endif
-
-   /* The following function is provided to allow a mechanism for local */
-   /* modules to send keyprss notifications. Used in LE SC pairing.  	*/
-   /* This function returns zero if                                     */
-   /* successful, or a negative return error code if there was an error.*/
-BTPSAPI_DECLARATION int BTPSAPI DEVM_SC_Send_Keypress_Notification(BD_ADDR_t BD_ADDR, GAP_LE_Keypress_t Keypress_Notification_Type);
-
-#ifdef INCLUDE_BLUETOOTH_API_PROTOTYPES
-   typedef int (BTPSAPI *PFN_DEVM_SC_Send_Keypress_Notification(BD_ADDR_t BD_ADDR, GAP_LE_Keypress_t Keypress_Notification_Type);
-#endif
-
-   /* The following function is provided to allow a mechanism for local */
    /* modules to actually Authenticate with a remote device (the device */
    /* *MUST* already be connected - i.e. this function will not make a  */
    /* connection and then attempt to authenticate the device).  This    */
@@ -1432,52 +1343,6 @@ BTPSAPI_DECLARATION int BTPSAPI DEVM_QueryConnectionHandle(BD_ADDR_t RemoteDevic
 
 #ifdef INCLUDE_BLUETOOTH_API_PROTOTYPES
    typedef int (BTPSAPI *PFN_DEVM_QueryConnectionHandle_t)(BD_ADDR_t RemoteDeviceAddress, Word_t *Connection_Handle);
-#endif
-
-   /* The following function is provided to allow a mechanism for local */
-   /* modules to send Set Authenticated Payload Timeout. Used in order 	*/
-   /* to change the Authenticated payload timeout of the ping. The ping */
-   /* will start working automatically after finishing the pairing      */
-   /* procedure. This function returns zero if successful, or a negative*/
-   /* return error code if there was an error.                          */
-BTPSAPI_DECLARATION int BTPSAPI DEVM_Set_Authenticated_Payload_Timeout(BD_ADDR_t BD_ADDR, Word_t PayloadTimeout);
-
-#ifdef INCLUDE_BLUETOOTH_API_PROTOTYPES
-   typedef int (BTPSAPI *PFN_DEVM_Set_Authenticated_Payload_Timeout_t)(BD_ADDR_t BD_ADDR, Word_t PayloadTimeout);
-#endif
-
-   /* The following function is provided to allow a mechanism for local */
-   /* modules to send Query Authenticated Payload Timeout. Used in order*/
-   /* to query the Authenticated payload timeout of the ping. The ping  */
-   /* will start working automatically after finishing the pairing      */
-   /* procedure. This function returns zero if successful, or a negative*/
-   /* return error code if there was an error.                          */
-BTPSAPI_DECLARATION int BTPSAPI DEVM_Query_Authenticated_Payload_Timeout(BD_ADDR_t BD_ADDR, Word_t *PayloadTimeout);
-
-#ifdef INCLUDE_BLUETOOTH_API_PROTOTYPES
-   typedef int (BTPSAPI *PFN_DEVM_Query_Authenticated_Payload_Timeout_t)(BD_ADDR_t BD_ADDR, Word_t *PayloadTimeout);
-#endif
-
-   /* The following function is provided to allow a mechanism for local */
-   /* modules to send Set advertising intervals. Used in order to Set   */
-   /* advertising intervals.  This function returns zero if successful, */
-   /* or a negative return error code if there was an error.            */
-BTPSAPI_DECLARATION int BTPSAPI DEVM_Set_Advertising_Intervals(Word_t Advertising_Interval_Min, Word_t Advertising_Interval_Max);
-
-#ifdef INCLUDE_BLUETOOTH_API_PROTOTYPES
-   typedef int (BTPSAPI *PFN_DEVM_Set_Advertising_Intervals_t)(Word_t Advertising_Interval_Min, Word_t Advertising_Interval_Max);
-#endif
-
-   /* The following function is provided to allow a mechanism for local */
-   /* modules to send Set and update connection and Scan parameters.    */
-   /* Used in order to update the connection while connected and set the*/
-   /* default connection and scan parameters.  This function returns    */
-   /* zero if successful, or a negative return error code if there was  */
-   /* an error.                                                         */
-BTPSAPI_DECLARATION int BTPSAPI DEVM_Set_And_Update_Connection_And_Scan_Parameters(BD_ADDR_t *BD_ADDR, AddressType_t *AddressType, GAP_LE_Connection_Parameters_t *ConnectionParameters, Word_t *ConnectionScanInterval, Word_t *ConnectionScanWindow, Word_t *ScanInterval, Word_t *ScanWindow);
-
-#ifdef INCLUDE_BLUETOOTH_API_PROTOTYPES
-   typedef int (BTPSAPI *PFN_DEVM_Set_And_Update_Connection_And_Scan_Parameters_t)(BD_ADDR_t *BD_ADDR, AddressType_t *AddressType, GAP_LE_Connection_Parameters_t *ConnectionParameters, Word_t *ConnectionScanInterval, Word_t *ConnectionScanWindow, Word_t *ScanInterval, Word_t *ScanWindow);
 #endif
 
 #endif

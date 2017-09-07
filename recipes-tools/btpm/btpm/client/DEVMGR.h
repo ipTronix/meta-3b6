@@ -2,9 +2,6 @@
 /*      Copyright 2010 - 2014 Stonestreet One.                                */
 /*      All Rights Reserved.                                                  */
 /*                                                                            */
-/*      Copyright (C) 2016 Texas Instruments Incorporated -  	              */
-/*      http://www.ti.com/ All Rights Reserved.  							  */
-/*                                                                            */
 /*  DEVMGR - Local Device Manager Interface Implementation for Stonestreet    */
 /*           One Bluetooth Protocol Stack Platform Manager.                   */
 /*                                                                            */
@@ -15,9 +12,6 @@
 /*   mm/dd/yy  F. Lastname    Description of Modification                     */
 /*   --------  -----------    ------------------------------------------------*/
 /*   07/01/10  D. Lange       Initial creation.                               */
-/*   04/19/16  L. Gersi       Adding support for LE SC pairing.               */
-/*   07/25/16  D. Horowitz    Adding Low duty cycle feature.			      */
-/*   07/25/16  D. Horowitz    Adding Ping feature.			      			  */
 /******************************************************************************/
 #ifndef __DEVMGRH__
 #define __DEVMGRH__
@@ -296,30 +290,6 @@ int _DEVM_CancelPairWithRemoteDevice(BD_ADDR_t RemoteDevice);
 int _DEVM_UnPairRemoteDevice(BD_ADDR_t RemoteDevice, unsigned long UnPairFlags);
 
    /* The following function is provided to allow a mechanism for local */
-   /* modules to reject LE Legacy pairing request from a remote device. */
-   /* This function returns zero if successful, or a negative return    */
-   /* error code if there was an error.                                 */
-int _DEVM_EnableSCOnly(Boolean_t EnableSCOnly);
-
-   /* The following function is provided to allow a mechanism for local */
-   /* modules to generate new local public and private P256 keys.       */
-   /* This function returns zero if successful, or a negative return    */
-   /* error code if there was an error.                                 */
-int _DEVM_RegenerateP256LocalKeys(void);
-
-   /* The following function is provided to allow a mechanism for local */
-   /* modules to generate OOB local parameters. Used in LE SC pairing.  */
-   /* This function returns zero if successful, or a negative return    */
-   /* error code if there was an error.                                 */
-int _DEVM_SC_OOB_Generate_Parameters(SM_Random_Value_t *OOB_Local_Rand_Result, SM_Confirm_Value_t *OOB_Local_Confirm_Result);
-
-   /* The following function is provided to allow a mechanism for local */
-   /* modules to send keyprss notifications. Used in LE SC pairing.     */
-   /* This function returns zero if successful, or a negative return    */
-   /* error code if there was an error.                                 */
-int _DEVM_SC_Send_Keypress_Notification(BD_ADDR_t BD_ADDR, GAP_LE_Keypress_t Keypress_Notification_Type);
-
-   /* The following function is provided to allow a mechanism for local */
    /* modules to actually Authenticate with a remote device (the device */
    /* *MUST* already be connected - i.e. this function will not make a  */
    /* connection and then attempt to authenticate the device).  This    */
@@ -474,33 +444,5 @@ int _DEVM_SendRawHCICommand(unsigned char OGF, unsigned short OCF, unsigned char
    /* will be stored.  This function returns zero if successful, or a   */
    /* negative return error code if there was an error.                 */
 int _DEVM_QueryConnectionHandle(BD_ADDR_t RemoteDeviceAddress, Word_t *Connection_Handle);
-
-   /* The following function is provided to allow a mechanism for local */
-   /* modules to send Set Authenticated Payload Timeout. Used in order 	*/
-   /* to change the Authenticated payload timeout of the ping. The ping */
-   /* will start working automatically after finishing the pairing      */
-   /* procedure. This function returns zero if successful, or a negative*/
-   /* return error code if there was an error.                          */
-int _DEVM_Set_Authenticated_Payload_Timeout(BD_ADDR_t BD_ADDR, Word_t AuthenticatedPayloadTimeout);
-
-   /* The following function is provided to allow a mechanism for local */
-   /* modules to send Query Authenticated Payload Timeout. Used in order*/
-   /* to query the Authenticated payload timeout of the ping.           */
-   /* This function returns zero if successful, or a negative return    */
-   /* error code if there was an error.                                 */
-int _DEVM_Query_Authenticated_Payload_Timeout(BD_ADDR_t BD_ADDR, Word_t *AuthenticatedPayloadTimeout);
-
-   /* The following function is provided to allow a mechanism for local */
-   /* modules to send Set advertising intervals. Used in order to Set   */
-   /* advertising intervals.  This function returns zero if successful, */
-   /* or a negative return error code if there was an error.            */
-int _DEVM_Set_Advertising_Intervals(Word_t Advertising_Interval_Min, Word_t Advertising_Interval_Max);
-
-   /* The following function is provided to allow a mechanism for local */
-   /* modules to send Set and update connection parameters. Used in     */
-   /* order to Set and update the connection parameters and the default */
-   /* connection parameters.  This function returns zero if successful, */
-   /* or a negative return error code if there was an error.            */
-int _DEVM_Set_And_Update_Connection_And_Scan_Parameters(BD_ADDR_t *BD_ADDR, AddressType_t *AddressType, GAP_LE_Connection_Parameters_t *ConnectionParameters, Word_t *ConnectionScanInterval, Word_t *ConnectionScanWindow, Word_t *ScanInterval, Word_t *ScanWindow);
 
 #endif

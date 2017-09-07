@@ -77,10 +77,6 @@ typedef enum
 #define SPPM_MFI_PACKET_TIMEOUT_MINIMUM_MS                     500
 #define SPPM_MFI_PACKET_TIMEOUT_MAXIMUM_MS                   15000
 
-#define SPPM_MFI_IAP2_ACCESSORY_EXTERNAL_ACCESSORY_START_SESSION_BTMASK     0x01
-#define SPPM_MFI_IAP2_ACCESSORY_EXTERNAL_ACCESSORY_STOP_SESSION_BTMASK      0x02
-#define SPPM_MFI_IAP2_ACCESSORY_EXTERNAL_ACCESSORY_LAUNCH_APP_BTMASK        0x04
-
    /* The following structure is a container structure which is used    */
    /* with the SPPM_MFi_Configuration_Settings_t structure to denote the*/
    /* various Accessory Inforamation (required fields for MFi           */
@@ -98,7 +94,6 @@ typedef struct _tagSPPM_MFi_Accessory_Info_t
    QWord_t      AccessoryCapabilitiesBitmask;
    Byte_t       AccessoryName[64];
    unsigned int AccessoryInformationBitMask;
-   unsigned int MessageSentByAccessoryBitMask;
    Byte_t       AccessoryFirmwareVersion[3];
    Byte_t       AccessoryHardwareVersion[3];
    Byte_t       AccessoryManufacturer[SPPM_MFI_MAXIMUM_SUPPORTED_MANUFACTURER_NAME_LENGTH];

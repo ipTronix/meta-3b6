@@ -2,9 +2,6 @@
 /*      Copyright 2010 - 2014 Stonestreet One.                                */
 /*      All Rights Reserved.                                                  */
 /*                                                                            */
-/*      Copyright 2016 Texas Instruments Incorporated.                        */
-/*      All Rights Reserved.                                                  */
-/*									      									  */	
 /*  GATTTYPE - Stonestreet One Bluetooth Stack Generic Attribute (GATT)       */
 /*             Profile Type Definitions/Constants.                            */
 /*                                                                            */
@@ -15,7 +12,6 @@
 /*   mm/dd/yy  F. Lastname       Description of Modification                  */
 /*   --------  -----------       ---------------------------------------------*/
 /*   10/19/10  T. Cook           Initial Creation.                            */
-/*   04/20/16  L. Gersi	         Adding macro for UUID_32		      		  */
 /******************************************************************************/
 #ifndef __GATTTYPEH__
 #define __GATTTYPEH__
@@ -34,19 +30,6 @@
 #define COMPARE_BLUETOOTH_UUID_16_TO_CONSTANT(_x, _a, _b) \
 (                                                         \
    ((_x).UUID_Byte1 == (_a)) && ((_x).UUID_Byte0 == (_b)) \
-)
-
-   /* The following MACRO is a utility MACRO that exists to aid in the  */
-   /* Comparison of two UUID_32_t variables.  This MACRO only returns   */
-   /* whether the two UUID_32_t variables are equal (MACRO returns      */
-   /* boolean result) NOT less than/greater than.  The first parameter  */
-   /* the the UUID_32_t variable. The next two are the individual byte  */
-   /* values to do the comparison with. The bytes are NOT in Little     */
-   /* Endian Format.                                                    */
-#define COMPARE_BLUETOOTH_UUID_32_TO_CONSTANT(_x, _a, _b, _c, _d) \
-(                                                                 \
-   ((_x).UUID_Byte0 == (_d)) && ((_x).UUID_Byte1 == (_c)) &&      \
-   ((_x).UUID_Byte2 == (_b)) && ((_x).UUID_Byte3 == (_a))         \
 )
 
    /* The following MACRO is a utility MACRO that exists to aid in the  */
@@ -78,6 +61,12 @@
 
    /* GATT Utility Macros.                                              */
 
+   /* The following MACRO is a utility MACRO that converts a specified  */
+   /* UUID_16_t variable to UUID_128_t. The first parameter is the      */
+   /* UUID_128_t variable that is to receive the 16 bit UUID, the       */
+   /* second is the UUID_16_t to convert from.                          */
+#define CONVERT_BLUETOOTH_UUID_16_TO_BLUETOOTH_UUID_128(_x, _y)                  ASSIGN_BLUETOOTH_UUID_128((_x), 0x00, 0x00, (_y).UUID_Byte1, (_y).UUID_Byte0, 0x00, 0x00, 0x10, 0x00, 0x80, 0x00, 0x00, 0x80, 0x5F, 0x9B, 0x34, 0xFB)
+
    /* The following MACRO is a utility MACRO that exists to compare a   */
    /* UUID_16_t type constant to a UUID_128_t variable. The first       */
    /* is the UUID_128_t variable to do the comparison with. The next    */
@@ -88,36 +77,12 @@
 #define COMPARE_BLUETOOTH_UUID_128_TO_UUID_16_CONSTANT(_x, _a, _b)               COMPARE_BLUETOOTH_UUID_128_TO_CONSTANT((_x), 0x00, 0x00, _a, _b, 0x00, 0x00, 0x10, 0x00, 0x80, 0x00, 0x00, 0x80, 0x5F, 0x9B, 0x34, 0xFB)
 
    /* The following MACRO is a utility MACRO that exists to compare a   */
-   /* UUID_16_t variable to a UUID_128_t variable. The first is the     */
+   /* UUID_16_t variab;e to a UUID_128_t variable. The first is the     */
    /* UUID_128_t variable to do the comparison with. The next parameter */
    /* is the UUID_16_t variable. This MACRO only returns whether or not */
    /* the two UUIDs are equal (MACRO returns Boolean result) NOT less   */
    /* than/greater than.                                                */
 #define COMPARE_BLUETOOTH_UUID_128_TO_BLUETOOTH_UUID_16(_x, _y)                  COMPARE_BLUETOOTH_UUID_128_TO_CONSTANT((_x), 0x00, 0x00, (_y).UUID_Byte1, (_y).UUID_Byte0, 0x00, 0x00, 0x10, 0x00, 0x80, 0x00, 0x00, 0x80, 0x5F, 0x9B, 0x34, 0xFB)
-
-   /* The following MACRO is a utility MACRO that exists to compare a   */
-   /* UUID_32_t type constant to a UUID_128_t variable. The first       */
-   /* is the UUID_128_t variable to do the comparison with. The next    */
-   /* parameters are the individual bytes of the UUID_32_t constant to  */
-   /* compare to the UUID_128_t variable. This MACRO only returns       */
-   /* whether or not the two UUIDs are equal (MACRO returns Boolean     */
-   /* result) NOT less than/greater than.                               */
-#define COMPARE_BLUETOOTH_UUID_128_TO_UUID_32_CONSTANT(_x, _a, _b, _c, _d)       COMPARE_BLUETOOTH_UUID_128_TO_CONSTANT((_x), _a, _b, _c, _d, 0x00, 0x00, 0x10, 0x00, 0x80, 0x00, 0x00, 0x80, 0x5F, 0x9B, 0x34, 0xFB)
-
-   /* The following MACRO is a utility MACRO that exists to compare a   */
-   /* UUID_32_t variable to a UUID_128_t variable. The first is the     */
-   /* UUID_128_t variable to do the comparison with. The next parameter */
-   /* is the UUID_32_t variable. This MACRO only returns whether or not */
-   /* the two UUIDs are equal (MACRO returns Boolean result) NOT less   */
-   /* than/greater than.                                                */
-#define COMPARE_BLUETOOTH_UUID_128_TO_BLUETOOTH_UUID_32(_x, _y)                  COMPARE_BLUETOOTH_UUID_128_TO_CONSTANT((_x), (_y).UUID_Byte3, (_y).UUID_Byte2, (_y).UUID_Byte1, (_y).UUID_Byte0, 0x00, 0x00, 0x10, 0x00, 0x80, 0x00, 0x00, 0x80, 0x5F, 0x9B, 0x34, 0xFB)
-
-   /* The following MACRO is a utility MACRO that exists to compare a   */
-   /* UUID_128_t variable to the Bluetooth Base UUID.  The first is the */
-   /* UUID_128_t variable to do the comparison with.  This MACRO only   */
-   /* returns whether or not the two UUIDs are equal (MACRO returns     */
-   /* Boolean result) NOT less than/greater than.                       */
-#define COMPARE_BLUETOOTH_UUID_TO_BLUETOOTH_BASE_UUID(_x)                        COMPARE_BLUETOOTH_UUID_128_TO_CONSTANT((_x), (_x).UUID_Byte15, (_x).UUID_Byte14, (_x).UUID_Byte13, (_x).UUID_Byte12, 0x00, 0x00, 0x10, 0x00, 0x80, 0x00, 0x00, 0x80, 0x5F, 0x9B, 0x34, 0xFB)
 
    /* GATT Attribute Types.                                             */
 

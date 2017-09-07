@@ -122,8 +122,7 @@ typedef enum
 typedef enum
 {
    guUUID_16,
-   guUUID_128,
-   guUUID_32
+   guUUID_128
 } GATT_UUID_Type_t;
 
    /* The following data type represents a container that can hold both */
@@ -134,7 +133,6 @@ typedef struct _tagGATT_UUID_t
    union
    {
       UUID_16_t  UUID_16;
-      UUID_32_t  UUID_32;
       UUID_128_t UUID_128;
    } UUID;
 } GATT_UUID_t;
@@ -156,12 +154,7 @@ typedef enum
    aetCharacteristicValue16,
    aetCharacteristicValue128,
    aetCharacteristicDescriptor16,
-   aetCharacteristicDescriptor128,
-   aetPrimaryService32,
-   aetSecondaryService32,
-   aetCharacteristicDeclaration32,
-   aetCharacteristicValue32,
-   aetCharacteristicDescriptor32
+   aetCharacteristicDescriptor128
 } GATT_Service_Attribute_Entry_Type_t;
 
    /* The following structure represents the structure of the data that */
@@ -173,16 +166,6 @@ typedef struct _tagGATT_Primary_Service_16_Entry_t
 } GATT_Primary_Service_16_Entry_t;
 
 #define GATT_PRIMARY_SERVICE_16_ENTRY_DATA_SIZE          (sizeof(GATT_Primary_Service_16_Entry_t))
-
-   /* The following structure represents the structure of the data that */
-   /* must be specified for a GATT_Service_Attribute_Entry_t of type    */
-   /* aetPrimaryService32.                                              */
-typedef struct _tagGATT_Primary_Service_32_Entry_t
-{
-   UUID_32_t Service_UUID;
-} GATT_Primary_Service_32_Entry_t;
-
-#define GATT_PRIMARY_SERVICE_32_ENTRY_DATA_SIZE          (sizeof(GATT_Primary_Service_32_Entry_t))
 
    /* The following structure represents the structure of the data that */
    /* must be specified for a GATT_Service_Attribute_Entry_t of type    */
@@ -203,16 +186,6 @@ typedef struct _tagGATT_Secondary_Service_16_Entry_t
 } GATT_Secondary_Service_16_Entry_t;
 
 #define GATT_SECONDARY_SERVICE_16_ENTRY_DATA_SIZE        (sizeof(GATT_Secondary_Service_16_Entry_t))
-
-   /* The following structure represents the structure of the data that */
-   /* must be specified for a GATT_Service_Attribute_Entry_t of type    */
-   /* aetSecondaryService32.                                            */
-typedef struct _tagGATT_Secondary_Service_32_Entry_t
-{
-   UUID_32_t Service_UUID;
-} GATT_Secondary_Service_32_Entry_t;
-
-#define GATT_SECONDARY_SERVICE_32_ENTRY_DATA_SIZE        (sizeof(GATT_Secondary_Service_32_Entry_t))
 
    /* The following structure represents the structure of the data that */
    /* must be specified for a GATT_Service_Attribute_Entry_t of type    */
@@ -249,17 +222,6 @@ typedef struct _tagGATT_Characteristic_Declaration_16_Entry_t
 
    /* The following structure represents the structure of the data that */
    /* must be specified for a GATT_Service_Attribute_Entry_t of type    */
-   /* aetCharacteristicDeclaration32.                                   */
-typedef struct _tagGATT_Characteristic_Declaration_32_Entry_t
-{
-   Byte_t    Properties;
-   UUID_32_t Characteristic_Value_UUID;
-} GATT_Characteristic_Declaration_32_Entry_t;
-
-#define GATT_CHARACTERISTIC_DECLARATION_32_ENTRY_DATA_SIZE (sizeof(GATT_Characteristic_Declaration_32_Entry_t))
-
-   /* The following structure represents the structure of the data that */
-   /* must be specified for a GATT_Service_Attribute_Entry_t of type    */
    /* aetCharacteristicDeclaration128.                                  */
 typedef struct _tagGATT_Characteristic_Declaration_128_Entry_t
 {
@@ -280,18 +242,6 @@ typedef struct _tagGATT_Characteristic_Value_16_Entry_t
 } GATT_Characteristic_Value_16_Entry_t;
 
 #define GATT_CHARACTERISTIC_VALUE_16_ENTRY_DATA_SIZE     (sizeof(GATT_Characteristic_Value_16_Entry_t))
-
-   /* The following structure represents the structure of the data that */
-   /* must be specified for a GATT_Service_Attribute_Entry_t of type    */
-   /* aetCharacteristicValue32.                                         */
-typedef struct _tagGATT_Characteristic_Value_32_Entry_t
-{
-   UUID_32_t     Characteristic_Value_UUID;
-   unsigned int  Characteristic_Value_Length;
-   Byte_t       *Characteristic_Value;
-} GATT_Characteristic_Value_32_Entry_t;
-
-#define GATT_CHARACTERISTIC_VALUE_32_ENTRY_DATA_SIZE     (sizeof(GATT_Characteristic_Value_32_Entry_t))
 
    /* The following structure represents the structure of the data that */
    /* must be specified for a GATT_Service_Attribute_Entry_t of type    */
@@ -316,18 +266,6 @@ typedef struct _tagGATT_Characteristic_Descriptor_16_Entry_t
 } GATT_Characteristic_Descriptor_16_Entry_t;
 
 #define GATT_CHARACTERISTIC_DESCRIPTOR_16_ENTRY_DATA_SIZE (sizeof(GATT_Characteristic_Descriptor_16_Entry_t))
-
-   /* The following structure represents the structure of the data that */
-   /* must be specified for a GATT_Service_Attribute_Entry_t of type    */
-   /* aetCharacteristicDescriptor32.                                    */
-typedef struct _tagGATT_Characteristic_Descriptor_32_Entry_t
-{
-   UUID_32_t     Characteristic_Descriptor_UUID;
-   unsigned int  Characteristic_Descriptor_Length;
-   Byte_t       *Characteristic_Descriptor;
-} GATT_Characteristic_Descriptor_32_Entry_t;
-
-#define GATT_CHARACTERISTIC_DESCRIPTOR_32_ENTRY_DATA_SIZE (sizeof(GATT_Characteristic_Descriptor_32_Entry_t))
 
    /* The following structure represents the structure of the data that */
    /* must be specified for a GATT_Service_Attribute_Entry_t of type    */
@@ -366,34 +304,24 @@ typedef struct _tagGATT_Characteristic_Descriptor_128_Entry_t
    /*                                                                   */
    /*             - aetPrimaryService16                                 */
    /*                  GATT_Primary_Service_16_Entry_t                  */
-   /*             - aetPrimaryService32                                 */
-   /*                  GATT_Primary_Service_32_Entry_t                  */
    /*             - aetPrimaryService128                                */
    /*                  GATT_Primary_Service_128_Entry_t                 */
    /*             - aetSecondaryService16                               */
    /*                  GATT_Secondary_Service_16_Entry_t                */
-   /*             - aetSecondaryService32                               */
-   /*                  GATT_Secondary_Service_32_Entry_t                */
    /*             - aetSecondaryService128                              */
    /*                  GATT_Secondary_Service_128_Entry_t               */
    /*             - aetIncludeDefinition                                */
    /*                  GATT_Include_Definition_Entry_t                  */
    /*             - aetCharacteristicDeclaration16                      */
    /*                  GATT_Characteristic_Declaration_16_Entry_t       */
-   /*             - aetCharacteristicDeclaration32                      */
-   /*                  GATT_Characteristic_Declaration_32_Entry_t       */
    /*             - aetCharacteristicDeclaration128                     */
    /*                  GATT_Characteristic_Declaration_128_Entry_t      */
    /*             - aetCharacteristicValue16                            */
    /*                  GATT_Characteristic_Value_16_Entry_t             */
-   /*             - aetCharacteristicValue32                            */
-   /*                  GATT_Characteristic_Value_32_Entry_t             */
    /*             - aetCharacteristicValue128                           */
    /*                  GATT_Characteristic_Value_128_Entry_t            */
    /*             - aetCharacteristicDescriptor16                       */
    /*                  GATT_Characteristic_Descriptor_16_Entry_t        */
-   /*             - aetCharacteristicDescriptor32                       */
-   /*                  GATT_Characteristic_Descriptor_32_Entry_t        */
    /*             - aetCharacteristicDescriptor128                      */
    /*                  GATT_Characteristic_Descriptor_128_Entry_t       */
 typedef struct _tagGATT_Service_Attribute_Entry_t

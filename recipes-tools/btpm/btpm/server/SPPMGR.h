@@ -12,19 +12,11 @@
 /*   mm/dd/yy  F. Lastname    Description of Modification                     */
 /*   --------  -----------    ------------------------------------------------*/
 /*   08/16/10  D. Lange       Initial creation.                               */
-/*   03/02/16  D. Keren       Add the ISPP_Configuration_Params_t to the MFi  */
-/*                            configuration function                          */
 /******************************************************************************/
 #ifndef __SPPMGRH__
 #define __SPPMGRH__
 
 #include "BTAPITyp.h"            /* Bluetooth API Type Definitions.           */
-
-#if BTPM_CONFIGURATION_SERIAL_PORT_MANAGER_SUPPORT_MFI
-
-#include "SS1BTISP.h"            /* Bluetopia MFi API Prototypes/Constants.   */
-
-#endif
 
    /* The following function is provided to allow a mechanism to        */
    /* initialize the Serial Port Profile Manager Implementation.  This  */
@@ -200,14 +192,6 @@ int _SPPM_ReadAuthenticationCoProcessorInformation(Byte_t *DeviceVersion, Byte_t
    /* error.                                                            */
 int _SPPM_DetermineRemoteDeviceSupportsMFi(BD_ADDR_t BD_ADDR, unsigned int PortID);
 
-#if BTPM_CONFIGURATION_SERIAL_PORT_MANAGER_SUPPORT_MFI
-
-   /* The following function sends the configuration Link Sync parameters,*/
-   /* for iAP2 session.   */
-int _SPPM_ConfigureIAP2LinkParams(ISPP_Configuration_Params_t *ISPPConfigurationParams);
-
-#endif //BTPM_CONFIGURATION_SERIAL_PORT_MANAGER_SUPPORT_MFI
-
    /* The following function is provided to allow a mechanism to set the*/
    /* default packet timeout for a specified connection.  This function */
    /* returns zero if successful or a negative return error code if     */
@@ -270,18 +254,6 @@ int _SPPM_SendSessionData(unsigned int PortID, Word_t SessionID, Word_t SessionD
    /*          confirmation status (as well as the ability to cancel the*/
    /*          queued packet via the SPPM_CancelPacket() function.      */
 int _SPPM_SendNonSessionData(unsigned int PortID, Byte_t Lingo, Byte_t CommandID, Word_t TransactionID, Word_t DataLength, unsigned char *DataBuffer);
-
-	/* The following function is provided to allow a mechanism to send   */
-	/* preformatted iAP2 control message packet to a currently MFi       */
-	/* device. This function accepts the Port ID, control message ID,    */
-	/* control message length and the data, and the           			 */
-	/* This function returns a positive, non-zero, value if       		 */
-	/* successful, or a negative return error code if there was an error.*/
-	/* * NOTE * A successful return value from this function represents  */
-	/*          the Packet ID of the packet that can be used to track the*/
-	/*          confirmation status (as well as the ability to cancel the*/
-	/*          queued packet via the SPPM_CancelPacket() function.      */
-int _SPPM_Send_Control_Message(unsigned int PortID, Word_t ControlMessageID, Word_t DataLength, unsigned char *DataBuffer);
 
    /* The following function is provided to allow a mechanism to cancel */
    /* a previously queued packet that was queued via one of the         */

@@ -2,9 +2,6 @@
 /*      Copyright 2000 - 2014 Stonestreet One.                                */
 /*      All Rights Reserved.                                                  */
 /*                                                                            */
-/*      Copyright 2015 Texas Instruments Incorporated.                        */
-/*      All Rights Reserved.                                                  */
-/*									      									  */	
 /*  BTBTYPES - Common Bluetooth Base Defined Types.                           */
 /*                                                                            */
 /*  Author:  Damon Lange                                                      */
@@ -15,7 +12,6 @@
 /*   --------  -----------    ------------------------------------------------*/
 /*   08/20/00  D. Lange       Initial creation.                               */
 /*   12/07/07  D. Mason       Changes for BT 2.1                              */
-/*   12/10/15  D. Keren       Adding macro for copying BD addresses           */
 /******************************************************************************/
 #ifndef __BTTYPESH_INC__
 #error "BTBTypes.h should never be used directly.  Include BTTypes.h, instead."
@@ -160,34 +156,6 @@ typedef __PACKED_STRUCT_BEGIN__ struct _tagLink_Key_t
    (_dest).Link_Key12 = (_d); (_dest).Link_Key13 = (_c); (_dest).Link_Key14 = (_b);            \
    (_dest).Link_Key15 = (_a);                                                                  \
 }
-
-/* The following MACRO is a utility MACRO that exists to Copy        */
-/* the individual Byte values into the specified Link Key variable.  */
-/* The Bytes are NOT in Little Endian Format, however, they are      */
-/* assigned to the Link Key variable in Little Endian Format.  The   */
-/* first parameter is the Link Key variable (of type Link_Key_t) to  */
-/* assign, and the next 16 parameters are the Individual Link Key    */
-/* Byte values to assign to the Link Key variable.                   */
-#define COPY_LINK_KEY(_dst, _src)          \
-{                                          \
-    (_dst).Link_Key0  = (_src).Link_Key0 ; \
-    (_dst).Link_Key1  = (_src).Link_Key1 ; \
-    (_dst).Link_Key2  = (_src).Link_Key2 ; \
-    (_dst).Link_Key3  = (_src).Link_Key3 ; \
-    (_dst).Link_Key4  = (_src).Link_Key4 ; \
-    (_dst).Link_Key5  = (_src).Link_Key5 ; \
-    (_dst).Link_Key6  = (_src).Link_Key6 ; \
-    (_dst).Link_Key7  = (_src).Link_Key7 ; \
-    (_dst).Link_Key8  = (_src).Link_Key8 ; \
-    (_dst).Link_Key9  = (_src).Link_Key9 ; \
-    (_dst).Link_Key10 = (_src).Link_Key10; \
-    (_dst).Link_Key11 = (_src).Link_Key11; \
-    (_dst).Link_Key12 = (_src).Link_Key12; \
-    (_dst).Link_Key13 = (_src).Link_Key13; \
-    (_dst).Link_Key14 = (_src).Link_Key14; \
-    (_dst).Link_Key15 = (_src).Link_Key15; \
-}
-
 
    /* The following MACRO is a utility MACRO that exists to aid in the  */
    /* Comparison of two Link_Key_t variables.  This MACRO only returns  */
@@ -1516,10 +1484,10 @@ typedef __PACKED_STRUCT_BEGIN__ struct _tagUUID_32_t
    /* UUID_128_t) to receive the 32 Bit UUID Value into, and the second */
    /* parameter is the 32 Bit UUID variable (of type UUID_32_t) to      */
    /* assign to the specified 128 Bit UUID.                             */
-#define ASSIGN_BLUETOOTH_UUID_32_TO_BLUETOOTH_UUID_128(_dest, _src)                   \
-{                                                                                     \
-   (_dest).UUID_Byte12 = (_src).UUID_Byte0;  (_dest).UUID_Byte13 = (_src).UUID_Byte1; \
-   (_dest).UUID_Byte14 = (_src).UUID_Byte2;  (_dest).UUID_Byte15 = (_src).UUID_Byte3; \
+#define ASSIGN_BLUETOOTH_UUID_32_TO_BLUETOOTH_UUID_128(_dest, _src)                 \
+{                                                                                   \
+   (_dest).UUID_Byte0 = (_src).UUID_Byte0;  (_dest).UUID_Byte1 = (_src).UUID_Byte1; \
+   (_dest).UUID_Byte2 = (_src).UUID_Byte2;  (_dest).UUID_Byte3 = (_src).UUID_Byte3; \
 }
 
    /* The following MACRO is a utility MACRO that exists to convert an  */
@@ -1918,30 +1886,7 @@ typedef __PACKED_STRUCT_BEGIN__ struct _tagEncryption_Key_t
    /* The following define determines the maximum fixed size that is    */
    /* used for Plain-text data that used as input to the LE encryption  */
    /* schema.                                                           */
-#define PLAIN_TEXT_DATA_MAXIMUM_SIZE                                 	16
-
-   /* The following define determines the size that is    */
-   /* used for AES-CMAC input message data for generating the confirmation value */
-#define AES_CMAC_CONFIRMATION_MSG_MAXIMUM_SIZE							65
-
-   /* The following define determines the size that is    */
-   /* used for AES-CMAC input message data for generating the Mackey and LTK values */
-#define AES_CMAC_KEY_GENERATION_MSG_MAXIMUM_SIZE						53
-#define AES_CMAC_CHECK_VALUE_GENERATION_MAXIMUM_MSG_SIZE				65
-#define AES_CMAC_NUMERIC_COMPARISON_VALUE_GENERATION_MAXIMUM_MSG_SIZE	80
-
-#define KEY_GENERATION_BTLE_SIZE										4
-#define KEY_GENERATION_SALT_SIZE										16
-#define KEY_GENERATION_T_SIZE											16
-#define KEY_GENERATION_LENGTH_SIZE										2
-
-#define AES_CMAC_CHECK_VALUE_GENERATION_R_SIZE							16
-#define AES_CMAC_CHECK_VALUE_GENERATION_NON_ZERO_R_PASSKEY_SIZE			3
-#define AES_CMAC_CHECK_VALUE_GENERATION_IOCAP_SIZE						3
-
-#define NUMERIC_COMPARISON_VALUE_128_TO_LEAST_SIGNIFICANT_32_SHIFT		12
-#define NUMERIC_COMPARISON_VALUE_MODULUS_TO_6_LEASET_DIGITS				1000000
-
+#define PLAIN_TEXT_DATA_MAXIMUM_SIZE                                 16
 
    /* The following type defines the buffer that is used to format      */
    /* Plain-text data that is to be used for input to the LE encryption */
@@ -1953,44 +1898,6 @@ typedef __PACKED_STRUCT_BEGIN__ struct _tagPlain_Text_Data_t
 } __PACKED_STRUCT_END__ Plain_Text_Data_t;
 
 #define PLAIN_TEXT_DATA_SIZE                    (sizeof(Plain_Text_Data_t))
-
-
-   /* The following type defines the buffer that is used to */
-   /* format AES-CMAC input message data for generating the confirmation value - used in f4 function */
-typedef __PACKED_STRUCT_BEGIN__ struct _tag_AES_CMAC_Confiramation_msg_t
-{
-   Byte_t AES_CMAC_Confiramation_msg[AES_CMAC_CONFIRMATION_MSG_MAXIMUM_SIZE];
-} __PACKED_STRUCT_END__ AES_CMAC_Confiramation_msg_t;
-
-#define AES_CMAC_CONFIRMATION_MSG_SIZE                    (sizeof(AES_CMAC_Confiramation_msg_t))
-
-   /* The following type defines the buffer that is used to */
-   /* format AES-CMAC input message data for generating the MacKey and LTK value - used in f5 function */
-typedef __PACKED_STRUCT_BEGIN__ struct _tag_AES_CMAC_Key_Generation_msg_t
-{
-   Byte_t AES_CMAC_Key_Generation_msg[AES_CMAC_KEY_GENERATION_MSG_MAXIMUM_SIZE];
-} __PACKED_STRUCT_END__ AES_CMAC_Key_Generation_msg_t;
-
-#define AES_CMAC_KEY_GENERATION_MSG_SIZE                    (sizeof(AES_CMAC_Key_Generation_msg_t))
-
-   /* The following type defines the buffer that is used to */
-   /* format AES-CMAC input message data for generating the check value - used in f6 function */
-typedef __PACKED_STRUCT_BEGIN__ struct _tag_AES_CMAC_Check_Value_Generation_msg_t
-{
-   Byte_t AES_CMAC_Check_Value_Generation_msg_t[AES_CMAC_CHECK_VALUE_GENERATION_MAXIMUM_MSG_SIZE];
-} __PACKED_STRUCT_END__ AES_CMAC_Check_Value_Generation_msg_t;
-
-#define AES_CMAC_CHECK_VALUE_GENERATION_MSG_SIZE                    (sizeof(AES_CMAC_Check_Value_Generation_msg_t))
-
-   /* The following type defines the buffer that is used to */
-   /* format AES-CMAC input message data for generating the Numeric Comparison value - used in g2 function */
-typedef __PACKED_STRUCT_BEGIN__ struct _tag_AES_CMAC_Numeric_Comparison_Value_Generation_msg_t
-{
-   Byte_t AES_CMAC_Numeric_Comparison_Value_Generation_msg_t[AES_CMAC_NUMERIC_COMPARISON_VALUE_GENERATION_MAXIMUM_MSG_SIZE];
-} __PACKED_STRUCT_END__ AES_CMAC_Numeric_Comparison_Value_Generation_msg_t;
-
-#define AES_CMAC_NUMERIC_COMPARISON_MSG_SIZE                    (sizeof(AES_CMAC_Numeric_Comparison_Value_Generation_msg_t))
-
 
    /* The following define determines the maximum fixed size that is    */
    /* output from the LE encryption schema.                             */

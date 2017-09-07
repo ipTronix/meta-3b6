@@ -30,26 +30,14 @@
 #define L2CAP_CHANNEL_IDENTIFIER_MINIMUM_CHANNEL_IDENTIFIER             0x0040
 #define L2CAP_CHANNEL_IDENTIFIER_MAXIMUM_CHANNEL_IDENTIFIER             0xFFFF
 
-#define L2CAP_CHANNEL_IDENTIFIER_MINIMUM_LE_CHANNEL_IDENTIFIER          0x0040
-#define L2CAP_CHANNEL_IDENTIFIER_MAXIMUM_LE_CHANNEL_IDENTIFIER          0x007F
-
    /* The following Constants represent the defined Bluetooth L2CAP PSM */
    /* Minimum and Maximum Values.                                       */
 #define L2CAP_PSM_MINIMUM_PSM                                           0x0001
 #define L2CAP_PSM_MAXIMUM_PSM                                           0xFEFF
 
-   /* The following Constants represent the defined Bluetooth L2CAP LE  */
-   /* PSM Minimum and Maximum Values.                                   */
-#define L2CAP_LE_PSM_MINIMUM_PSM                                        0x0001
-#define L2CAP_LE_PSM_MAXIMUM_PSM                                        0x00FF
-
    /* The following Constant represents an Invalid PSM value that can   */
    /* be used by the programmer to initialize an invalid PSM value.     */
 #define L2CAP_PSM_INVALID_PSM                                           0x0000
-
-   /* The following constant represents the maximum credit count for a  */
-   /* connection orieneted channel using LE Credit Based Flow Control.  */
-#define L2CAP_MAXIMUM_LE_CREDIT_COUNT                                   65535
 
    /* The following MACRO is a utility MACRO that exists to aid code    */
    /* readability of testing whether or not a specified PSM value is    */
@@ -59,15 +47,6 @@
    /* boolean TRUE if the specified PSM is valid, or a boolean FALSE    */
    /* if the specified PSM value is invalid.                            */
 #define L2CAP_PSM_VALID_PSM(_x)                         (((_x) & 0x0001) && (!((_x) & 0x0100)) && ((_x) >= L2CAP_PSM_MINIMUM_PSM) && ((_x) <= L2CAP_PSM_MAXIMUM_PSM))
-
-   /* The following MACRO is a utility MACRO that exists to aid code    */
-   /* readability of testing whether or not a specified LE PSM value is */
-   /* valid.  The first parameter to this MACRO is the LE PSM Value to  */
-   /* verify.  This MACRO returns a boolean value based upon whether or */
-   /* not the specified LE PSM value is valid.  This MACRO returns a    */
-   /* boolean TRUE if the specified LE PSM is valid, or a boolean FALSE */
-   /* if the specified LE PSM value is invalid.                         */
-#define L2CAP_LE_PSM_VALID_PSM(_x)                      (((_x) >= L2CAP_LE_PSM_MINIMUM_PSM) && ((_x) <= L2CAP_LE_PSM_MAXIMUM_PSM))
 
    /* The following Constants represent the defined Bluetooth L2CAP     */
    /* Link Timeout Minimum and Maximum Values (in Milliseconds).        */
@@ -155,16 +134,6 @@
 #define L2CAP_CONNECT_RESULT_CONNECTION_TIMEOUT                         0xEEEE
 #define L2CAP_CONNECT_RESULT_CONNECTION_ACL_CONNECTION_FAILURE          0xEEEF
 #define L2CAP_CONNECT_RESULT_CONNECTION_AUTHENTICATION_FAILURE          0xEEF0
-
-   /* The following Constants represent the defined Bluetooth L2CAP LE  */
-   /* Credit Based Connection Result Values.                            */
-#define L2CAP_LE_CONNECT_RESULT_CONNECTION_SUCCESSFUL                               0x0000
-#define L2CAP_LE_CONNECT_RESULT_CONNECTION_REFUSED_LE_PSM_NOT_REGISTERED            0x0002
-#define L2CAP_LE_CONNECT_RESULT_CONNECTION_REFUSED_NO_RESOURCES                     0x0004
-#define L2CAP_LE_CONNECT_RESULT_CONNECTION_REFUSED_INSUFFICIENT_AUTHENTICATION      0x0005
-#define L2CAP_LE_CONNECT_RESULT_CONNECTION_REFUSED_INSUFFICIENT_AUTHORIZATION       0x0006
-#define L2CAP_LE_CONNECT_RESULT_CONNECTION_REFUSED_INSUFFICIENT_ENCRYPTION_KEY_SIZE 0x0007
-#define L2CAP_LE_CONNECT_RESULT_CONNECTION_REFUSED_INSUFFICIENT_ENCRYPTION          0x0008
 
    /* The following Constants represent the defined Bluetooth L2CAP     */
    /* Connection Status Values.                                         */
@@ -270,8 +239,8 @@
 
    /* The following Constants represent the defines Modes of operation  */
 #define L2CAP_MODE_INFO_MODE_BASIC                                      0
-#define L2CAP_MODE_INFO_MODE_RETRANSMISSION                             1
-#define L2CAP_MODE_INFO_MODE_FLOW_CONTROL                               2
+#define L2CAP_MODE_INFO_MODE_FLOW_CONTROL                               1
+#define L2CAP_MODE_INFO_MODE_RETRANSMISSION                             2
 #define L2CAP_MODE_INFO_MODE_ENHANCED_RETRANSMISSION                    3
 #define L2CAP_MODE_INFO_MODE_STREAMING                                  4
 #define L2CAP_MODE_INFO_MODE_WITH_EXTENDED_WINDOW_SIZE                  128
@@ -442,9 +411,6 @@
 #define L2CAP_CODE_MOVE_CHANNEL_CONFIRMATION_RESPONSE                   0x11
 #define L2CAP_CODE_CONNECTION_PARAMETER_UPDATE_REQUEST                  0x12
 #define L2CAP_CODE_CONNECTION_PARAMETER_UPDATE_RESPONSE                 0x13
-#define L2CAP_CODE_LE_CREDIT_BASED_CONNECTION_REQUEST                   0x14
-#define L2CAP_CODE_LE_CREDIT_BASED_CONNECTION_RESPONSE                  0x15
-#define L2CAP_CODE_LE_FLOW_CONTROL_CREDIT                               0x16
 
    /* L2CAP SDP Protocol UUID's.                                        */
 
@@ -773,45 +739,6 @@ typedef __PACKED_STRUCT_BEGIN__ struct _tagL2CAP_Connection_Parameter_Update_Res
 
 #define L2CAP_CONNECTION_PARAMETER_UPDATE_RESPONSE_SIZE (sizeof(L2CAP_Connection_Parameter_Update_Response_t))
 
-   /* The following structure represents the structure of the L2CAP LE  */
-   /* Credit Based Connection Request Packet.                           */
-typedef __PACKED_STRUCT_BEGIN__ struct _tagL2CAP_LE_Credit_Based_Connection_Request_t
-{
-  L2CAP_Signal_Command_Header_t CommandHeader;
-  NonAlignedWord_t              LE_PSM;
-  NonAlignedWord_t              SCID;
-  NonAlignedWord_t              MTU;
-  NonAlignedWord_t              MPS;
-  NonAlignedWord_t              InitialCredits;
-} __PACKED_STRUCT_END__ L2CAP_LE_Credit_Based_Connection_Request_t;
-
-#define L2CAP_LE_CREDIT_BASED_CONNECTION_REQUEST_SIZE   (sizeof(L2CAP_LE_Credit_Based_Connection_Request_t))
-
-   /* The following structure represents the structure of the L2CAP LE  */
-   /* Credit Based Connection Response Packet.                          */
-typedef __PACKED_STRUCT_BEGIN__ struct _tagL2CAP_LE_Credit_Based_Connection_Response_t
-{
-  L2CAP_Signal_Command_Header_t CommandHeader;
-  NonAlignedWord_t              DCID;
-  NonAlignedWord_t              MTU;
-  NonAlignedWord_t              MPS;
-  NonAlignedWord_t              InitialCredits;
-  NonAlignedWord_t              Result;
-} __PACKED_STRUCT_END__ L2CAP_LE_Credit_Based_Connection_Response_t;
-
-#define L2CAP_LE_CREDIT_BASED_CONNECTION_RESPONSE_SIZE  (sizeof(L2CAP_LE_Credit_Based_Connection_Response_t))
-
-   /* The following structure represents the structure of the L2CAP LE  */
-   /* Flow Control Credit Packet.                                       */
-typedef __PACKED_STRUCT_BEGIN__ struct _tagL2CAP_LE_Flow_Control_Credit_t
-{
-  L2CAP_Signal_Command_Header_t CommandHeader;
-  NonAlignedWord_t              DCID;
-  NonAlignedWord_t              Credits;
-} __PACKED_STRUCT_END__ L2CAP_LE_Flow_Control_Credit_t;
-
-#define L2CAP_LE_FLOW_CONTROL_CREDIT_SIZE               (sizeof(L2CAP_LE_Flow_Control_Credit_t))
-
    /* The following type declaration represents the structure of the    */
    /* Header of an L2CAP Data Packet.  This Header Information is       */
    /* contained in Every Defined L2CAP Data Packet.  This structure     */
@@ -1022,21 +949,5 @@ typedef __PACKED_STRUCT_BEGIN__ struct _tagL2CAP_C_Frame_Packet_t
    /* the Packet.  The first parameter to this MACRO is the size (in    */
    /* Bytes) of the Payload that is to be part of the Packet.           */
 #define L2CAP_C_FRAME_PACKET_SIZE(_x)                   (sizeof(L2CAP_Data_Packet_Header_t) + L2CAP_C_PACKET_SIZE(_x))
-
-   /* The following structure represents the structure of the L2CAP LE  */
-   /* Frame for an L2CAP LE connection oriented channel.                */
-typedef __PACKED_STRUCT_BEGIN__ struct _tagL2CAP_LE_Frame_Packet_t
-{
-   L2CAP_Data_Packet_Header_t L2CAP_Data_Packet_Header;
-   NonAlignedWord_t           SDU_Length;
-   Byte_t                     Variable_Data[1];
-} __PACKED_STRUCT_END__ L2CAP_LE_Frame_Packet_t;
-
-   /* The following MACRO is a utility MACRO that exists to aid code    */
-   /* readability to Determine the size (in Bytes) of an L2CAP LE Frame */
-   /* Packet Structure based upon the size of the Data associated with  */
-   /* the Packet.  The first parameter to this MACRO is the size (in    */
-   /* Bytes) of the Payload that is to be part of the Packet.           */
-#define L2CAP_LE_FRAME_PACKET_SIZE(_x)                  ((sizeof(L2CAP_LE_Frame_Packet_t) - sizeof(Byte_t)) + (unsigned int)(_x))
 
 #endif

@@ -13,8 +13,6 @@
 /*   --------  -----------    ------------------------------------------------*/
 /*   09/11/00  T. Thomas      Initial creation.                               */
 /*   09/18/08  T. Thomas      Updates for BT 2.1                              */
-/*   06/10/11  T. Thomas      Updates for BT 4.0.                             */
-/*   02/15/14  T. Cook        Updates for BT 4.1.                             */
 /******************************************************************************/
 #ifndef __L2CAPAPIH__
 #define __L2CAPAPIH__
@@ -78,51 +76,6 @@
 
 #define L2CA_CONFIG_SUPPORTED_OPTIONS                              (L2CA_CONFIG_OPTION_FLAG_MTU | L2CA_CONFIG_OPTION_FLAG_FLUSH_TIMEOUT | L2CA_CONFIG_OPTION_FLAG_QOS | L2CA_CONFIG_OPTION_FLAG_MODE_INFO | L2CA_CONFIG_OPTION_FLAG_FCS_OPTION)
 
-   /* The following structure represents the structure of the L2CAP LE  */
-   /* Credit Based Channel Data Structure.                              */
-   /* * NOTE * The Max SDU Size denotes the maximum Service Data Unit   */
-   /*          that the local device is capable of receiving from the   */
-   /*          remote device.                                           */
-   /* * NOTE * The Max PDU Size (MPS) denotes the maximum L2CAP Packet  */
-   /*          (LE-Frame) that the local device is capable of receiving */
-   /*          from the remote device.  If the Max SDU Size is larger   */
-   /*          than the Max PDU Size then the SDU will be split into    */
-   /*          multiple LE-Frames before being sent to the remote       */
-   /*          device.                                                  */
-   /* * NOTE * The Maximum Credits denotes the maximum number of credits*/
-   /*          (in LE-Frames) to grant to the remote device.  The remote*/
-   /*          device will only be able to send this many LE-Frames (of */
-   /*          at most MaxPDUSize bytes) without the local device       */
-   /*          granting credits back.                                   */
-   /* * NOTE * The PDUQueueLimit directly affects the throughput for    */
-   /*          this channel and for other channels.  With a large value */
-   /*          for PDUQueueLimit the channel will have a larger share of*/
-   /*          the bandwidth at the expense of other channels.          */
-   /* * NOTE * The Credit Threshold controls when credits will be       */
-   /*          granted back to the remote device.  When the number of   */
-   /*          credits that we MAY grant back to the remote device (i.e.*/
-   /*          the initial credit count minus the number of un-credited */
-   /*          packets we have received) is greater than or equal to    */
-   /*          this number then we will grant credits back to the remote*/
-   /*          device (so a value of 2 says that we will send credits   */
-   /*          back to the remote device on every second packet).  Thus */
-   /*          CreditThreshold MUST be less than or equal to            */
-   /*          InitialCredits.                                          */
-typedef struct _tagL2CA_LE_Channel_Parameters_t
-{
-   Word_t ChannelFlags;
-   Word_t MaxSDUSize;
-   Word_t MaxPDUSize;
-   Word_t PDUQueueDepth;
-   Word_t MaximumCredits;
-} L2CA_LE_Channel_Parameters_t;
-
-#define L2CA_LE_CHANNEL_PARAMETERS_SIZE                  (sizeof(L2CA_LE_Channel_Parameters_t))
-
-   /* The following flags define the valid flags that may be set in the */
-   /* ChannelFlags member of the L2CA_LE_Channel_Parameters_t structure.*/
-#define L2CA_LE_CHANNEL_PARAMETER_FLAGS_MANUAL_CREDIT_MODE  0x0001
-
    /* The following Type Declaration defines the L2CA Event Callback    */
    /* Data Types.  These types are used with the L2CA_Event_Data_t      */
    /* structure to determine the type of Data the L2CAP Event Callback  */
@@ -148,13 +101,7 @@ typedef enum
    etFixed_Channel_Connect_Indication,
    etFixed_Channel_Disconnect_Indication,
    etFixed_Channel_Data_Indication,
-   etFixed_Channel_Buffer_Empty_Indication,
-   etLE_Connect_Indication,
-   etLE_Connect_Confirmation,
-   etLE_Disconnect_Indication,
-   etLE_Disconnect_Confirmation,
-   etLE_Data_Indication,
-   etLE_Channel_Buffer_Empty_Indication
+   etFixed_Channel_Buffer_Empty_Indication
 } L2CA_Event_Type_t;
 
    /* The following structure represents the structure of the L2CAP     */
@@ -702,108 +649,6 @@ typedef struct _tagL2CA_Fixed_Channel_Buffer_Empty_Indication_t
 
 #define L2CA_FIXED_CHANNEL_BUFFER_EMPTY_INDICATION_SIZE  (sizeof(L2CA_Fixed_Channel_Buffer_Empty_Indication_t))
 
-   /* The following structure represents the structure of the L2CAP LE  */
-   /* Connect Indication Event Data (etLE_Connect_Indication).  This    */
-   /* structure is used when an L2CAP LE Connect Request is received.   */
-   /* The Upper Layer is provided the LE Connect Request information in */
-   /* the Callback Function.  The LCID is the Local CID that should be  */
-   /* used to reference this connection.  The Board address is provided */
-   /* as Extra information about the device that is requesting the      */
-   /* connection.                                                       */
-typedef struct _tagL2CA_LE_Connect_Indication_t
-{
-  Word_t    PSM;
-  Word_t    LCID;
-  Byte_t    Identifier;
-  BD_ADDR_t BD_ADDR;
-  Word_t    MaxSDUSize;
-  Word_t    MaxPDUSize;
-  Word_t    InitialCredits;
-} L2CA_LE_Connect_Indication_t;
-
-#define L2CA_LE_CONNECT_INDICATION_SIZE                  (sizeof(L2CA_LE_Connect_Indication_t))
-
-   /* The following structure represents the structure of the L2CAP LE  */
-   /* Connect Confirmation Event Data (etLE_Connect_Confirmation).  This*/
-   /* structure is used when an L2CAP LE Connect Response is received.  */
-   /* The Upper Layer is provided the LE Connect Response information in*/
-   /* the Callback Function.  The LCID is the Local CID that should be  */
-   /* used to reference this connection.                                */
-typedef struct _tagL2CA_LE_Connect_Confirmation_t
-{
-   Word_t LCID;
-   Word_t Result;
-   Word_t MaxSDUSize;
-   Word_t MaxPDUSize;
-   Word_t InitialCredits;
-} L2CA_LE_Connect_Confirmation_t;
-
-#define L2CA_LE_CONNECT_CONFIRMATION_SIZE                (sizeof(L2CA_LE_Connect_Confirmation_t))
-
-   /* The following structure represents the structure of the L2CAP LE  */
-   /* Disconnect Indication Event Data.                                 */
-typedef struct _tagL2CA_LE_Disconnect_Indication_t
-{
-  Word_t LCID;
-  Byte_t Reason;
-} L2CA_LE_Disconnect_Indication_t;
-
-#define L2CA_LE_DISCONNECT_INDICATION_SIZE               (sizeof(L2CA_LE_Disconnect_Indication_t))
-
-   /* The following structure represents the structure of the L2CAP LE  */
-   /* Disconnect Confirmation Event Data.                               */
-typedef struct _tagL2CA_LE_Disconnect_Confirmation_t
-{
-  Word_t LCID;
-  Word_t Result;
-} L2CA_LE_Disconnect_Confirmation_t;
-
-#define L2CA_LE_DISCONNECT_CONFIRMATION_SIZE             (sizeof(L2CA_LE_Disconnect_Confirmation_t))
-
-   /* The following structure represents the structure of the L2CAP LE  */
-   /* Data Indication Event Data.                                       */
-   /* * NOTE * The CreditsConsumed member of this event indicates the   */
-   /*          number of credits that were consumed by the remote device*/
-   /*          to send this packet.  When in manual-credit mode (i.e.   */
-   /*          the L2CA_LE_CHANNEL_PARAMETER_FLAGS_MANUAL_CREDIT_MODE   */
-   /*          flag was set in the ChannelFlags member of the           */
-   /*          L2CA_LE_Channel_Parameters_t structure that was passed to*/
-   /*          either the L2CA_LE_Connect_Request() or                  */
-   /*          L2CA_LE_Connect_Response() API calls that created or     */
-   /*          accepted this LE channel respectively) then the          */
-   /*          application should call the L2CA_LE_Grant_Credits()      */
-   /*          passing the CreditsConsumed member to inform the L2CA    */
-   /*          Layer that the SDU has been consumed and we can grant    */
-   /*          credits back.                                            */
-   /* * NOTE * This CreditsConsumed member is additive so the           */
-   /*          application may add the CreditsConsumed from multiple    */
-   /*          events into one call to the L2CA_LE_Grant_Credits().     */
-   /*          However the application should grant credits as soon as a*/
-   /*          SDU is consumed rather than waiting on multiple data     */
-   /*          indication events.                                       */
-typedef struct _tagL2CA_LE_Data_Indication_t
-{
-   Word_t  CID;
-   Word_t  CreditsConsumed;
-   Word_t  Data_Length;
-   Byte_t *Variable_Data;
-} L2CA_LE_Data_Indication_t;
-
-#define L2CA_LE_DATA_INDICATION_SIZE                     (sizeof(L2CA_LE_Data_Indication_t))
-
-   /* The following structure represents the event that is dispatched   */
-   /* when the L2CAP LE Channel Buffers are Empty.  This event is ONLY  */
-   /* dispatched when the caller has tried to write data and the Channel*/
-   /* Buffers are full.  See the                                        */
-   /* L2CA_Enhanced_Dynamic_Channel_Data_Write() function for more      */
-   /* information.                                                      */
-typedef struct _tagL2CA_LE_Channel_Buffer_Empty_Indication_t
-{
-   Word_t CID;
-} L2CA_LE_Channel_Buffer_Empty_Indication_t;
-
-#define L2CA_LE_CHANNEL_BUFFER_EMPTY_INDICATION_SIZE     (sizeof(L2CA_LE_Channel_Buffer_Empty_Indication_t))
-
 typedef struct _tagL2CA_Event_Data_t
 {
    L2CA_Event_Type_t L2CA_Event_Type;
@@ -830,12 +675,6 @@ typedef struct _tagL2CA_Event_Data_t
       L2CA_Fixed_Channel_Disconnect_Indication_t      *L2CA_Fixed_Channel_Disconnect_Indication;
       L2CA_Fixed_Channel_Data_Indication_t            *L2CA_Fixed_Channel_Data_Indication;
       L2CA_Fixed_Channel_Buffer_Empty_Indication_t    *L2CA_Fixed_Channel_Buffer_Empty_Indication;
-      L2CA_LE_Connect_Indication_t                    *L2CA_LE_Connect_Indication;
-      L2CA_LE_Connect_Confirmation_t                  *L2CA_LE_Connect_Confirmation;
-      L2CA_LE_Disconnect_Indication_t                 *L2CA_LE_Disconnect_Indication;
-      L2CA_LE_Disconnect_Confirmation_t               *L2CA_LE_Disconnect_Confirmation;
-      L2CA_LE_Data_Indication_t                       *L2CA_LE_Data_Indication;
-      L2CA_LE_Channel_Buffer_Empty_Indication_t       *L2CA_LE_Channel_Buffer_Empty_Indication;
    } Event_Data;
 } L2CA_Event_Data_t;
 
@@ -954,50 +793,6 @@ BTPSAPI_DECLARATION int BTPSAPI L2CA_Un_Register_PSM(unsigned int BluetoothStack
 
 #ifdef INCLUDE_BLUETOOTH_API_PROTOTYPES
    typedef int (BTPSAPI *PFN_L2CA_Un_Register_PSM_t)(unsigned int BluetoothStackID, unsigned int L2CAP_PSMID);
-#endif
-
-   /* The following function is responsible for Registering an L2CAP    */
-   /* Callback function, with the L2CAP Layer associated with the       */
-   /* specified Bluetooth Stack ID, to handle incoming L2CAP Events     */
-   /* destined for the specified LE PSM Number.  The first parameter to */
-   /* this function is the Bluetooth Stack ID that specifies the        */
-   /* Bluetooth Protocol Stack to install the L2CAP Callback with.  The */
-   /* second parameter is the LE PSM Number to register the L2CAP       */
-   /* Callback for, and the last two parameters specify the Callback    */
-   /* Function and the Callback Parameter that will be passed to the    */
-   /* callback function when an Event occurs for the specified LE PSM.  */
-   /* This function returns a non-zero, positive return value which     */
-   /* represents the L2CAP LE PSM Callback ID if successful, or a       */
-   /* negative return code if the function is unsuccessful.  The caller */
-   /* can use the return value from this function (if successful) as the*/
-   /* L2CAP_PSMID parameter for the L2CA_Un_Register_LE_PSM() function  */
-   /* when the caller wants to Un-Register the LE PSM from the L2CAP    */
-   /* Layer associated with the Bluetooth Stack specified by the        */
-   /* Bluetooth Stack ID parameter.                                     */
-BTPSAPI_DECLARATION int BTPSAPI L2CA_Register_LE_PSM(unsigned int BluetoothStackID, Word_t LE_PSM, L2CA_Event_Callback_t L2CA_Event_Callback, unsigned long CallbackParameter);
-
-#ifdef INCLUDE_BLUETOOTH_API_PROTOTYPES
-   typedef int (BTPSAPI *PFN_L2CA_Register_LE_PSM_t)(unsigned int BluetoothStackID, Word_t LE_PSM, L2CA_Event_Callback_t L2CA_Event_Callback, unsigned long CallbackParameter);
-#endif
-
-   /* The following function is responsible for Un-Registering an L2CAP */
-   /* Callback function that was previously registered via a successful */
-   /* call to the L2CA_Register_LE_PSM() function.  The first parameter */
-   /* to this function is the Bluetooth Stack ID that specifies the     */
-   /* Bluetooth Protocol Stack that the L2CAP PSM Callback Function was */
-   /* previously installed, and the second parameter is the L2CAP LE PSM*/
-   /* Callback ID.  This ID is the return value from the                */
-   /* L2CA_Register_LE_PSM() function.  This function returns zero if   */
-   /* the L2CAP LE PSM Callback was successfully removed from the       */
-   /* Bluetooth Protocol Stack or a negative return value if the        */
-   /* operation was unsuccessful.  If this function completes           */
-   /* successfully, then the specified Callback will NO longer be called*/
-   /* when an L2CAP Event occurs for the PSM Number that was associated */
-   /* with the specified L2CAP Callback function.                       */
-BTPSAPI_DECLARATION int BTPSAPI L2CA_Un_Register_LE_PSM(unsigned int BluetoothStackID, unsigned int L2CAP_PSMID);
-
-#ifdef INCLUDE_BLUETOOTH_API_PROTOTYPES
-   typedef int (BTPSAPI *PFN_L2CA_Un_Register_LE_PSM_t)(unsigned int BluetoothStackID, unsigned int L2CAP_PSMID);
 #endif
 
    /* The following function is responsible for Registering an L2CAP    */
@@ -1163,7 +958,7 @@ BTPSAPI_DECLARATION int BTPSAPI L2CA_Disconnect_Request(unsigned int BluetoothSt
    /* Disconnect Indication Event.  This function allows the recipient  */
    /* of the L2CAP Event the option of Responding to the Disconnection  */
    /* Indication.  There is no option provided to reject or deny the    */
-   /* request.  This function should be called ONLY upon receipt of an  */
+   /* request. This function should be called ONLY upon receipt of an   */
    /* L2CAP Disconnect Indication Event Callback.  The input parameter  */
    /* to this function are the Bluetooth Protocol Stack ID and the L2CAP*/
    /* Identifier (this value was passed to the caller in the caller in  */
@@ -1181,110 +976,6 @@ BTPSAPI_DECLARATION int BTPSAPI L2CA_Disconnect_Response(unsigned int BluetoothS
 
 #ifdef INCLUDE_BLUETOOTH_API_PROTOTYPES
    typedef int (BTPSAPI *PFN_L2CA_Disconnect_Response_t)(unsigned int BluetoothStackID, Word_t LCID);
-#endif
-
-   /* The following function is responsible for requesting the creation */
-   /* of a Dynamic LE L2CAP Channel with the specified Bluetooth Board  */
-   /* Address.  This function, accepts as input the Bluetooth Stack ID  */
-   /* of the Bluetooth Stack to create the L2CAP Connection.  The second*/
-   /* parameter to this function is the Bluetooth Board Address of the  */
-   /* Bluetooth Device to establish the L2CAP Connection with.  The     */
-   /* third parameter is the LE_PSM Number of the Protocol to request   */
-   /* connection with (on the remote side), the next parameter contains */
-   /* the local device's channel parameters to use with the channel, and*/
-   /* the last two parameters specify the L2CAP Callback Function and   */
-   /* Callback Parameter that will be associated with ALL L2CAP Events  */
-   /* that occur related to the requested Connection.  This function    */
-   /* returns a positive, non-zero Local Channel Identifier (LCID) if   */
-   /* the L2CAP Connection Request was issued successfully, or a        */
-   /* negative, return error code indicating an error.                  */
-   /* * NOTE * If this function is successful, then all further Status  */
-   /*          and Event Notifications will occur through the Callback  */
-   /*          Function that is specified with this function.           */
-   /* * NOTE * A Positive return value (LCID) does NOT mean that a      */
-   /*          connection already exists, only that the Connection      */
-   /*          Request has been successfully submitted.                 */
-   /* * NOTE * The ACL connection to the remote device must already     */
-   /*          exist before calling this function.                      */
-BTPSAPI_DECLARATION int BTPSAPI L2CA_LE_Connect_Request(unsigned int BluetoothStackID, BD_ADDR_t BD_ADDR, Word_t LE_PSM, L2CA_LE_Channel_Parameters_t *ChannelParameters, L2CA_Event_Callback_t L2CA_Event_Callback, unsigned long CallbackParameter);
-
-#ifdef INCLUDE_BLUETOOTH_API_PROTOTYPES
-   typedef int (BTPSAPI *PFN_L2CA_LE_Connect_Request_t)(unsigned int BluetoothStackID, BD_ADDR_t BD_ADDR, Word_t LE_PSM, L2CA_LE_Channel_Parameters_t *ChannelParameters, L2CA_Event_Callback_t L2CA_Event_Callback, unsigned long CallbackParameter);
-#endif
-
-   /* The following function is responsible for Responding to a L2CAP LE*/
-   /* Connect Indication Event.  This function allows the recipient of  */
-   /* the L2CAP Event the option of Responding to the Connection        */
-   /* Indication with a Positive Accept, or a Negative Accept.  This    */
-   /* function should be called ONLY upon receipt of an L2CAP LE Connect*/
-   /* Indication Event Callback.  The input parameter to this function  */
-   /* are the Bluetooth Protocol Stack ID, the Bluetooth Board Address  */
-   /* of the Bluetooth Device Requesting the L2CAP Connection, the L2CAP*/
-   /* Identifier (this value was passed to the caller in the L2CAP      */
-   /* Connect Indication Event), and the L2CAP LE Connection Accept     */
-   /* Result (Accept, Pending, or Rejection Reason), and finally the    */
-   /* local device's channel parameters to use with the channel (if the */
-   /* connection request is being accepted).  This function returns zero*/
-   /* if the L2CAP Connection Response was successfully submitted, or a */
-   /* negative return error code if the Response was NOT successfully   */
-   /* submitted.                                                        */
-   /* * NOTE * A successful return value (zero) does NOT mean that the  */
-   /*          connection response was sent, only that the Connection   */
-   /*          Response has been successfully submitted to the L2CAP    */
-   /*          Layer associated with the Local Bluetooth Protocol Stack.*/
-   /* * NOTE * The ChannelParameters parameter is only required when the*/
-   /*          Result is set to                                         */
-   /*          L2CAP_LE_CONNECT_RESULT_CONNECTION_SUCCESSFUL (i.e the   */
-   /*          connection is being accepted).                           */
-BTPSAPI_DECLARATION int BTPSAPI L2CA_LE_Connect_Response(unsigned int BluetoothStackID, BD_ADDR_t BD_ADDR, Byte_t Identifier, Word_t LCID, Word_t Result, L2CA_LE_Channel_Parameters_t *ChannelParameters);
-
-#ifdef INCLUDE_BLUETOOTH_API_PROTOTYPES
-   typedef int (BTPSAPI *PFN_L2CA_LE_Connect_Response_t)(unsigned int BluetoothStackID, BD_ADDR_t BD_ADDR, Byte_t Identifier, Word_t LCID, Word_t Result, L2CA_LE_Channel_Parameters_t *ChannelParameters);
-#endif
-
-   /* The following function is responsible for requesting the          */
-   /* Disconnection of a logical L2CAP LE Connection that has previously*/
-   /* been established (either created or accepted).  The input         */
-   /* parameters to this function are the Bluetooth stack ID of the     */
-   /* Bluetooth Stack that is maintaining the L2CAP LE Connection, and  */
-   /* the Local Channel Identifier (LCID) of the Logical L2CAP LE       */
-   /* Connection to terminate.  This function returns a zero value if   */
-   /* the L2CAP LE Connection was terminated, or a negative, return     */
-   /* error code if unsuccessful.  If this function completes           */
-   /* successfully then an L2CAP LE Disconnect Indication will be sent  */
-   /* to the L2CAP Callback Function that was handling the L2CAP Events */
-   /* for this connection.                                              */
-   /* * NOTE * It should be noted that after this function is called (if*/
-   /*          it completes successfully), the LCID is NO Longer able to*/
-   /*          be used (i.e.  Logical Connection is terminated).        */
-BTPSAPI_DECLARATION int BTPSAPI L2CA_LE_Disconnect_Request(unsigned int BluetoothStackID, Word_t LCID);
-
-#ifdef INCLUDE_BLUETOOTH_API_PROTOTYPES
-   typedef int (BTPSAPI *PFN_L2CA_LE_Disconnect_Request_t)(unsigned int BluetoothStackID, Word_t LCID);
-#endif
-
-   /* The following function is responsible for Responding to a L2CAP LE*/
-   /* Disconnect Indication Event.  This function allows the recipient  */
-   /* of the L2CAP Event the option of Responding to the Disconnection  */
-   /* Indication.  There is no option provided to reject or deny the    */
-   /* request.  This function should be called ONLY upon receipt of an  */
-   /* L2CAP Disconnect Indication Event Callback.  The input parameter  */
-   /* to this function are the Bluetooth Protocol Stack ID, and the     */
-   /* L2CAP Identifier (this value was passed to the caller in the      */
-   /* caller in the L2CAP LE Disconnect Indication Event).  This        */
-   /* function returns zero if the L2CAP LE Disconnection Response was  */
-   /* successfully submitted, or a negative return error code if the    */
-   /* Response was NOT successfully submitted.                          */
-   /* * NOTE * A successful return value (zero) does NOT mean that the  */
-   /*          disconnection response was sent, only that the           */
-   /*          Disconnection Response has been successfully submitted to*/
-   /*          the L2CAP Layer associated with the Local Bluetooth      */
-   /*          Protocol Stack.  Any further use of the specified CID    */
-   /*          will be rejected by the stack.                           */
-BTPSAPI_DECLARATION int BTPSAPI L2CA_LE_Disconnect_Response(unsigned int BluetoothStackID, Word_t LCID);
-
-#ifdef INCLUDE_BLUETOOTH_API_PROTOTYPES
-   typedef int (BTPSAPI *PFN_L2CA_LE_Disconnect_Response_t)(unsigned int BluetoothStackID, Word_t LCID);
 #endif
 
    /* The following function is responsible for Sending L2CAP Data to   */
@@ -1412,43 +1103,6 @@ BTPSAPI_DECLARATION int BTPSAPI L2CA_Enhanced_Fixed_Channel_Data_Write(unsigned 
 
 #ifdef INCLUDE_BLUETOOTH_API_PROTOTYPES
    typedef int (BTPSAPI *PFN_L2CA_Enhanced_Fixed_Channel_Data_Write_t)(unsigned int BluetoothStackID, BD_ADDR_t BD_ADDR, Word_t FCID, L2CA_Queueing_Parameters_t *QueueingParameters, Word_t Data_Length, Byte_t *Data);
-#endif
-
-   /* The following function is responsible for Sending L2CAP Data to   */
-   /* the specified L2CAP LE Connection Oriented channel.  This function*/
-   /* provides additional functionallity to control the amount of buffer*/
-   /* usage for each data channel.  The L2CAP Connection ID (LCID) that */
-   /* is passed to this function MUST have been established by either   */
-   /* Accepting an L2CAP LE Connection or Initiating an L2CAP LE        */
-   /* Connection (and having the other side accept the Connection).  The*/
-   /* input parameters to this function are the Bluetooth Stack ID of   */
-   /* the Bluetooth Stack that the second parameter is valid for (LCID -*/
-   /* Logical Connection Channel Identifier), a pointer to a structure  */
-   /* that contains conditional queueing parameters, the Length of the  */
-   /* Data to send and a pointer to the Data Buffer to Send.  This      */
-   /* function returns a zero if the data was successfully sent, or a   */
-   /* negative return error code if unsuccessful.                       */
-   /* * NOTE * If this function returns the Error Code:                 */
-   /*                                                                   */
-   /*             BTPS_ERROR_INSUFFICIENT_BUFFER_SPACE                  */
-   /*                                                                   */
-   /*          then this is a signal to the caller that the requested   */
-   /*          data could NOT be sent because the requested data could  */
-   /*          not be queued in the Outgoing L2CAP Queue.  The caller   */
-   /*          then, must wait for the                                  */
-   /*                                                                   */
-   /*             etLE_Channel_Buffer_Empty_Indication                  */
-   /*                                                                   */
-   /*          Event before trying to send any more data.               */
-   /* * NOTE * If this function is called with a non-NULL               */
-   /*          QueueingParameters then the data is queued conditionally.*/
-   /*          If successful, the return value will indicate the number */
-   /*          of packets/bytes that are currently queued on the        */
-   /*          specified channel at the time the function returns.      */
-BTPSAPI_DECLARATION int BTPSAPI L2CA_Enhanced_Dynamic_Channel_Data_Write(unsigned int BluetoothStackID, Word_t LCID, L2CA_Queueing_Parameters_t *QueueingParameters, Word_t Data_Length, Byte_t *Data);
-
-#ifdef INCLUDE_BLUETOOTH_API_PROTOTYPES
-   typedef int (BTPSAPI *PFN_L2CA_Enhanced_Dynamic_Channel_Data_Write_t)(unsigned int BluetoothStackID, Word_t LCID, L2CA_Queueing_Parameters_t *QueueingParameters, Word_t Data_Length, Byte_t *Data);
 #endif
 
    /* The following function is responsible for Sending L2CAP Data to   */
@@ -1712,34 +1366,6 @@ BTPSAPI_DECLARATION int BTPSAPI L2CA_Flush_Channel_Data(unsigned int BluetoothSt
 
 #ifdef INCLUDE_BLUETOOTH_API_PROTOTYPES
    typedef int (BTPSAPI *PFN_L2CA_Flush_Channel_Data_t)(unsigned int BluetoothStackID, Word_t CID);
-#endif
-
-   /* The following function is responsible for flushing all data that  */
-   /* is current queued for transmission for the specified LE CID.  This*/
-   /* function takes as its parameters the Bluetooth Stack ID that      */
-   /* identifies the stack in which the data is currently queued, and   */
-   /* the Local L2CAP LE CID that identifies the channel on which the   */
-   /* data is currently queued.  This function will return Zero if      */
-   /* successful, otherwise the function will return a negative error   */
-   /* code.                                                             */
-BTPSAPI_DECLARATION int BTPSAPI L2CA_LE_Flush_Channel_Data(unsigned int BluetoothStackID, Word_t CID);
-
-#ifdef INCLUDE_BLUETOOTH_API_PROTOTYPES
-   typedef int (BTPSAPI *PFN_L2CA_LE_Flush_Channel_Data_t)(unsigned int BluetoothStackID, Word_t CID);
-#endif
-
-   /* The following function is responsible for allowing a mechanism of */
-   /* granting the specified amount of credits for the specified LE     */
-   /* CID..  This function takes as its parameters the Bluetooth Stack  */
-   /* ID that identifies the stack in which the data is currently       */
-   /* queued, the Local L2CAP LE CID that identifies the channel on     */
-   /* which to grant credits, and the total amount of credits to grant. */
-   /* This function will return zero if successful, otherwise the       */
-   /* function will return a negative error code.                       */
-BTPSAPI_DECLARATION int BTPSAPI L2CA_LE_Grant_Credits(unsigned int BluetoothStackID, Word_t CID, Word_t CreditsToGrant);
-
-#ifdef INCLUDE_BLUETOOTH_API_PROTOTYPES
-   typedef int (BTPSAPI *PFN_L2CA_LE_Grant_Credits_t)(unsigned int BluetoothStackID, Word_t CID, Word_t CreditsToGrant);
 #endif
 
    /* The following function is responsible for retrieving Config       */

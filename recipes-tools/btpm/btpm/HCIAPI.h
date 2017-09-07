@@ -13,8 +13,6 @@
 /*   --------  -----------    ------------------------------------------------*/
 /*   09/11/00  D. Lange       Initial creation.                               */
 /*   12/07/07  D. Mason       Changes for BT 2.1                              */
-/*   05/20/11  T. Cook        Changes for BT 4.0                              */
-/*   01/02/14  T. Cook        Changes for BT 4.1                              */
 /******************************************************************************/
 #ifndef __HCIAPIH__
 #define __HCIAPIH__
@@ -45,8 +43,7 @@ typedef enum
    hvSpecification_2_1,                 /* HCI Specification 2.1 + EDR. */
    hvSpecification_3_0,                 /* HCI Specification 3.0 + HS.  */
    hvSpecification_4_0,                 /* HCI Specification 4.0.       */
-   hvSpecification_4_1,                 /* HCI Specification 4.1.       */
-   hvSpecification_4_2                  /* HCI Specification 4.2.       */
+   hvSpecification_4_1                  /* HCI Specification 4.1.       */
 } HCI_Version_t;
 
    /* The following structure is used with the                          */
@@ -58,7 +55,7 @@ typedef struct _tagHCI_Stored_Link_Key_Info_t
    Link_Key_t Link_Key;
 } HCI_Stored_Link_Key_Info_t;
 
-#define HCI_STORED_LINK_KEY_INFO_SIZE                       (sizeof(HCI_Stored_Link_Key_Info_t))
+#define HCI_STORED_LINK_KEY_INFO_SIZE                   (sizeof(HCI_Stored_Link_Key_Info_t))
 
    /* The following structure is used with the                          */
    /* HCI_Host_Number_Of_Completed_Packets() function, and represents   */
@@ -70,7 +67,7 @@ typedef struct _tagHCI_Host_Completed_Packets_Info_t
    Word_t Host_Num_Of_Completed_Packets;
 } HCI_Host_Completed_Packets_Info_t;
 
-#define HCI_HOST_COMPLETED_PACKETS_INFO_SIZE                (sizeof(HCI_Host_Completed_Packets_Info_t))
+#define HCI_HOST_COMPLETED_PACKETS_INFO_SIZE            (sizeof(HCI_Host_Completed_Packets_Info_t))
 
    /* The following structure is used with                              */
    /* HCI_Read_Local_Supported_Codecs() function and respresents a      */
@@ -146,80 +143,6 @@ typedef struct _tagHCI_Enhanced_Synchronous_Connection_Info_t
 
 #define HCI_ENHANCED_SYNCHRONOUS_CONNECTION_INFO_SIZE       (sizeof(HCI_Enhanced_Synchronous_Connection_Info_t))
 
-   /* The following structure is used to holder information on a        */
-   /* specified MWS Transport.                                          */
-   /* * NOTE * The To_MWS_Baud_Rate and From_MWS_Baud_Rate members are  */
-   /*          arrays of NumberOfBaudRates entries.                     */
-typedef struct _tagHCI_MWS_Transport_Info_t
-{
-   Byte_t   TransportLayer;
-   Byte_t   NumberOfBaudRates;
-   DWord_t *To_MWS_Baud_Rate;
-   DWord_t *From_MWS_Baud_Rate;
-} HCI_MWS_Transport_Info_t;
-
-#define HCI_MWS_TRANSPORT_INFO_SIZE                         (sizeof(HCI_MWS_Transport_Info_t))
-
-   /* The following structure is used with the the                      */
-   /* HCI_Get_MWS_Transport_Layer_Configuration command for the HCI     */
-   /* return result.                                                    */
-   /* * NOTE * The TransportLayerInfo parameter is an array of          */
-   /*          NumberOfTransports entries.                              */
-typedef struct _tagHCI_MWS_Transport_Layer_Configuration_Info_t
-{
-   Byte_t                    NumberOfTransports;
-   HCI_MWS_Transport_Info_t *TransportLayerInfo;
-} HCI_MWS_Transport_Layer_Configuration_Info_t;
-
-#define HCI_MWS_TRANSPORT_LAYER_CONFIGURATION_INFO_SIZE     (sizeof(HCI_MWS_Transport_Layer_Configuration_Info_t))
-
-   /* The following structure is used with the HCI_Set_MWS_Signaling()  */
-   /* command for the command parameters.                               */
-typedef struct _tagHCI_Set_MWS_Signaling_Parameters_t
-{
-   Word_t MWS_RX_Assert_Offset;
-   Word_t MWS_RX_Assert_Jitter;
-   Word_t MWS_RX_Deassert_Offset;
-   Word_t MWS_RX_Deassert_Jitter;
-   Word_t MWS_TX_Assert_Offset;
-   Word_t MWS_TX_Assert_Jitter;
-   Word_t MWS_TX_Deassert_Offset;
-   Word_t MWS_TX_Deassert_Jitter;
-   Word_t MWS_Pattern_Assert_Offset;
-   Word_t MWS_Pattern_Assert_Jitter;
-   Word_t MWS_Inactivity_Duration_Assert_Offset;
-   Word_t MWS_Inactivity_Duration_Assert_Jitter;
-   Word_t MWS_Scan_Frequency_Assert_Offset;
-   Word_t MWS_Scan_Frequency_Assert_Jitter;
-   Word_t MWS_Priority_Assert_Offset_Request;
-} HCI_Set_MWS_Signaling_Parameters_t;
-
-#define HCI_SET_MWS_SIGNALING_PARAMETERS_SIZE               (sizeof(HCI_Set_MWS_Signaling_Parameters_t))
-
-   /* The following structure is used with the HCI_Set_MWS_Signaling()  */
-   /* command for the command Result.                                   */
-typedef struct _tagHCI_Set_MWS_Signaling_Result_t
-{
-   Word_t Bluetooth_RX_Priority_Assert_Offset;
-   Word_t Bluetooth_RX_Priority_Assert_Jitter;
-   Word_t Bluetooth_RX_Priority_Deassert_Offset;
-   Word_t Bluetooth_RX_Priority_Deassert_Jitter;
-   Word_t _802_RX_Priority_Assert_Offset;
-   Word_t _802_RX_Priority_Assert_Jitter;
-   Word_t _802_RX_Priority_Deassert_Offset;
-   Word_t _802_RX_Priority_Deassert_Jitter;
-   Word_t Bluetooth_TX_On_Assert_Offset;
-   Word_t Bluetooth_TX_On_Assert_Jitter;
-   Word_t Bluetooth_TX_On_Deassert_Offset;
-   Word_t Bluetooth_TX_On_Deassert_Jitter;
-   Word_t _802_TX_On_Assert_Offset;
-   Word_t _802_TX_On_Assert_Jitter;
-   Word_t _802_TX_On_Deassert_Offset;
-   Word_t _802_TX_On_Deassert_Jitter;
-} HCI_Set_MWS_Signaling_Result_t;
-
-#define HCI_SET_MWS_SIGNALING_RESULT_SIZE                   (sizeof(HCI_Set_MWS_Signaling_Result_t))
-
    /* HCI Event API Types.                                              */
 typedef enum
 {
@@ -290,17 +213,7 @@ typedef enum
    etAMP_Test_End_Event,
    etAMP_Receiver_Report_Event,
    etLE_Meta_Event,
-   etPlatform_Specific_Event,
-   etTriggered_Clock_Capture_Event,
-   etSynchronization_Train_Complete_Event,
-   etSynchronization_Train_Received_Event,
-   etConnectionless_Slave_Broadcast_Receive_Event,
-   etConnectionless_Slave_Broadcast_Timeout_Event,
-   etTruncated_Page_Complete_Event,
-   etSlave_Page_Response_Timeout_Event,
-   etConnectionless_Slave_Broadcast_Channel_Map_Change_Event,
-   etInquiry_Response_Notification_Event,
-   etAuthenticated_Payload_Timeout_Expired_Event
+   etPlatform_Specific_Event
 } HCI_Event_Type_t;
 
    /* LE Meta Event Subevent Types.  (Version 4.0 + LE).                */
@@ -310,8 +223,7 @@ typedef enum
    meAdvertising_Report_Event,
    meConnection_Update_Complete_Event,
    meRead_Remote_Used_Features_Complete_Event,
-   meLong_Term_Key_Request_Event,
-   meRemote_Connection_Parameter_Request_Event
+   meLong_Term_Key_Request_Event
 } HCI_LE_Meta_Event_Type_t;
 
    /* The following structure represents the data that provided by a    */
@@ -1326,32 +1238,17 @@ typedef struct _tagHCI_LE_Long_Term_Key_Request_Event_Data_t
 
 #define HCI_LE_LONG_TERM_KEY_REQUEST_EVENT_DATA_SIZE                       (sizeof(HCI_LE_Long_Term_Key_Request_Event_Data_t))
 
-   /* The following structure represents the data that is returned in a */
-   /* HCI LE Meta Event with Subevent LE Remote Connection Parameter    */
-   /* Request Event (Vesion 4.1).                                       */
-typedef struct _tagHCI_LE_Remote_Connection_Parameter_Request_Event_Data_t
-{
-   Word_t Connection_Handle;
-   Word_t Conn_Interval_Min;
-   Word_t Conn_Interval_Max;
-   Word_t Conn_Latency;
-   Word_t Supervision_Timeout;
-} HCI_LE_Remote_Connection_Parameter_Request_Event_Data_t;
-
-#define HCI_LE_REMOTE_CONNECTION_PARAMETER_REQUEST_EVENT_DATA_SIZE         (sizeof(HCI_LE_Remote_Connection_Parameter_Request_Event_Data_t))
-
    /* The following represents the structure of an LE Meta Event.       */
 typedef struct _tagHCI_LE_Meta_Event_Data_t
 {
    HCI_LE_Meta_Event_Type_t LE_Event_Data_Type;
    union
    {
-      HCI_LE_Connection_Complete_Event_Data_t                  HCI_LE_Connection_Complete_Event_Data;
-      HCI_LE_Advertising_Report_Event_Data_t                   HCI_LE_Advertising_Report_Event_Data;
-      HCI_LE_Connection_Update_Complete_Event_Data_t           HCI_LE_Connection_Update_Complete_Event_Data;
-      HCI_LE_Read_Remote_Used_Features_Complete_Event_Data_t   HCI_LE_Read_Remote_Used_Features_Complete_Event_Data;
-      HCI_LE_Long_Term_Key_Request_Event_Data_t                HCI_LE_Long_Term_Key_Request_Event_Data;
-      HCI_LE_Remote_Connection_Parameter_Request_Event_Data_t  HCI_LE_Remote_Connection_Parameter_Request_Event_Data;
+      HCI_LE_Connection_Complete_Event_Data_t                HCI_LE_Connection_Complete_Event_Data;
+      HCI_LE_Advertising_Report_Event_Data_t                 HCI_LE_Advertising_Report_Event_Data;
+      HCI_LE_Connection_Update_Complete_Event_Data_t         HCI_LE_Connection_Update_Complete_Event_Data;
+      HCI_LE_Read_Remote_Used_Features_Complete_Event_Data_t HCI_LE_Read_Remote_Used_Features_Complete_Event_Data;
+      HCI_LE_Long_Term_Key_Request_Event_Data_t              HCI_LE_Long_Term_Key_Request_Event_Data;
    } Event_Data;
 } HCI_LE_Meta_Event_Data_t;
 
@@ -1367,114 +1264,6 @@ typedef struct _tagHCI_Platform_Specific_Event_Data_t
 
 #define HCI_PLATFORM_SPECIFIC_EVENT_DATA_SIZE                              (sizeof(HCI_Platform_Specific_Event_Data_t))
 
-   /* The following structure represents the Data that is associated    */
-   /* with the HCI Triggered Clock Capture Event.                       */
-typedef struct _tagHCI_Triggered_Clock_Capture_Event_Data_t
-{
-   Word_t  Connection_Handle;
-   Byte_t  Which_Clock;
-   DWord_t Clock;
-   Word_t  Slot_Offset;
-} HCI_Triggered_Clock_Capture_Event_Data_t;
-
-#define HCI_TRIGGERED_CLOCK_CAPTURE_EVENT_DATA_SIZE                        (sizeof(HCI_Triggered_Clock_Capture_Event_Data_t))
-
-   /* The following structure represents the Data that is associated    */
-   /* with the HCI Synchronization Train Received Event.                */
-typedef struct _tagHCI_Synchronization_Train_Complete_Event_Data_t
-{
-   Byte_t Status;
-} HCI_Synchronization_Train_Complete_Event_Data_t;
-
-#define HCI_SYNCHRONIZATION_TRAIN_COMPLETE_EVENT_DATA_SIZE                 (sizeof(HCI_Synchronization_Train_Complete_Event_Data_t))
-
-   /* The following structure represents the Data that is associated    */
-   /* with the HCI Synchronization Train Received Event.                */
-typedef struct _tagHCI_Synchronization_Train_Received_Event_Data_t
-{
-   Byte_t            Status;
-   BD_ADDR_t         BD_ADDR;
-   DWord_t           Clock_Offset;
-   AFH_Channel_Map_t AFH_Channel_Map;
-   Byte_t            LT_ADDR;
-   DWord_t           Next_Broadcast_Instant;
-   Word_t            Connectionless_Slave_Broadcast_Interval;
-   Byte_t            Service_Data;
-} HCI_Synchronization_Train_Received_Event_Data_t;
-
-#define HCI_SYNCHRONIZATION_TRAIN_RECEIVED_EVENT_DATA_SIZE                 (sizeof(HCI_Synchronization_Train_Received_Event_Data_t))
-
-   /* The following structure represents the Data that is associated    */
-   /* with the HCI Connectionless Slave Broadcast Receive Event.        */
-typedef struct _tagHCI_Connectionless_Slave_Broadcast_Receive_Event_Data_t
-{
-   BD_ADDR_t BD_ADDR;
-   Byte_t    LT_ADDR;
-   DWord_t   CLK;
-   DWord_t   Offset;
-   Byte_t    Receive_Status;
-   Byte_t    Fragment;
-   Byte_t    Data_Length;
-   Byte_t    Data[1];
-} HCI_Connectionless_Slave_Broadcast_Receive_Event_Data_t;
-
-   /* The following MACRO is a utility MACRO that exists to aid code    */
-   /* readability to Determine the size (in Bytes) of an                */
-   /* HCI Inquiry Result Event Data Structure based upon the number of  */
-   /* HCI Inquiry Result Entries associated with the Event.  The first  */
-   /* parameter to this MACRO is the number of HCI Inquiry Result       */
-   /* Entries.                                                          */
-#define HCI_CONNECTIONLESS_SLAVE_BROADCAST_RECEIVE_EVENT_DATA_SIZE(_x)     ((sizeof(HCI_Connectionless_Slave_Broadcast_Receive_Event_Data_t) - sizeof(Byte_t)) + (((Byte_t)(_x))*sizeof(Byte_t)))
-
-   /* The following structure represents the Data that is associated    */
-   /* with the HCI Connectionless Slave Broadcast Timeout Event.        */
-typedef struct _tagHCI_Connectionless_Slave_Broadcast_Timeout_Event_Data_t
-{
-   BD_ADDR_t BD_ADDR;
-   Byte_t    LT_ADDR;
-} HCI_Connectionless_Slave_Broadcast_Timeout_Event_Data_t;
-
-#define HCI_CONNECTIONLESS_SLAVE_BROADCAST_TIMEOUT_EVENT_DATA_SIZE         (sizeof(HCI_Connectionless_Slave_Broadcast_Timeout_Event_Data_t))
-
-   /* The following structure represents the Data that is associated    */
-   /* with the HCI Truncated Page Complete Timeout Event.        */
-typedef struct _tagHCI_Truncated_Page_Complete_Event_Data_t
-{
-   Byte_t    Status;
-   BD_ADDR_t BD_ADDR;
-} HCI_Truncated_Page_Complete_Event_Data_t;
-
-#define HCI_TRUNCATED_PAGE_COMPLETE_EVENT_DATA_SIZE                        (sizeof(HCI_Truncated_Page_Complete_Event_Data_t))
-
-   /* The following structure represents the Data that is associated    */
-   /* with the HCI Connectionless Slave Broadcast Channel Map Change    */
-   /* Event.                                                            */
-typedef struct _tagHCI_Connectionless_Slave_Broadcast_Channel_Map_Change_Event_Data_t
-{
-   AFH_Channel_Map_t Channel_Map;
-} HCI_Connectionless_Slave_Broadcast_Channel_Map_Change_Event_Data_t;
-
-#define HCI_CONNECTIONLESS_SLAVE_BROADCAST_CHANNEL_MAP_CHANGE_EVENT_DATA_SIZE (sizeof(HCI_Connectionless_Slave_Broadcast_Channel_Map_Change_Event_Data_t))
-
-   /* The following structure represents the Data that is associated    */
-   /* with the HCI Inquiry Response Notification Event.                 */
-typedef struct _tagHCI_Inquiry_Response_Notification_Event_Data_t
-{
-   LAP_t  LAP;
-   Byte_t RSSI;
-} HCI_Inquiry_Response_Notification_Event_Data_t;
-
-#define HCI_INQUIRY_RESPONSE_NOTIFICATION_EVENT_DATA_SIZE                  (sizeof(HCI_Inquiry_Response_Notification_Event_Data_t))
-
-   /* The following structure represents the Data that is associated    */
-   /* with the HCI Authenticated Payload Timeout Expired Event.         */
-typedef struct _tagHCI_Authenticated_Payload_Timeout_Expired_Event_Data_t
-{
-   Word_t Connection_Handle;
-} HCI_Authenticated_Payload_Timeout_Expired_Event_Data_t;
-
-#define HCI_AUTHENTICATED_PAYLOAD_TIMEOUT_EXPIRED_EVENT_DATA_SIZE          (sizeof(HCI_Authenticated_Payload_Timeout_Expired_Event_Data_t))
-
    /* The following structure represents the container structure for    */
    /* Holding all HCI Event Data Data.                                  */
 typedef struct _tagHCI_Event_Data_t
@@ -1483,81 +1272,72 @@ typedef struct _tagHCI_Event_Data_t
    Word_t           Event_Data_Size;
    union
    {
-      HCI_Inquiry_Complete_Event_Data_t                                  *HCI_Inquiry_Complete_Event_Data;
-      HCI_Inquiry_Result_Event_Data_t                                    *HCI_Inquiry_Result_Event_Data;
-      HCI_Connection_Complete_Event_Data_t                               *HCI_Connection_Complete_Event_Data;
-      HCI_Connection_Request_Event_Data_t                                *HCI_Connection_Request_Event_Data;
-      HCI_Disconnection_Complete_Event_Data_t                            *HCI_Disconnection_Complete_Event_Data;
-      HCI_Authentication_Complete_Event_Data_t                           *HCI_Authentication_Complete_Event_Data;
-      HCI_Remote_Name_Request_Complete_Event_Data_t                      *HCI_Remote_Name_Request_Complete_Event_Data;
-      HCI_Encryption_Change_Event_Data_t                                 *HCI_Encryption_Change_Event_Data;
-      HCI_Change_Connection_Link_Key_Complete_Event_Data_t               *HCI_Change_Connection_Link_Key_Complete_Event_Data;
-      HCI_Master_Link_Key_Complete_Event_Data_t                          *HCI_Master_Link_Key_Complete_Event_Data;
-      HCI_Read_Remote_Supported_Features_Complete_Event_Data_t           *HCI_Read_Remote_Supported_Features_Complete_Event_Data;
-      HCI_Read_Remote_Version_Information_Complete_Event_Data_t          *HCI_Read_Remote_Version_Information_Complete_Event_Data;
-      HCI_QoS_Setup_Complete_Event_Data_t                                *HCI_QoS_Setup_Complete_Event_Data;
-      HCI_Hardware_Error_Event_Data_t                                    *HCI_Hardware_Error_Event_Data;
-      HCI_Flush_Occurred_Event_Data_t                                    *HCI_Flush_Occurred_Event_Data;
-      HCI_Role_Change_Event_Data_t                                       *HCI_Role_Change_Event_Data;
-      HCI_Number_Of_Completed_Packets_Event_Data_t                       *HCI_Number_Of_Completed_Packets_Event_Data;
-      HCI_Mode_Change_Event_Data_t                                       *HCI_Mode_Change_Event_Data;
-      HCI_Return_Link_Keys_Event_Data_t                                  *HCI_Return_Link_Keys_Event_Data;
-      HCI_PIN_Code_Request_Event_Data_t                                  *HCI_PIN_Code_Request_Event_Data;
-      HCI_Link_Key_Request_Event_Data_t                                  *HCI_Link_Key_Request_Event_Data;
-      HCI_Link_Key_Notification_Event_Data_t                             *HCI_Link_Key_Notification_Event_Data;
-      HCI_Loopback_Command_Event_Data_t                                  *HCI_Loopback_Command_Event_Data;
-      HCI_Data_Buffer_Overflow_Event_Data_t                              *HCI_Data_Buffer_Overflow_Event_Data;
-      HCI_Max_Slots_Change_Event_Data_t                                  *HCI_Max_Slots_Change_Event_Data;
-      HCI_Read_Clock_Offset_Complete_Event_Data_t                        *HCI_Read_Clock_Offset_Complete_Event_Data;
-      HCI_Connection_Packet_Type_Changed_Event_Data_t                    *HCI_Connection_Packet_Type_Changed_Event_Data;
-      HCI_QoS_Violation_Event_Data_t                                     *HCI_QoS_Violation_Event_Data;
-      HCI_Page_Scan_Repetition_Mode_Change_Event_Data_t                  *HCI_Page_Scan_Repetition_Mode_Change_Event_Data;
-      HCI_Page_Scan_Mode_Change_Event_Data_t                             *HCI_Page_Scan_Mode_Change_Event_Data;
-      HCI_Flow_Specification_Complete_Event_Data_t                       *HCI_Flow_Specification_Complete_Event_Data;
-      HCI_Inquiry_Result_With_RSSI_Event_Data_t                          *HCI_Inquiry_Result_With_RSSI_Event_Data;
-      HCI_Read_Remote_Extended_Features_Complete_Event_Data_t            *HCI_Read_Remote_Extended_Features_Complete_Event_Data;
-      HCI_Synchronous_Connection_Complete_Event_Data_t                   *HCI_Synchronous_Connection_Complete_Event_Data;
-      HCI_Synchronous_Connection_Changed_Event_Data_t                    *HCI_Synchronous_Connection_Changed_Event_Data;
-      HCI_Sniff_Subrating_Event_Data_t                                   *HCI_Sniff_Subrating_Event_Data;
-      HCI_Extended_Inquiry_Result_Event_Data_t                           *HCI_Extended_Inquiry_Result_Event_Data;
-      HCI_Encryption_Key_Refresh_Complete_Event_Data_t                   *HCI_Encryption_Key_Refresh_Complete_Event_Data;
-      HCI_IO_Capability_Request_Event_Data_t                             *HCI_IO_Capability_Request_Event_Data;
-      HCI_IO_Capability_Response_Event_Data_t                            *HCI_IO_Capability_Response_Event_Data;
-      HCI_User_Confirmation_Request_Event_Data_t                         *HCI_User_Confirmation_Request_Event_Data;
-      HCI_User_Passkey_Request_Event_Data_t                              *HCI_User_Passkey_Request_Event_Data;
-      HCI_Remote_OOB_Data_Request_Event_Data_t                           *HCI_Remote_OOB_Data_Request_Event_Data;
-      HCI_Simple_Pairing_Complete_Event_Data_t                           *HCI_Simple_Pairing_Complete_Event_Data;
-      HCI_Link_Supervision_Timeout_Changed_Event_Data_t                  *HCI_Link_Supervision_Timeout_Changed_Event_Data;
-      HCI_Enhanced_Flush_Complete_Event_Data_t                           *HCI_Enhanced_Flush_Complete_Event_Data;
-      HCI_User_Passkey_Notification_Event_Data_t                         *HCI_User_Passkey_Notification_Event_Data;
-      HCI_Keypress_Notification_Event_Data_t                             *HCI_Keypress_Notification_Event_Data;
-      HCI_Remote_Host_Supported_Features_Notification_Event_Data_t       *HCI_Remote_Host_Supported_Features_Notification_Event_Data;
-      HCI_Physical_Link_Complete_Event_Data_t                            *HCI_Physical_Link_Complete_Event_Data;
-      HCI_Channel_Selected_Event_Data_t                                  *HCI_Channel_Selected_Event_Data;
-      HCI_Disconnection_Physical_Link_Complete_Event_Data_t              *HCI_Disconnection_Physical_Link_Complete_Event_Data;
-      HCI_Physical_Link_Loss_Early_Warning_Event_Data_t                  *HCI_Physical_Link_Loss_Early_Warning_Event_Data;
-      HCI_Physical_Link_Recovery_Event_Data_t                            *HCI_Physical_Link_Recovery_Event_Data;
-      HCI_Logical_Link_Complete_Event_Data_t                             *HCI_Logical_Link_Complete_Event_Data;
-      HCI_Disconnection_Logical_Link_Complete_Event_Data_t               *HCI_Disconnection_Logical_Link_Complete_Event_Data;
-      HCI_Flow_Spec_Modify_Complete_Event_Data_t                         *HCI_Flow_Spec_Modify_Complete_Event_Data;
-      HCI_Number_Of_Completed_Data_Blocks_Event_Data_t                   *HCI_Number_Of_Completed_Data_Blocks_Event_Data;
-      HCI_Short_Range_Mode_Change_Complete_Event_Data_t                  *HCI_Short_Range_Mode_Change_Complete_Event_Data;
-      HCI_AMP_Status_Change_Event_Data_t                                 *HCI_AMP_Status_Change_Event_Data;
-      HCI_AMP_Start_Test_Event_Data_t                                    *HCI_AMP_Start_Test_Event_Data;
-      HCI_AMP_Test_End_Event_Data_t                                      *HCI_AMP_Test_End_Event_Data;
-      HCI_AMP_Receiver_Report_Event_Data_t                               *HCI_AMP_Receiver_Report_Event_Data;
-      HCI_LE_Meta_Event_Data_t                                           *HCI_LE_Meta_Event_Data;
-      HCI_Triggered_Clock_Capture_Event_Data_t                           *HCI_Triggered_Clock_Capture_Event_Data;
-      HCI_Synchronization_Train_Complete_Event_Data_t                    *HCI_Synchronization_Train_Complete_Event_Data;
-      HCI_Synchronization_Train_Received_Event_Data_t                    *HCI_Synchronization_Train_Received_Event_Data;
-      HCI_Connectionless_Slave_Broadcast_Receive_Event_Data_t            *HCI_Connectionless_Slave_Broadcast_Receive_Event_Data;
-      HCI_Connectionless_Slave_Broadcast_Timeout_Event_Data_t            *HCI_Connectionless_Slave_Broadcast_Timeout_Event_Data;
-      HCI_Truncated_Page_Complete_Event_Data_t                           *HCI_Truncated_Page_Complete_Event_Data;
-      HCI_Connectionless_Slave_Broadcast_Channel_Map_Change_Event_Data_t *HCI_Connectionless_Slave_Broadcast_Channel_Map_Change_Event_Data;
-      HCI_Inquiry_Response_Notification_Event_Data_t                     *HCI_Inquiry_Response_Notification_Event_Data;
-      HCI_Authenticated_Payload_Timeout_Expired_Event_Data_t             *HCI_Authenticated_Payload_Timeout_Expired_Event_Data;
-      HCI_Platform_Specific_Event_Data_t                                 *HCI_Platform_Specific_Event_Data;
-      void                                                               *HCI_Unknown_Event_Data;
+      HCI_Inquiry_Complete_Event_Data_t                            *HCI_Inquiry_Complete_Event_Data;
+      HCI_Inquiry_Result_Event_Data_t                              *HCI_Inquiry_Result_Event_Data;
+      HCI_Connection_Complete_Event_Data_t                         *HCI_Connection_Complete_Event_Data;
+      HCI_Connection_Request_Event_Data_t                          *HCI_Connection_Request_Event_Data;
+      HCI_Disconnection_Complete_Event_Data_t                      *HCI_Disconnection_Complete_Event_Data;
+      HCI_Authentication_Complete_Event_Data_t                     *HCI_Authentication_Complete_Event_Data;
+      HCI_Remote_Name_Request_Complete_Event_Data_t                *HCI_Remote_Name_Request_Complete_Event_Data;
+      HCI_Encryption_Change_Event_Data_t                           *HCI_Encryption_Change_Event_Data;
+      HCI_Change_Connection_Link_Key_Complete_Event_Data_t         *HCI_Change_Connection_Link_Key_Complete_Event_Data;
+      HCI_Master_Link_Key_Complete_Event_Data_t                    *HCI_Master_Link_Key_Complete_Event_Data;
+      HCI_Read_Remote_Supported_Features_Complete_Event_Data_t     *HCI_Read_Remote_Supported_Features_Complete_Event_Data;
+      HCI_Read_Remote_Version_Information_Complete_Event_Data_t    *HCI_Read_Remote_Version_Information_Complete_Event_Data;
+      HCI_QoS_Setup_Complete_Event_Data_t                          *HCI_QoS_Setup_Complete_Event_Data;
+      HCI_Hardware_Error_Event_Data_t                              *HCI_Hardware_Error_Event_Data;
+      HCI_Flush_Occurred_Event_Data_t                              *HCI_Flush_Occurred_Event_Data;
+      HCI_Role_Change_Event_Data_t                                 *HCI_Role_Change_Event_Data;
+      HCI_Number_Of_Completed_Packets_Event_Data_t                 *HCI_Number_Of_Completed_Packets_Event_Data;
+      HCI_Mode_Change_Event_Data_t                                 *HCI_Mode_Change_Event_Data;
+      HCI_Return_Link_Keys_Event_Data_t                            *HCI_Return_Link_Keys_Event_Data;
+      HCI_PIN_Code_Request_Event_Data_t                            *HCI_PIN_Code_Request_Event_Data;
+      HCI_Link_Key_Request_Event_Data_t                            *HCI_Link_Key_Request_Event_Data;
+      HCI_Link_Key_Notification_Event_Data_t                       *HCI_Link_Key_Notification_Event_Data;
+      HCI_Loopback_Command_Event_Data_t                            *HCI_Loopback_Command_Event_Data;
+      HCI_Data_Buffer_Overflow_Event_Data_t                        *HCI_Data_Buffer_Overflow_Event_Data;
+      HCI_Max_Slots_Change_Event_Data_t                            *HCI_Max_Slots_Change_Event_Data;
+      HCI_Read_Clock_Offset_Complete_Event_Data_t                  *HCI_Read_Clock_Offset_Complete_Event_Data;
+      HCI_Connection_Packet_Type_Changed_Event_Data_t              *HCI_Connection_Packet_Type_Changed_Event_Data;
+      HCI_QoS_Violation_Event_Data_t                               *HCI_QoS_Violation_Event_Data;
+      HCI_Page_Scan_Repetition_Mode_Change_Event_Data_t            *HCI_Page_Scan_Repetition_Mode_Change_Event_Data;
+      HCI_Page_Scan_Mode_Change_Event_Data_t                       *HCI_Page_Scan_Mode_Change_Event_Data;
+      HCI_Flow_Specification_Complete_Event_Data_t                 *HCI_Flow_Specification_Complete_Event_Data;
+      HCI_Inquiry_Result_With_RSSI_Event_Data_t                    *HCI_Inquiry_Result_With_RSSI_Event_Data;
+      HCI_Read_Remote_Extended_Features_Complete_Event_Data_t      *HCI_Read_Remote_Extended_Features_Complete_Event_Data;
+      HCI_Synchronous_Connection_Complete_Event_Data_t             *HCI_Synchronous_Connection_Complete_Event_Data;
+      HCI_Synchronous_Connection_Changed_Event_Data_t              *HCI_Synchronous_Connection_Changed_Event_Data;
+      HCI_Sniff_Subrating_Event_Data_t                             *HCI_Sniff_Subrating_Event_Data;
+      HCI_Extended_Inquiry_Result_Event_Data_t                     *HCI_Extended_Inquiry_Result_Event_Data;
+      HCI_Encryption_Key_Refresh_Complete_Event_Data_t             *HCI_Encryption_Key_Refresh_Complete_Event_Data;
+      HCI_IO_Capability_Request_Event_Data_t                       *HCI_IO_Capability_Request_Event_Data;
+      HCI_IO_Capability_Response_Event_Data_t                      *HCI_IO_Capability_Response_Event_Data;
+      HCI_User_Confirmation_Request_Event_Data_t                   *HCI_User_Confirmation_Request_Event_Data;
+      HCI_User_Passkey_Request_Event_Data_t                        *HCI_User_Passkey_Request_Event_Data;
+      HCI_Remote_OOB_Data_Request_Event_Data_t                     *HCI_Remote_OOB_Data_Request_Event_Data;
+      HCI_Simple_Pairing_Complete_Event_Data_t                     *HCI_Simple_Pairing_Complete_Event_Data;
+      HCI_Link_Supervision_Timeout_Changed_Event_Data_t            *HCI_Link_Supervision_Timeout_Changed_Event_Data;
+      HCI_Enhanced_Flush_Complete_Event_Data_t                     *HCI_Enhanced_Flush_Complete_Event_Data;
+      HCI_User_Passkey_Notification_Event_Data_t                   *HCI_User_Passkey_Notification_Event_Data;
+      HCI_Keypress_Notification_Event_Data_t                       *HCI_Keypress_Notification_Event_Data;
+      HCI_Remote_Host_Supported_Features_Notification_Event_Data_t *HCI_Remote_Host_Supported_Features_Notification_Event_Data;
+      HCI_Physical_Link_Complete_Event_Data_t                      *HCI_Physical_Link_Complete_Event_Data;
+      HCI_Channel_Selected_Event_Data_t                            *HCI_Channel_Selected_Event_Data;
+      HCI_Disconnection_Physical_Link_Complete_Event_Data_t        *HCI_Disconnection_Physical_Link_Complete_Event_Data;
+      HCI_Physical_Link_Loss_Early_Warning_Event_Data_t            *HCI_Physical_Link_Loss_Early_Warning_Event_Data;
+      HCI_Physical_Link_Recovery_Event_Data_t                      *HCI_Physical_Link_Recovery_Event_Data;
+      HCI_Logical_Link_Complete_Event_Data_t                       *HCI_Logical_Link_Complete_Event_Data;
+      HCI_Disconnection_Logical_Link_Complete_Event_Data_t         *HCI_Disconnection_Logical_Link_Complete_Event_Data;
+      HCI_Flow_Spec_Modify_Complete_Event_Data_t                   *HCI_Flow_Spec_Modify_Complete_Event_Data;
+      HCI_Number_Of_Completed_Data_Blocks_Event_Data_t             *HCI_Number_Of_Completed_Data_Blocks_Event_Data;
+      HCI_Short_Range_Mode_Change_Complete_Event_Data_t            *HCI_Short_Range_Mode_Change_Complete_Event_Data;
+      HCI_AMP_Status_Change_Event_Data_t                           *HCI_AMP_Status_Change_Event_Data;
+      HCI_AMP_Start_Test_Event_Data_t                              *HCI_AMP_Start_Test_Event_Data;
+      HCI_AMP_Test_End_Event_Data_t                                *HCI_AMP_Test_End_Event_Data;
+      HCI_AMP_Receiver_Report_Event_Data_t                         *HCI_AMP_Receiver_Report_Event_Data;
+      HCI_LE_Meta_Event_Data_t                                     *HCI_LE_Meta_Event_Data;
+      HCI_Platform_Specific_Event_Data_t                           *HCI_Platform_Specific_Event_Data;
+      void                                                         *HCI_Unknown_Event_Data;
    } Event_Data;
 } HCI_Event_Data_t;
 
@@ -2722,134 +2502,6 @@ BTPSAPI_DECLARATION int BTPSAPI HCI_Enhanced_Accept_Setup_Synchronous_Connection
 
 #ifdef INCLUDE_BLUETOOTH_API_PROTOTYPES
    typedef int (BTPSAPI *PFN_HCI_Enhanced_Accept_Setup_Synchronous_Connection_Request_t)(unsigned int BluetoothStackID, BD_ADDR_t BD_ADDR, HCI_Enhanced_Synchronous_Connection_Info_t *SynchronousConnectionInfo, Byte_t *StatusResult);
-#endif
-
-   /* HCI Command API's (Link Control - Version 4.0 + CSA4).            */
-
-   /* The following function issues the HCI_Truncated_Page Command to   */
-   /* the Bluetooth Device that is associated with the Bluetooth        */
-   /* Protocol Stack specified by the BluetoothStackID parameter.  This */
-   /* function returns zero if successful, or a non-zero value if there */
-   /* was an error.  If this function returns zero (success) then the   */
-   /* StatusResult variable will contain the Status Result returned from*/
-   /* the Bluetooth Device.                                             */
-   /* * NOTE * This function blocks until either a result is returned   */
-   /*          from the Bluetooth Device OR the function Times Out      */
-   /*          Waiting for a response from the Bluetooth Device.        */
-BTPSAPI_DECLARATION int BTPSAPI HCI_Truncated_Page(unsigned int BluetoothStackID, BD_ADDR_t BD_ADDR, Byte_t Page_Scan_Repetition_Mode, Word_t Clock_Offset, Byte_t *StatusResult);
-
-#ifdef INCLUDE_BLUETOOTH_API_PROTOTYPES
-   typedef int (BTPSAPI *PFN_HCI_Truncated_Page_t)(unsigned int BluetoothStackID, BD_ADDR_t BD_ADDR, Byte_t Page_Scan_Repetition_Mode, Word_t Clock_Offset, Byte_t *StatusResult);
-#endif
-
-   /* The following function issues the HCI_Truncated_Page_Cancel       */
-   /* Command to the Bluetooth Device that is associated with the       */
-   /* Bluetooth Protocol Stack specified by the BluetoothStackID        */
-   /* parameter.  This function returns zero if successful, or a        */
-   /* non-zero value if there was an error.  If this function returns   */
-   /* zero (success) then the StatusResult variable will contain the    */
-   /* Status Result returned from the Bluetooth Device AND the          */
-   /* BD_ADDRResult variable will contain the BD_ADDR returned from the */
-   /* Bluetooth Device.                                                 */
-   /* * NOTE * This function blocks until either a result is returned   */
-   /*          from the Bluetooth Device OR the function Times Out      */
-   /*          Waiting for a response from the Bluetooth Device.        */
-BTPSAPI_DECLARATION int BTPSAPI HCI_Truncated_Page_Cancel(unsigned int BluetoothStackID, BD_ADDR_t BD_ADDR, Byte_t *StatusResult, BD_ADDR_t *BD_ADDRResult);
-
-#ifdef INCLUDE_BLUETOOTH_API_PROTOTYPES
-   typedef int (BTPSAPI *PFN_HCI_Truncated_Page_Cancel_t)(unsigned int BluetoothStackID, BD_ADDR_t BD_ADDR, Byte_t *StatusResult, BD_ADDR_t *BD_ADDRResult);
-#endif
-
-   /* The following function issues the                                 */
-   /* HCI_Set_Connectionless_Slave_Broadcast Command to the Bluetooth   */
-   /* Device that is associated with the Bluetooth Protocol Stack       */
-   /* specified by the BluetoothStackID parameter.  This function       */
-   /* returns zero if successful, or a non-zero value if there was an   */
-   /* error.  If this function returns zero (success) then the          */
-   /* StatusResult variable will contain the Status Result returned from*/
-   /* the Bluetooth Device AND the LT_ADDRResult variable will contain  */
-   /* the LT_ADDR returned from the Bluetooth Device AND the            */
-   /* IntervalResult variable will contain the Interval returned from   */
-   /* the Bluetooth Device.                                             */
-   /* * NOTE * This function blocks until either a result is returned   */
-   /*          from the Bluetooth Device OR the function Times Out      */
-   /*          Waiting for a response from the Bluetooth Device.        */
-BTPSAPI_DECLARATION int BTPSAPI HCI_Set_Connectionless_Slave_Broadcast(unsigned int BluetoothStackID, Byte_t Enable, Byte_t LT_ADDR, Byte_t LPO_Allowed, Word_t Packet_Type, Word_t Interval_Min, Word_t Interval_Max, Word_t CSB_Supervision_Timeout, Byte_t *StatusResult, Byte_t *LT_ADDRResult, Word_t *IntervalResult);
-
-#ifdef INCLUDE_BLUETOOTH_API_PROTOTYPES
-   typedef int (BTPSAPI *PFN_HCI_Set_Connectionless_Slave_Broadcast_t)(unsigned int BluetoothStackID, Byte_t Enable, Byte_t LT_ADDR, Byte_t LPO_Allowed, Word_t Packet_Type, Word_t Interval_Min, Word_t Interval_Max, Word_t CSB_Supervision_Timeout, Byte_t *StatusResult, Byte_t *LT_ADDRResult, Word_t *IntervalResult);
-#endif
-
-   /* The following function issues the                                 */
-   /* HCI_Set_Connectionless_Slave_Broadcast_Receive Command to the     */
-   /* Bluetooth Device that is associated with the Bluetooth Protocol   */
-   /* Stack specified by the BluetoothStackID parameter.  This function */
-   /* returns zero if successful, or a non-zero value if there was an   */
-   /* error.  If this function returns zero (success) then the          */
-   /* StatusResult variable will contain the Status Result returned from*/
-   /* the Bluetooth Device AND the BD_ADDRResult variable will contain  */
-   /* the BD_ADDR returned from the Bluetooth Device AND the            */
-   /* LT_ADDRResult variable will contain the LT_ADDR returned from the */
-   /* Bluetooth Device.                                                 */
-   /* * NOTE * This function blocks until either a result is returned   */
-   /*          from the Bluetooth Device OR the function Times Out      */
-   /*          Waiting for a response from the Bluetooth Device.        */
-BTPSAPI_DECLARATION int BTPSAPI HCI_Set_Connectionless_Slave_Broadcast_Receive(unsigned int BluetoothStackID, Byte_t Enable, BD_ADDR_t BD_ADDR, Byte_t LT_ADDR, Word_t Interval, DWord_t Clock_Offset, DWord_t Next_CSB_Clock, Word_t CSB_Supervision_Timeout, Byte_t Remote_Timing_Accuracy, Byte_t Skip, Word_t Packet_Type, AFH_Channel_Map_t *AFH_Channel_Map, Byte_t *StatusResult, BD_ADDR_t *BD_ADDRResult, Word_t *LT_ADDRResult);
-
-#ifdef INCLUDE_BLUETOOTH_API_PROTOTYPES
-   typedef int (BTPSAPI *PFN_HCI_Set_Connectionless_Slave_Broadcast_Receive_t)(unsigned int BluetoothStackID, Byte_t Enable, BD_ADDR_t BD_ADDR, Byte_t LT_ADDR, Word_t Interval, DWord_t Clock_Offset, DWord_t Next_CSB_Clock, Word_t CSB_Supervision_Timeout, Byte_t Remote_Timing_Accuracy, Byte_t Skip, Word_t Packet_Type, AFH_Channel_Map_t *AFH_Channel_Map, Byte_t *StatusResult, BD_ADDR_t *BD_ADDRResult, Word_t *LT_ADDRResult);
-#endif
-
-   /* The following function issues the HCI_Start_Synchronization_Train */
-   /* Command to the Bluetooth Device that is associated with the       */
-   /* Bluetooth Protocol Stack specified by the BluetoothStackID        */
-   /* parameter.  This function returns zero if successful, or a        */
-   /* non-zero value if there was an error.  If this function returns   */
-   /* zero (success) then the StatusResult variable will contain the    */
-   /* Status Result returned from the Bluetooth Device.                 */
-   /* * NOTE * This function blocks until either a result is returned   */
-   /*          from the Bluetooth Device OR the function Times Out      */
-   /*          Waiting for a response from the Bluetooth Device.        */
-BTPSAPI_DECLARATION int BTPSAPI HCI_Start_Synchronization_Train(unsigned int BluetoothStackID, Byte_t *StatusResult);
-
-#ifdef INCLUDE_BLUETOOTH_API_PROTOTYPES
-   typedef int (BTPSAPI *PFN_HCI_Start_Synchronization_Train_t)(unsigned int BluetoothStackID, Byte_t *StatusResult);
-#endif
-
-   /* The following function issues the HCI_Start_Synchronization_Train */
-   /* Command to the Bluetooth Device that is associated with the       */
-   /* Bluetooth Protocol Stack specified by the BluetoothStackID        */
-   /* parameter.  This function returns zero if successful, or a        */
-   /* non-zero value if there was an error.  If this function returns   */
-   /* zero (success) then the StatusResult variable will contain the    */
-   /* Status Result returned from the Bluetooth Device.                 */
-   /* * NOTE * This function blocks until either a result is returned   */
-   /*          from the Bluetooth Device OR the function Times Out      */
-   /*          Waiting for a response from the Bluetooth Device.        */
-BTPSAPI_DECLARATION int BTPSAPI HCI_Receive_Synchronization_Train(unsigned int BluetoothStackID, BD_ADDR_t BD_ADDR, Word_t Sync_Scan_Timeout, Word_t Sync_Scan_Window, Word_t Sync_Scan_Interval, Byte_t *StatusResult);
-
-#ifdef INCLUDE_BLUETOOTH_API_PROTOTYPES
-   typedef int (BTPSAPI *PFN_HCI_Receive_Synchronization_Train_t)(unsigned int BluetoothStackID, BD_ADDR_t BD_ADDR, Word_t Sync_Scan_Timeout, Word_t Sync_Scan_Window, Word_t Sync_Scan_Interval, Byte_t *StatusResult);
-#endif
-
-   /* HCI Command API's (Link Control - Version 4.1).                   */
-
-   /* The following function issues the                                 */
-   /* HCI_Remote_OOB_Extended_Data_Request_Reply Command to the         */
-   /* Bluetooth Device that is associated with the Bluetooth Protocol   */
-   /* Stack specified by the BluetoothStackID parameter.  This function */
-   /* returns zero if successful, or a non-zero value if there was an   */
-   /* error.  If this function returns zero (success) then the          */
-   /* StatusResult variable will contain the Status Result returned from*/
-   /* the Bluetooth Device AND the BD_ADDRResult variable will contain  */
-   /* the BD_ADDR returned from the Bluetooth device.                   */
-   /* * NOTE * This function blocks until either a result is returned   */
-   /*          from the Bluetooth Device OR the function Times Out      */
-   /*          Waiting for a response from the Bluetooth Device.        */
-BTPSAPI_DECLARATION int BTPSAPI HCI_Remote_OOB_Extended_Data_Request_Reply(unsigned int BluetoothStackID, BD_ADDR_t BD_ADDR, Simple_Pairing_Hash_t *C_192, Simple_Pairing_Randomizer_t *R_192, Simple_Pairing_Hash_t *C_256, Simple_Pairing_Randomizer_t *R_256, Byte_t *StatusResult, BD_ADDR_t *BD_ADDRResult);
-
-#ifdef INCLUDE_BLUETOOTH_API_PROTOTYPES
-   typedef int (BTPSAPI *PFN_HCI_Remote_OOB_Extended_Data_Request_Reply_t)(unsigned int BluetoothStackID, BD_ADDR_t BD_ADDR, Simple_Pairing_Hash_t *C_192, Simple_Pairing_Randomizer_t *R_192, Simple_Pairing_Hash_t *C_256, Simple_Pairing_Randomizer_t *R_256, Byte_t *StatusResult, BD_ADDR_t *BD_ADDRResult);
 #endif
 
    /* HCI Command API's (Link Policy).                                  */
@@ -4637,384 +4289,6 @@ BTPSAPI_DECLARATION int BTPSAPI HCI_Write_LE_Host_Supported(unsigned int Bluetoo
    typedef int (BTPSAPI *PFN_HCI_Write_LE_Host_Supported_t)(unsigned int BluetoothStackID, Byte_t LE_Supported_Host, Byte_t Simultaneous_LE_Host, Byte_t *StatusResult);
 #endif
 
-   /* HCI Command API's (Host Controller and Baseband - Version 4.0 +   */
-   /* CSA3).                                                            */
-
-   /* The following function issues the HCI_Set_MWS_Channel_Parameters  */
-   /* command to the Bluetooth Device that is associated with the       */
-   /* Bluetooth Protocol Stack specified by the BluetoothStackID        */
-   /* parameter.  This function returns zero if successful, or a        */
-   /* non-zero value if there was an error.  If this function returns   */
-   /* zero (success) then the StatusResult variable will contain the    */
-   /* Status Result returned from the Bluetooth Device.                 */
-   /* * NOTE * This function blocks until either a result is returned   */
-   /*          from the Bluetooth Device OR the function Times Out      */
-   /*          Waiting for a response from the Bluetooth Device.        */
-BTPSAPI_DECLARATION int BTPSAPI HCI_Set_MWS_Channel_Parameters(unsigned int BluetoothStackID, Byte_t MWS_Channel_Enable, Word_t MWS_RX_Center_Frequency, Word_t MWS_TX_Center_Frequency, Word_t MWS_RX_Channel_Bandwidth, Word_t MWS_TX_Channel_Bandwidth, Byte_t MWS_Channel_Type, Byte_t *StatusResult);
-
-#ifdef INCLUDE_BLUETOOTH_API_PROTOTYPES
-   typedef int (BTPSAPI *PFN_HCI_Set_MWS_Channel_Parameters_t)(unsigned int BluetoothStackID, Byte_t MWS_Channel_Enable, Word_t MWS_RX_Center_Frequency, Word_t MWS_TX_Center_Frequency, Word_t MWS_RX_Channel_Bandwidth, Word_t MWS_TX_Channel_Bandwidth, Byte_t MWS_Channel_Type, Byte_t *StatusResult);
-#endif
-
-   /* The following function issues the                                 */
-   /* HCI_Set_External_Frame_Configuration command to the Bluetooth     */
-   /* Device that is associated with the Bluetooth Protocol Stack       */
-   /* specified by the BluetoothStackID parameter followed by the Host  */
-   /* supported LE parameters.  This function returns zero if           */
-   /* successful, or a non-zero value if there was an error.  If this   */
-   /* function returns zero (success) then the StatusResult variable    */
-   /* will contain the Status Result returned from the Bluetooth Device.*/
-   /* * NOTE * This function blocks until either a result is returned   */
-   /*          from the Bluetooth Device OR the function Times Out      */
-   /*          Waiting for a response from the Bluetooth Device.        */
-   /* * NOTE * Both Period_Duration and Period_Type must be arrays of   */
-   /*          Ext_Num_Periods entries.                                 */
-BTPSAPI_DECLARATION int BTPSAPI HCI_Set_External_Frame_Configuration(unsigned int BluetoothStackID, Word_t Ext_Frame_Duration, Word_t Ext_Frame_Sync_Assert_Offset, Word_t Ext_Frame_Sync_Assert_Jitter, Byte_t Ext_Num_Periods, Word_t *Period_Duration, Byte_t *Period_Type, Byte_t *StatusResult);
-
-#ifdef INCLUDE_BLUETOOTH_API_PROTOTYPES
-   typedef int (BTPSAPI *PFN_HCI_Set_External_Frame_Configuration_t)(unsigned int BluetoothStackID, Word_t Ext_Frame_Duration, Word_t Ext_Frame_Sync_Assert_Offset, Word_t Ext_Frame_Sync_Assert_Jitter, Byte_t Ext_Num_Periods, Word_t *Period_Duration, Byte_t *Period_Type, Byte_t *StatusResult);
-#endif
-
-   /* The following function issues the HCI_Set_MWS_Signaling command to*/
-   /* the Bluetooth Device that is associated with the Bluetooth        */
-   /* Protocol Stack specified by the BluetoothStackID parameter.  This */
-   /* function returns zero if successful, or a non-zero value if there */
-   /* was an error.  If this function returns zero (success) then the   */
-   /* StatusResult variable will contain the Status Result returned from*/
-   /* the Bluetooth Device and teh Set_MWS_Signaling_Result variable    */
-   /* will contain the return values returned from the Bluetooth device.*/
-   /* * NOTE * This function blocks until either a result is returned   */
-   /*          from the Bluetooth Device OR the function Times Out      */
-   /*          Waiting for a response from the Bluetooth Device.        */
-BTPSAPI_DECLARATION int BTPSAPI HCI_Set_MWS_Signaling(unsigned int BluetoothStackID, HCI_Set_MWS_Signaling_Parameters_t *Set_MWS_Signaling_Parameters, Byte_t *StatusResult, HCI_Set_MWS_Signaling_Result_t *Set_MWS_Signaling_Result);
-
-#ifdef INCLUDE_BLUETOOTH_API_PROTOTYPES
-   typedef int (BTPSAPI *PFN_HCI_Set_MWS_Signaling_t)(unsigned int BluetoothStackID, HCI_Set_MWS_Signaling_Parameters_t *Set_MWS_Signaling_Parameters, Byte_t *StatusResult, HCI_Set_MWS_Signaling_Result_t *Set_MWS_Signaling_Result);
-#endif
-
-   /* The following function issues the HCI_Set_MWS_Transport_Layer     */
-   /* command to the Bluetooth Device that is associated with the       */
-   /* Bluetooth Protocol Stack specified by the BluetoothStackID        */
-   /* parameter.  This function returns zero if successful, or a        */
-   /* non-zero value if there was an error.  If this function returns   */
-   /* zero (success) then the StatusResult variable will contain the    */
-   /* Status Result returned from the Bluetooth Device.                 */
-   /* * NOTE * This function blocks until either a result is returned   */
-   /*          from the Bluetooth Device OR the function Times Out      */
-   /*          Waiting for a response from the Bluetooth Device.        */
-BTPSAPI_DECLARATION int BTPSAPI HCI_Set_MWS_Transport_Layer(unsigned int BluetoothStackID, Byte_t Transport_Layer, DWord_t To_MWS_Baud_Rate, DWord_t From_MWS_Baud_Rate, Byte_t *StatusResult);
-
-#ifdef INCLUDE_BLUETOOTH_API_PROTOTYPES
-   typedef int (BTPSAPI *PFN_HCI_Set_MWS_Transport_Layer_t)(unsigned int BluetoothStackID, Byte_t Transport_Layer, DWord_t To_MWS_Baud_Rate, DWord_t From_MWS_Baud_Rate, Byte_t *StatusResult);
-#endif
-
-   /* The following function issues the HCI_Set_MWS_Scan_Frequency_Table*/
-   /* command to the Bluetooth Device that is associated with the       */
-   /* Bluetooth Protocol Stack specified by the BluetoothStackID        */
-   /* parameter.  This function returns zero if successful, or a        */
-   /* non-zero value if there was an error.  If this function returns   */
-   /* zero (success) then the StatusResult variable will contain the    */
-   /* Status Result returned from the Bluetooth Device.                 */
-   /* * NOTE * This function blocks until either a result is returned   */
-   /*          from the Bluetooth Device OR the function Times Out      */
-   /*          Waiting for a response from the Bluetooth Device.        */
-   /* * NOTE * Both Scan_Frequency_Low and Scan_Frequency_High are      */
-   /*          arrays of Num_Scan_Frequencies entries.                  */
-BTPSAPI_DECLARATION int BTPSAPI HCI_Set_MWS_Scan_Frequency_Table(unsigned int BluetoothStackID, Byte_t Num_Scan_Frequencies, Word_t *Scan_Frequency_Low, Word_t *Scan_Frequency_High, Byte_t *StatusResult);
-
-#ifdef INCLUDE_BLUETOOTH_API_PROTOTYPES
-   typedef int (BTPSAPI *PFN_HCI_Set_MWS_Scan_Frequency_Table_t)(unsigned int BluetoothStackID, Byte_t Num_Scan_Frequencies, Word_t *Scan_Frequency_Low, Word_t *Scan_Frequency_High, Byte_t *StatusResult);
-#endif
-
-   /* The following function issues the                                 */
-   /* HCI_Set_MWS_PATTERN_Configuration command to the Bluetooth Device */
-   /* that is associated with the Bluetooth Protocol Stack specified by */
-   /* the BluetoothStackID parameter.  This function returns zero if    */
-   /* successful, or a non-zero value if there was an error.  If this   */
-   /* function returns zero (success) then the StatusResult variable    */
-   /* will contain the Status Result returned from the Bluetooth Device.*/
-   /* * NOTE * This function blocks until either a result is returned   */
-   /*          from the Bluetooth Device OR the function Times Out      */
-   /*          Waiting for a response from the Bluetooth Device.        */
-   /* * NOTE * Both MWS_PATTERN_IntervalDuration and                    */
-   /*          MWS_PATTERN_IntervalType are arrays of                   */
-   /*          MWS_PATTERN_NumIntervals entries.                        */
-BTPSAPI_DECLARATION int BTPSAPI HCI_Set_MWS_PATTERN_Configuration(unsigned int BluetoothStackID, Byte_t MWS_PATTERN_Index, Byte_t MWS_PATTERN_NumIntervals, Word_t *MWS_PATTERN_IntervalDuration, Byte_t *MWS_PATTERN_IntervalType, Byte_t *StatusResult);
-
-#ifdef INCLUDE_BLUETOOTH_API_PROTOTYPES
-   typedef int (BTPSAPI *PFN_HCI_Set_MWS_PATTERN_Configuration_t)(unsigned int BluetoothStackID, Byte_t MWS_PATTERN_Index, Byte_t MWS_PATTERN_NumIntervals, Word_t *MWS_PATTERN_IntervalDuration, Byte_t *MWS_PATTERN_IntervalType, Byte_t *StatusResult);
-#endif
-
-   /* HCI Command API's (Host Controller and Baseband - Version 4.0 +   */
-   /* CSA4).                                                            */
-
-   /* The following function issues the HCI_Set_Reserved_LT_ADDR Command*/
-   /* Command to the Bluetooth Device that is associated with the       */
-   /* Bluetooth Protocol Stack specified by the BluetoothStackID        */
-   /* parameter.  This function returns zero if successful, or a        */
-   /* non-zero value if there was an error.  If this function returns   */
-   /* zero (success) then the StatusResult variable will contain the    */
-   /* Status Result returned from the Bluetooth Device AND the          */
-   /* LT_ADDRResult variable will contain the LT_ADDR returned from the */
-   /* Bluetooth Device.                                                 */
-   /* * NOTE * This function blocks until either a result is returned   */
-   /*          from the Bluetooth Device OR the function Times Out      */
-   /*          Waiting for a response from the Bluetooth Device.        */
-BTPSAPI_DECLARATION int BTPSAPI HCI_Set_Reserved_LT_ADDR(unsigned int BluetoothStackID, Byte_t LT_ADDR, Byte_t *StatusResult, Byte_t *LT_ADDRResult);
-
-#ifdef INCLUDE_BLUETOOTH_API_PROTOTYPES
-   typedef int (BTPSAPI *PFN_HCI_Set_Reserved_LT_ADDR_t)(unsigned int BluetoothStackID, Byte_t LT_ADDR, Byte_t *StatusResult, Byte_t *LT_ADDRResult);
-#endif
-
-   /* The following function issues the HCI_Delete_Reserved_LT_ADDR     */
-   /* Command Command to the Bluetooth Device that is associated with   */
-   /* the Bluetooth Protocol Stack specified by the BluetoothStackID    */
-   /* parameter.  This function returns zero if successful, or a        */
-   /* non-zero value if there was an error.  If this function returns   */
-   /* zero (success) then the StatusResult variable will contain the    */
-   /* Status Result returned from the Bluetooth Device AND the          */
-   /* LT_ADDRResult variable will contain the LT_ADDR returned from the */
-   /* Bluetooth Device.                                                 */
-   /* * NOTE * This function blocks until either a result is returned   */
-   /*          from the Bluetooth Device OR the function Times Out      */
-   /*          Waiting for a response from the Bluetooth Device.        */
-BTPSAPI_DECLARATION int BTPSAPI HCI_Delete_Reserved_LT_ADDR(unsigned int BluetoothStackID, Byte_t LT_ADDR, Byte_t *StatusResult, Byte_t *LT_ADDRResult);
-
-#ifdef INCLUDE_BLUETOOTH_API_PROTOTYPES
-   typedef int (BTPSAPI *PFN_HCI_Delete_Reserved_LT_ADDR_t)(unsigned int BluetoothStackID, Byte_t LT_ADDR, Byte_t *StatusResult, Byte_t *LT_ADDRResult);
-#endif
-
-   /* The following function issues the                                 */
-   /* HCI_Set_Connectionless_Slave_Broadcast_Data Command Command to the*/
-   /* Bluetooth Device that is associated with the Bluetooth Protocol   */
-   /* Stack specified by the BluetoothStackID parameter.  This function */
-   /* returns zero if successful, or a non-zero value if there was an   */
-   /* error.  If this function returns zero (success) then the          */
-   /* StatusResult variable will contain the Status Result returned from*/
-   /* the Bluetooth Device AND the LT_ADDRResult variable will contain  */
-   /* the LT_ADDR returned from the Bluetooth Device.                   */
-   /* * NOTE * This function blocks until either a result is returned   */
-   /*          from the Bluetooth Device OR the function Times Out      */
-   /*          Waiting for a response from the Bluetooth Device.        */
-BTPSAPI_DECLARATION int BTPSAPI HCI_Set_Connectionless_Slave_Broadcast_Data(unsigned int BluetoothStackID, Byte_t LT_ADDR, Byte_t Fragment, Byte_t Data_Length, Byte_t *Data, Byte_t *StatusResult, Byte_t *LT_ADDRResult);
-
-#ifdef INCLUDE_BLUETOOTH_API_PROTOTYPES
-   typedef int (BTPSAPI *PFN_HCI_Set_Connectionless_Slave_Broadcast_Data_t)(unsigned int BluetoothStackID, Byte_t LT_ADDR, Byte_t Fragment, Byte_t Data_Length, Byte_t *Data, Byte_t *StatusResult, Byte_t *LT_ADDRResult);
-#endif
-
-   /* The following function issues the                                 */
-   /* HCI_Read_Synchronization_Train_Parameters Command to the Bluetooth*/
-   /* Device that is associated with the Bluetooth Protocol Stack       */
-   /* specified by the BluetoothStackID parameter.  This function       */
-   /* returns zero if successful, or a non-zero value if there was an   */
-   /* error.  If this function returns zero (success) then the          */
-   /* StatusResult variable will contain the Status Result returned from*/
-   /* the Bluetooth Device AND the Sync_Train_IntervalResult variable   */
-   /* will contain the Synchronization Train Interval returned from the */
-   /* Bluetooth Device AND the Sync_Train_TimeoutResult variable will   */
-   /* contain the Synchronization Train Timeout returned from the       */
-   /* Bluetooth Device AND the Service_DataResult variable will contain */
-   /* the Service Data returned from the Bluetooth Device.              */
-   /* * NOTE * This function blocks until either a result is returned   */
-   /*          from the Bluetooth Device OR the function Times Out      */
-   /*          Waiting for a response from the Bluetooth Device.        */
-BTPSAPI_DECLARATION int BTPSAPI HCI_Read_Synchronization_Train_Parameters(unsigned int BluetoothStackID, Byte_t *StatusResult, Word_t *Sync_Train_IntervalResult, DWord_t *Sync_Train_TimeoutResult, Byte_t *Service_DataResult);
-
-#ifdef INCLUDE_BLUETOOTH_API_PROTOTYPES
-   typedef int (BTPSAPI *PFN_HCI_Read_Synchronization_Train_Parameters_t)(unsigned int BluetoothStackID, Byte_t *StatusResult, Word_t *Sync_Train_IntervalResult, DWord_t *Sync_Train_TimeoutResult, Byte_t *Service_DataResult);
-#endif
-
-   /* The following function issues the                                 */
-   /* HCI_Write_Synchronization_Train_Parameters Command Command to the */
-   /* Bluetooth Device that is associated with the Bluetooth Protocol   */
-   /* Stack specified by the BluetoothStackID parameter.  This function */
-   /* returns zero if successful, or a non-zero value if there was an   */
-   /* error.  If this function returns zero (success) then the          */
-   /* StatusResult variable will contain the Status Result returned from*/
-   /* the Bluetooth Device AND the Sync_Train_IntervalResult variable   */
-   /* will contain the Synchronization Train Interval returned from the */
-   /* Bluetooth Device.                                                 */
-   /* * NOTE * This function blocks until either a result is returned   */
-   /*          from the Bluetooth Device OR the function Times Out      */
-   /*          Waiting for a response from the Bluetooth Device.        */
-BTPSAPI_DECLARATION int BTPSAPI HCI_Write_Synchronization_Train_Parameters(unsigned int BluetoothStackID, Word_t Interval_Min, Word_t Interval_Max, DWord_t Sync_Train_Timeout, Byte_t Service_Data, Byte_t *StatusResult, Word_t *Sync_Train_IntervalResult);
-
-#ifdef INCLUDE_BLUETOOTH_API_PROTOTYPES
-   typedef int (BTPSAPI *PFN_HCI_Write_Synchronization_Train_Parameters_t)(unsigned int BluetoothStackID, Word_t Interval_Min, Word_t Interval_Max, DWord_t Sync_Train_Timeout, Byte_t Service_Data, Byte_t *StatusResult, Word_t *Sync_Train_IntervalResult);
-#endif
-
-   /* HCI Command API's (Host Controller and Baseband - Version 4.1).   */
-
-   /* The following function issues the                                 */
-   /* HCI_Read_Secure_Connections_Host_Support Command to the Bluetooth */
-   /* Device that is associated with the Bluetooth Protocol Stack       */
-   /* specified by the BluetoothStackID parameter.  This function       */
-   /* returns zero if successful, or a non-zero value if there was an   */
-   /* error.  If this function returns zero (success) then the          */
-   /* StatusResult variable will contain the Status Result returned from*/
-   /* the Bluetooth Device AND the Secure_Connections_Host_SupportResult*/
-   /* variable will contain the Secure Connections Host Support returned*/
-   /* from the Bluetooth Device.                                        */
-   /* * NOTE * This function blocks until either a result is returned   */
-   /*          from the Bluetooth Device OR the function Times Out      */
-   /*          Waiting for a response from the Bluetooth Device.        */
-BTPSAPI_DECLARATION int BTPSAPI HCI_Read_Secure_Connections_Host_Support(unsigned int BluetoothStackID, Byte_t *StatusResult, Byte_t *Secure_Connections_Host_SupportResult);
-
-#ifdef INCLUDE_BLUETOOTH_API_PROTOTYPES
-   typedef int (BTPSAPI *PFN_HCI_Read_Secure_Connections_Host_Support_t)(unsigned int BluetoothStackID, Byte_t *StatusResult, Byte_t *Secure_Connections_Host_SupportResult);
-#endif
-
-   /* The following function issues the                                 */
-   /* HCI_Write_Secure_Connections_Host_Support Command to the Bluetooth*/
-   /* Device that is associated with the Bluetooth Protocol Stack       */
-   /* specified by the BluetoothStackID parameter.  This function       */
-   /* returns zero if successful, or a non-zero value if there was an   */
-   /* error.  If this function returns zero (success) then the          */
-   /* StatusResult variable will contain the Status Result returned from*/
-   /* the Bluetooth Device AND the Secure_Connections_Host_SupportResult*/
-   /* variable will contain the Secure Connections Host Support returned*/
-   /* from the Bluetooth Device.                                        */
-   /* * NOTE * This function blocks until either a result is returned   */
-   /*          from the Bluetooth Device OR the function Times Out      */
-   /*          Waiting for a response from the Bluetooth Device.        */
-BTPSAPI_DECLARATION int BTPSAPI HCI_Write_Secure_Connections_Host_Support(unsigned int BluetoothStackID, Byte_t Secure_Connections_Host_Support, Byte_t *StatusResult);
-
-#ifdef INCLUDE_BLUETOOTH_API_PROTOTYPES
-   typedef int (BTPSAPI *PFN_HCI_Write_Secure_Connections_Host_Support_t)(unsigned int BluetoothStackID, Byte_t Secure_Connections_Host_Support, Byte_t *StatusResult);
-#endif
-
-   /* The following function issues the                                 */
-   /* HCI_Read_Authenticated_Payload_Timeout Command to the Bluetooth   */
-   /* Device that is associated with the Bluetooth Protocol Stack       */
-   /* specified by the BluetoothStackID parameter.  This function       */
-   /* returns zero if successful, or a non-zero value if there was an   */
-   /* error.  If this function returns zero (success) then the          */
-   /* StatusResult variable will contain the Status Result returned from*/
-   /* the Bluetooth Device AND the Connection_HandleResult variable will*/
-   /* contain the Connection Handle returned from the Bluetooth Device  */
-   /* AND the Authenticated_Payload_TimeoutResult variable will contain */
-   /* the Authenticated Payload Timeout returned from the Bluetooth     */
-   /* Device.                                                           */
-   /* * NOTE * This function blocks until either a result is returned   */
-   /*          from the Bluetooth Device OR the function Times Out      */
-   /*          Waiting for a response from the Bluetooth Device.        */
-BTPSAPI_DECLARATION int BTPSAPI HCI_Read_Authenticated_Payload_Timeout(unsigned int BluetoothStackID, Word_t Connection_Handle, Byte_t *StatusResult, Word_t *Connection_HandleResult, Word_t *Authenticated_Payload_TimeoutResult);
-
-#ifdef INCLUDE_BLUETOOTH_API_PROTOTYPES
-   typedef int (BTPSAPI *PFN_HCI_Read_Authenticated_Payload_Timeout_t)(unsigned int BluetoothStackID, Word_t Connection_Handle, Byte_t *StatusResult, Word_t *Connection_HandleResult, Word_t *Authenticated_Payload_TimeoutResult);
-#endif
-
-   /* The following function issues the                                 */
-   /* HCI_Write_Authenticated_Payload_Timeout Command to the Bluetooth  */
-   /* Device that is associated with the Bluetooth Protocol Stack       */
-   /* specified by the BluetoothStackID parameter.  This function       */
-   /* returns zero if successful, or a non-zero value if there was an   */
-   /* error.  If this function returns zero (success) then the          */
-   /* StatusResult variable will contain the Status Result returned from*/
-   /* the Bluetooth Device AND the Connection_HandleResult variable will*/
-   /* contain the Connection Handle returned from the Bluetooth Device. */
-   /* * NOTE * This function blocks until either a result is returned   */
-   /*          from the Bluetooth Device OR the function Times Out      */
-   /*          Waiting for a response from the Bluetooth Device.        */
-BTPSAPI_DECLARATION int BTPSAPI HCI_Write_Authenticated_Payload_Timeout(unsigned int BluetoothStackID, Word_t Connection_Handle, Word_t Authenticated_Payload_Timeout, Byte_t *StatusResult, Word_t *Connection_HandleResult);
-
-#ifdef INCLUDE_BLUETOOTH_API_PROTOTYPES
-   typedef int (BTPSAPI *PFN_HCI_Write_Authenticated_Payload_Timeout_t)(unsigned int BluetoothStackID, Word_t Connection_Handle, Word_t Authenticated_Payload_Timeout, Byte_t *StatusResult, Word_t *Connection_HandleResult);
-#endif
-
-   /* The following function issues the HCI_Read_Local_OOB_Extended_Data*/
-   /* Command to the Bluetooth Device that is associated with the       */
-   /* Bluetooth Protocol Stack specified by the BluetoothStackID        */
-   /* parameter.  This function returns zero if successful, or a        */
-   /* non-zero value if there was an error.  If this function returns   */
-   /* zero (success) then the StatusResult variable will contain the    */
-   /* Status Result returned from the Bluetooth Device AND the          */
-   /* C_192Result variable will contain the Simple Pairing Hash derived */
-   /* from the P-192 public key returned from the Bluetooth Device AND  */
-   /* the R_192Result variable will contain the Simple Pairing          */
-   /* Randomizer associated with the P-192 public key returned from the */
-   /* Bluetooth Device AND the C_256Result variable will contain the    */
-   /* Simple Pairing Hash derived from the P-256 public key returned    */
-   /* from the Bluetooth Device AND the R_256Result variable will       */
-   /* contain the Simple Pairing Randomizer associated with the P-256   */
-   /* public key returned from the Bluetooth Device.                    */
-   /* * NOTE * This function blocks until either a result is returned   */
-   /*          from the Bluetooth Device OR the function Times Out      */
-   /*          Waiting for a response from the Bluetooth Device.        */
-BTPSAPI_DECLARATION int BTPSAPI HCI_Read_Local_OOB_Extended_Data(unsigned int BluetoothStackID, Byte_t *StatusResult, Simple_Pairing_Hash_t *C_192Result, Simple_Pairing_Randomizer_t *R_192Result, Simple_Pairing_Hash_t *C_256Result, Simple_Pairing_Randomizer_t *R_256Result);
-
-#ifdef INCLUDE_BLUETOOTH_API_PROTOTYPES
-   typedef int (BTPSAPI *PFN_HCI_Read_Local_OOB_Extended_Data_t)(unsigned int BluetoothStackID, Byte_t *StatusResult, Simple_Pairing_Hash_t *C_192Result, Simple_Pairing_Randomizer_t *R_192Result, Simple_Pairing_Hash_t *C_256Result, Simple_Pairing_Randomizer_t *R_256Result);
-#endif
-
-   /* The following function issues the HCI_Read_Extended_Page_Timeout  */
-   /* Command to the Bluetooth Device that is associated with the       */
-   /* Bluetooth Protocol Stack specified by the BluetoothStackID        */
-   /* parameter.  This function returns zero if successful, or a        */
-   /* non-zero value if there was an error.  If this function returns   */
-   /* zero (success) then the StatusResult variable will contain the    */
-   /* Status Result returned from the Bluetooth Device AND the          */
-   /* Extended_Page_TimeoutResult variable will contain the Extended    */
-   /* Page Timeout returned from the Bluetooth Device.                  */
-   /* * NOTE * This function blocks until either a result is returned   */
-   /*          from the Bluetooth Device OR the function Times Out      */
-   /*          Waiting for a response from the Bluetooth Device.        */
-BTPSAPI_DECLARATION int BTPSAPI HCI_Read_Extended_Page_Timeout(unsigned int BluetoothStackID, Byte_t *StatusResult, Word_t *Extended_Page_TimeoutResult);
-
-#ifdef INCLUDE_BLUETOOTH_API_PROTOTYPES
-   typedef int (BTPSAPI *PFN_HCI_Read_Extended_Page_Timeout_t)(unsigned int BluetoothStackID, Byte_t *StatusResult, Word_t *Extended_Page_TimeoutResult);
-#endif
-
-   /* The following function issues the HCI_Write_Extended_Page_Timeout */
-   /* Command to the Bluetooth Device that is associated with the       */
-   /* Bluetooth Protocol Stack specified by the BluetoothStackID        */
-   /* parameter.  This function returns zero if successful, or a        */
-   /* non-zero value if there was an error.  If this function returns   */
-   /* zero (success) then the StatusResult variable will contain the    */
-   /* Status Result returned from the Bluetooth Device.                 */
-   /* * NOTE * This function blocks until either a result is returned   */
-   /*          from the Bluetooth Device OR the function Times Out      */
-   /*          Waiting for a response from the Bluetooth Device.        */
-BTPSAPI_DECLARATION int BTPSAPI HCI_Write_Extended_Page_Timeout(unsigned int BluetoothStackID, Word_t Extended_Page_Timeout, Byte_t *StatusResult);
-
-#ifdef INCLUDE_BLUETOOTH_API_PROTOTYPES
-   typedef int (BTPSAPI *PFN_HCI_Write_Extended_Page_Timeout_t)(unsigned int BluetoothStackID, Word_t Extended_Page_Timeout, Byte_t *StatusResult);
-#endif
-
-   /* The following function issues the HCI_Read_Extended_Inquiry_Length*/
-   /* Command to the Bluetooth Device that is associated with the       */
-   /* Bluetooth Protocol Stack specified by the BluetoothStackID        */
-   /* parameter.  This function returns zero if successful, or a        */
-   /* non-zero value if there was an error.  If this function returns   */
-   /* zero (success) then the StatusResult variable will contain the    */
-   /* Status Result returned from the Bluetooth Device AND the          */
-   /* Extended_Inquiry_LengthResult variable will contain the Extended  */
-   /* Inquiry Length returned from the Bluetooth Device.                */
-   /* * NOTE * This function blocks until either a result is returned   */
-   /*          from the Bluetooth Device OR the function Times Out      */
-   /*          Waiting for a response from the Bluetooth Device.        */
-BTPSAPI_DECLARATION int BTPSAPI HCI_Read_Extended_Inquiry_Length(unsigned int BluetoothStackID, Byte_t *StatusResult, Word_t *Extended_Inquiry_LengthResult);
-
-#ifdef INCLUDE_BLUETOOTH_API_PROTOTYPES
-   typedef int (BTPSAPI *PFN_HCI_Read_Extended_Inquiry_Length_t)(unsigned int BluetoothStackID, Byte_t *StatusResult, Word_t *Extended_Inquiry_LengthResult);
-#endif
-
-   /* The following function issues the                                 */
-   /* HCI_Write_Extended_Inquiry_Length Command to the Bluetooth Device */
-   /* that is associated with the Bluetooth Protocol Stack specified by */
-   /* the BluetoothStackID parameter.  This function returns zero if    */
-   /* successful, or a non-zero value if there was an error.  If this   */
-   /* function returns zero (success) then the StatusResult variable    */
-   /* will contain the Status Result returned from the Bluetooth Device.*/
-   /* * NOTE * This function blocks until either a result is returned   */
-   /*          from the Bluetooth Device OR the function Times Out      */
-   /*          Waiting for a response from the Bluetooth Device.        */
-BTPSAPI_DECLARATION int BTPSAPI HCI_Write_Extended_Inquiry_Length(unsigned int BluetoothStackID, Word_t Extended_Inquiry_Length, Byte_t *StatusResult);
-
-#ifdef INCLUDE_BLUETOOTH_API_PROTOTYPES
-   typedef int (BTPSAPI *PFN_HCI_Write_Extended_Inquiry_Length_t)(unsigned int BluetoothStackID, Word_t Extended_Inquiry_Length, Byte_t *StatusResult);
-#endif
-
    /* HCI Command API's (Informational Parameters).                     */
 
    /* The following function issues the                                 */
@@ -5450,56 +4724,6 @@ BTPSAPI_DECLARATION int BTPSAPI HCI_Write_Remote_AMP_ASSOC(unsigned int Bluetoot
    typedef int (BTPSAPI *PFN_HCI_Write_Remote_AMP_ASSOC_t)(unsigned int BluetoothStackID, Byte_t Physical_Link_Handle, Word_t Length_So_Far, Word_t AMP_ASSOC_Remaining_Length, Byte_t AMP_ASSOC_Fragment_Length, Byte_t *AMP_ASSOC_Fragment, Byte_t *StatusResult, Byte_t *Physical_Link_HandleResult);
 #endif
 
-   /* HCI Command API's (Status Parameters - Version 4.0 + CSA3).       */
-
-   /* The following function issues the                                 */
-   /* HCI_Get_MWS_Transport_Layer_Configuration Command to the Bluetooth*/
-   /* Device that is associated with the Bluetooth Protocol Stack       */
-   /* specified by the BluetoothStackID parameter.  This function       */
-   /* returns zero if successful, or a non-zero value if there was an   */
-   /* error.  If this function returns zero (success) then the          */
-   /* StatusResult variable will contain the Status Result returned from*/
-   /* the Bluetooth Device and the Transport_Layer_ConfigurationResult  */
-   /* variable will contain the Transport Layer Configuration retruned  */
-   /* from the Bluetooth device.                                        */
-   /* * NOTE * This function blocks until either a result is returned   */
-   /*          from the Bluetooth Device OR the function Times Out      */
-   /*          Waiting for a response from the Bluetooth Device.        */
-   /* * NOTE * The HCI_Free_MWS_Transport_Layer_Configuration() function*/
-   /*          MUST be called after a successful return from this       */
-   /*          function to free the memory allocated by this call.      */
-BTPSAPI_DECLARATION int BTPSAPI HCI_Get_MWS_Transport_Layer_Configuration(unsigned int BluetoothStackID, Byte_t *StatusResult, HCI_MWS_Transport_Layer_Configuration_Info_t *Transport_Layer_ConfigurationResult);
-
-#ifdef INCLUDE_BLUETOOTH_API_PROTOTYPES
-   typedef int (BTPSAPI *PFN_HCI_Get_MWS_Transport_Layer_Configuration_t)(unsigned int BluetoothStackID, Byte_t *StatusResult, HCI_MWS_Transport_Layer_Configuration_Info_t *Transport_Layer_ConfigurationResult);
-#endif
-
-   /* The following function frees the memory allocated by a successful */
-   /* call to the HCI_Get_MWS_Transport_Layer_Configuration() function. */
-BTPSAPI_DECLARATION void BTPSAPI HCI_Free_MWS_Transport_Layer_Configuration(HCI_MWS_Transport_Layer_Configuration_Info_t *Transport_Layer_Configuration);
-
-#ifdef INCLUDE_BLUETOOTH_API_PROTOTYPES
-   typedef void (BTPSAPI *PFN_HCI_Free_MWS_Transport_Layer_Configuration_t)(HCI_MWS_Transport_Layer_Configuration_Info_t *Transport_Layer_Configuration);
-#endif
-
-   /* HCI Command API's (Status Parameters - Version 4.0 + CSA4).       */
-
-   /* The following function issues the HCI_Set_Triggered_Clock_Capture */
-   /* Command to the Bluetooth Device that is associated with the       */
-   /* Bluetooth Protocol Stack specified by the BluetoothStackID        */
-   /* parameter.  This function returns zero if successful, or a        */
-   /* non-zero value if there was an error.  If this function returns   */
-   /* zero (success) then the StatusResult variable will contain the    */
-   /* Status Result returned from the Bluetooth Device.                 */
-   /* * NOTE * This function blocks until either a result is returned   */
-   /*          from the Bluetooth Device OR the function Times Out      */
-   /*          Waiting for a response from the Bluetooth Device.        */
-BTPSAPI_DECLARATION int BTPSAPI HCI_Set_Triggered_Clock_Capture(unsigned int BluetoothStackID, Word_t Connection_Handle, Byte_t Enable, Byte_t Which_Clock, Byte_t LPO_Allowed, Byte_t Num_Clock_Captures_To_Filter, Byte_t *StatusResult);
-
-#ifdef INCLUDE_BLUETOOTH_API_PROTOTYPES
-   typedef int (BTPSAPI *PFN_HCI_Set_Triggered_Clock_Capture_t)(unsigned int BluetoothStackID, Word_t Connection_Handle, Byte_t Enable, Byte_t Which_Clock, Byte_t LPO_Allowed, Byte_t Num_Clock_Captures_To_Filter, Byte_t *StatusResult);
-#endif
-
    /* HCI Command API's (Testing Commands).                             */
 
    /* The following function issues the HCI_Read_Loopback_Mode Command  */
@@ -5622,27 +4846,6 @@ BTPSAPI_DECLARATION int BTPSAPI HCI_AMP_Test_Command(unsigned int BluetoothStack
 
 #ifdef INCLUDE_BLUETOOTH_API_PROTOTYPES
    typedef int (BTPSAPI *PFN_HCI_AMP_Test_Command_t)(unsigned int BluetoothStackID, Byte_t Parameter_Length, Byte_t Parameter_Data[], Byte_t *StatusResult);
-#endif
-
-   /* HCI Command API's (Testing Commands - Version 4.1).               */
-
-   /* The following function issues the                                 */
-   /* HCI_Write_Secure_Connections_Test_Mode Command to the Bluetooth   */
-   /* Device that is associated with the Bluetooth Protocol Stack       */
-   /* specified by the BluetoothStackID parameter.  This function       */
-   /* returns zero if successful, or a non-zero value if there was an   */
-   /* error.  If this function returns zero (success) then the          */
-   /* StatusResult variable will contain the Status Result returned from*/
-   /* the Bluetooth Device AND the Connection_HandleResult variable will*/
-   /* contain the Connection Handle result returned from the Bluetooth  */
-   /* Device.                                                           */
-   /* * NOTE * This function blocks until either a result is returned   */
-   /*          from the Bluetooth Device OR the function Times Out      */
-   /*          Waiting for a response from the Bluetooth Device.        */
-BTPSAPI_DECLARATION int BTPSAPI HCI_Write_Secure_Connections_Test_Mode(unsigned int BluetoothStackID, Word_t Connection_Handle, Byte_t DM1_ACLU_Mode, Byte_t ESCO_Loopback_Mode, Byte_t *StatusResult, Word_t *Connection_HandleResult);
-
-#ifdef INCLUDE_BLUETOOTH_API_PROTOTYPES
-   typedef int (BTPSAPI *PFN_HCI_Write_Secure_Connections_Test_Mode_t)(unsigned int BluetoothStackID, Word_t Connection_Handle, Byte_t DM1_ACLU_Mode, Byte_t ESCO_Loopback_Mode, Byte_t *StatusResult, Word_t *Connection_HandleResult);
 #endif
 
    /* HCI Command API's (LE Commands - Version 4.0 + LE).               */
@@ -6156,44 +5359,6 @@ BTPSAPI_DECLARATION int BTPSAPI HCI_LE_Test_End(unsigned int BluetoothStackID, B
 
 #ifdef INCLUDE_BLUETOOTH_API_PROTOTYPES
    typedef int (BTPSAPI *PFN_HCI_LE_Test_End_t)(unsigned int BluetoothStackID, Byte_t *StatusResult, Word_t *Number_Of_PacketsResult);
-#endif
-
-   /* HCI Command API's (LE Commands - Version 4.1).                    */
-
-   /* The following function issues the                                 */
-   /* HCI_LE_Remote_Connection_Parameter_Request_Reply Command to the   */
-   /* Bluetooth Device that is associated with the Bluetooth Protocol   */
-   /* Stack specified by the BluetoothStackID parameter.  This function */
-   /* returns zero if successful, or a non-zero value if there was an   */
-   /* error.  If this function returns zero (success) then the          */
-   /* StatusResult variable will contain the Status Result returned from*/
-   /* the Bluetooth Device and the Connection_HandleResult variable will*/
-   /* contain the Connection Handle returned from the Bluetooth device. */
-   /* * NOTE * This function blocks until either a result is returned   */
-   /*          from the Bluetooth Device OR the function Times Out      */
-   /*          Waiting for a response from the Bluetooth Device.        */
-BTPSAPI_DECLARATION int BTPSAPI HCI_LE_Remote_Connection_Parameter_Request_Reply(unsigned int BluetoothStackID, Word_t Connection_Handle, Word_t Conn_Interval_Min, Word_t Conn_Interval_Max, Word_t Conn_Latency, Word_t Supervision_Timeout, Word_t Minimum_CE_Length, Word_t Maximum_CE_Length, Byte_t *StatusResult, Word_t *Connection_HandleResult);
-
-#ifdef INCLUDE_BLUETOOTH_API_PROTOTYPES
-   typedef int (BTPSAPI *PFN_HCI_LE_Remote_Connection_Parameter_Request_Reply_t)(unsigned int BluetoothStackID, Word_t Connection_Handle, Word_t Conn_Interval_Min, Word_t Conn_Interval_Max, Word_t Conn_Latency, Word_t Supervision_Timeout, Word_t Minimum_CE_Length, Word_t Maximum_CE_Length, Byte_t *StatusResult, Word_t *Connection_HandleResult);
-#endif
-
-   /* The following function issues the                                 */
-   /* HCI_LE_Remote_Connection_Parameter_Request_Negative_Reply Command */
-   /* to the Bluetooth Device that is associated with the Bluetooth     */
-   /* Protocol Stack specified by the BluetoothStackID parameter.  This */
-   /* function returns zero if successful, or a non-zero value if there */
-   /* was an error.  If this function returns zero (success) then the   */
-   /* StatusResult variable will contain the Status Result returned from*/
-   /* the Bluetooth Device and the Connection_HandleResult variable will*/
-   /* contain the Connection Handle returned from the Bluetooth device. */
-   /* * NOTE * This function blocks until either a result is returned   */
-   /*          from the Bluetooth Device OR the function Times Out      */
-   /*          Waiting for a response from the Bluetooth Device.        */
-BTPSAPI_DECLARATION int BTPSAPI HCI_LE_Remote_Connection_Parameter_Request_Negative_Reply(unsigned int BluetoothStackID, Word_t Connection_Handle, Byte_t Reason, Byte_t *StatusResult, Word_t *Connection_HandleResult);
-
-#ifdef INCLUDE_BLUETOOTH_API_PROTOTYPES
-   typedef int (BTPSAPI *PFN_HCI_LE_Remote_Connection_Parameter_Request_Negative_Reply_t)(unsigned int BluetoothStackID, Word_t Connection_Handle, Byte_t Reason, Byte_t *StatusResult, Word_t *Connection_HandleResult);
 #endif
 
 #endif

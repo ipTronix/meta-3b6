@@ -2,9 +2,6 @@
 /*      Copyright 2000 - 2014 Stonestreet One.                                */
 /*      All Rights Reserved.                                                  */
 /*                                                                            */
-/*      Copyright 2015 Texas Instruments Incorporated.                        */
-/*      All Rights Reserved.                                                  */
-/*									      									  */		
 /*  GAPAPI - Stonestreet One Bluetooth Stack Generic Access Profile API       */
 /*           Type Definitions, Constants, and Prototypes.                     */
 /*                                                                            */
@@ -18,8 +15,6 @@
 /*   12/07/07  D. Mason       Changes for BT 2.1                              */
 /*   09/18/08  J. Toole       Updates for BT 2.1                              */
 /*   06/30/11  T. Cook        Updates for BT 4.0                              */
-/*   01/02/14  T. Cook        Changes for BT 4.1                              */
-/*   12/07/15  L. Gersi	      Updates for BT 4.2 - LE SC		      		  */
 /******************************************************************************/
 #ifndef __GAPAPIH__
 #define __GAPAPIH__
@@ -27,7 +22,7 @@
 #include "HCITypes.h"           /* HCI Related Type Definitions.              */
 #include "BTAPITyp.h"           /* Bluetooth API Type Definitions.            */
 #include "BTTypes.h"            /* Bluetooth Type Definitions/Constants.      */
-#include "SMTypes.h"
+
 #include "BTPSCFG.h"            /* BTPS Configuration Constants.              */
 
    /* GAP Basic Rate/Enhanced Data Rate (BR/EDR) type definitions and   */
@@ -95,13 +90,10 @@ typedef enum
    cmConnectableMode
 } GAP_Connectability_Mode_t;
 
-   /* The following enumerated type represents the supported Pairability*/
-   /* Modes that a Bluetooth Device can be set to.  These types are used*/
-   /* with the GAP_Set_Pairability_Mode() and the                       */
+   /* The following enumerated type represents the supported            */
+   /* Pairability Modes that a Bluetooth Device can be set to.  These   */
+   /* types are used with the GAP_Set_Pairability_Mode() and the        */
    /* GAP_Query_Pairability_Mode() functions.                           */
-   /* * NOTE * If the local Bluetooth device is a 4.1 or greater chipset*/
-   /*          enabling Secure Simple Pairing (SSP) will also enable    */
-   /*          Secure Connections support.                              */
 typedef enum
 {
   pmNonPairableMode,
@@ -119,27 +111,14 @@ typedef enum
    amEnabled
 } GAP_Authentication_Mode_t;
 
-   /* The following enumerated type represents the supported Encryption */
-   /* Modes that a Bluetooth Device can be set to.  These types are used*/
-   /* with the GAP_Set_Encryption_Mode(), GAP_Query_Encryption_Mode()   */
-   /* and the GAP_LE_Query_Encryption_Mode() functions.                 */
-   /* * NOTE * For the GAP_Set_Encryption_Mode() API the emEnabled and  */
-   /*          emEnabled_AES enumerated values have the same meaning.   */
-   /* * NOTE * For the return from GAP_Query_Encryption_Mode() (classic */
-   /*          connections only) emEnabled_AES means that the specified */
-   /*          link is encrypted with AES-CCM encryption (4.1 or greater*/
-   /*          chipsets only).  emEnabled means that the specified link */
-   /*          is encrypted with E0 encryption.                         */
-   /* * NOTE * For the return from GAP_LE_Query_Encryption_Mode() (low  */
-   /*          energy connections only) emEnabled means that the        */
-   /*          specified link is encrypted with AES-CCM encryption (4.0 */
-   /*          or greater chipsets only).  emEnabled_AES will never be  */
-   /*          returned for an LE connection.                           */
+   /* The following enumerated type represents the supported            */
+   /* Encryption Modes that a Bluetooth Device can be set to.  These    */
+   /* types are used with the GAP_Set_Encryption_Mode() and the         */
+   /* GAP_Query_Encryption_Mode() functions.                            */
 typedef enum
 {
    emDisabled,
-   emEnabled,
-   emEnabled_AES
+   emEnabled
 } GAP_Encryption_Mode_t;
 
    /* The following enumerated type represents the supported Bonding    */
@@ -186,8 +165,7 @@ typedef enum
    etExtended_Inquiry_Entry_Result,
    etEncryption_Refresh_Complete,
    etRemote_Features_Result,
-   etRemote_Version_Information_Result,
-   etAuthenticated_Payload_Timeout
+   etRemote_Version_Information_Result
 } GAP_Event_Type_t;
 
    /* The following type declaration defines an Individual Inquiry      */
@@ -396,25 +374,6 @@ typedef struct _tagGAP_Out_Of_Band_Data_t
 
 #define GAP_OUT_OF_BAND_DATA_SIZE                                 (sizeof(GAP_Out_Of_Band_Data_t))
 
-   /* The following structure defines the extended Out of Band (OOB)    */
-   /* Data that is exchanged during the Out of Band Authentication      */
-   /* process.                                                          */
-   /* * NOTE * The Simple_Pairing_Hash_192 and                          */
-   /*          Simple_Pairing_Randomizer_192 members are derived from   */
-   /*          the P-192 public key.                                    */
-   /* * NOTE * The Simple_Pairing_Hash_256 and                          */
-   /*          Simple_Pairing_Randomizer_256 members are derived from   */
-   /*          the P-256 public key.                                    */
-typedef struct _tagGAP_Extended_Out_Of_Band_Data_t
-{
-   Simple_Pairing_Hash_t       Simple_Pairing_Hash_192;
-   Simple_Pairing_Randomizer_t Simple_Pairing_Randomizer_192;
-   Simple_Pairing_Hash_t       Simple_Pairing_Hash_256;
-   Simple_Pairing_Randomizer_t Simple_Pairing_Randomizer_256;
-} GAP_Extended_Out_Of_Band_Data_t;
-
-#define GAP_EXTENDED_OUT_OF_BAND_DATA_SIZE                        (sizeof(GAP_Extended_Out_Of_Band_Data_t))
-
    /* The following structure defines the I/O Capabilities supported    */
    /* during Capablities exchange during the Authentication Process     */
    /* (required during Secure Simple Pairing).                          */
@@ -424,15 +383,9 @@ typedef struct _tagGAP_IO_Capabilities_t
    Boolean_t                        OOB_Data_Present;
    Boolean_t                        MITM_Protection_Required;
    GAP_IO_Capability_Bonding_Type_t Bonding_Type;
-   Boolean_t                        OOB_256_Data_Present;
 } GAP_IO_Capabilities_t;
 
 #define GAP_IO_CAPABILITIES_SIZE                                  (sizeof(GAP_IO_Capabilities_t))
-
-   /* The following define is used to determine if the structure passed */
-   /* to this layer is the legacy GAP_IO_Capabilities_t structure before*/
-   /* the addition of the OOB_256_Data_Present member.                  */
-#define GAP_LEGACY_IO_CAPABILITIES_SIZE                           (BTPS_STRUCTURE_OFFSET(GAP_IO_Capabilities_t, OOB_256_Data_Present))
 
    /* The following enumerated type is used with the Authentication     */
    /* Event Data Structure and defines the reason that the              */
@@ -478,18 +431,17 @@ typedef enum
    /*          inserted automatically.                                  */
 typedef struct _tagGAP_Authentication_Information_t
 {
-   GAP_Authentication_Type_t          GAP_Authentication_Type;
-   Byte_t                             Authentication_Data_Length;
+   GAP_Authentication_Type_t GAP_Authentication_Type;
+   Byte_t                    Authentication_Data_Length;
    union
    {
-      PIN_Code_t                      PIN_Code;
-      Link_Key_t                      Link_Key;
-      Boolean_t                       Confirmation;
-      DWord_t                         Passkey;
-      GAP_Keypress_t                  Keypress;
-      GAP_Out_Of_Band_Data_t          Out_Of_Band_Data;
-      GAP_Extended_Out_Of_Band_Data_t Extended_Out_Of_Band_Data;
-      GAP_IO_Capabilities_t           IO_Capabilities;
+      PIN_Code_t             PIN_Code;
+      Link_Key_t             Link_Key;
+      Boolean_t              Confirmation;
+      DWord_t                Passkey;
+      GAP_Keypress_t         Keypress;
+      GAP_Out_Of_Band_Data_t Out_Of_Band_Data;
+      GAP_IO_Capabilities_t  IO_Capabilities;
    } Authentication_Data;
 } GAP_Authentication_Information_t;
 
@@ -589,17 +541,6 @@ typedef struct _tagGAP_Remote_Version_Information_Event_Data_t
 
 #define GAP_REMOTE_VERSION_INFORMATION_EVENT_DATA_SIZE            (sizeof(GAP_Remote_Version_Information_Event_Data_t))
 
-   /* The following structure represents the GAP Authentication Payload */
-   /* Timeout Event Data that is returned when the a packet with a valid*/
-   /* MIC is not received from the remote device in the time specified  */
-   /* by the GAP_Set_Authenticated_Payload_Timeout() function.          */
-typedef struct _tagGAP_Authenticated_Payload_Timeout_Event_Data_t
-{
-   BD_ADDR_t BD_ADDR;
-} GAP_Authenticated_Payload_Timeout_Event_Data_t;
-
-#define GAP_AUTHENTICATED_PAYLOAD_TIMEOUT_EVENT_DATA_SIZE         (sizeof(GAP_Authenticated_Payload_Timeout_Event_Data_t))
-
    /* The following structure represents the container structure that   */
    /* holds all GAP Event Data Data.                                    */
 typedef struct _tagGAP_Event_Data_t
@@ -608,17 +549,16 @@ typedef struct _tagGAP_Event_Data_t
    Word_t           Event_Data_Size;
    union
    {
-      GAP_Inquiry_Event_Data_t                       *GAP_Inquiry_Event_Data;
-      GAP_Encryption_Mode_Event_Data_t               *GAP_Encryption_Mode_Event_Data;
-      GAP_Authentication_Event_Data_t                *GAP_Authentication_Event_Data;
-      GAP_Remote_Name_Event_Data_t                   *GAP_Remote_Name_Event_Data;
-      GAP_Inquiry_Entry_Event_Data_t                 *GAP_Inquiry_Entry_Event_Data;
-      GAP_Inquiry_With_RSSI_Entry_Event_Data_t       *GAP_Inquiry_With_RSSI_Entry_Event_Data;
-      GAP_Extended_Inquiry_Entry_Event_Data_t        *GAP_Extended_Inquiry_Entry_Event_Data;
-      GAP_Encryption_Refresh_Complete_Event_Data_t   *GAP_Encryption_Refresh_Complete_Event_Data;
-      GAP_Remote_Features_Event_Data_t               *GAP_Remote_Features_Event_Data;
-      GAP_Remote_Version_Information_Event_Data_t    *GAP_Remote_Version_Information_Event_Data;
-      GAP_Authenticated_Payload_Timeout_Event_Data_t *GAP_Authenticated_Payload_Timeout_Event_Data;
+      GAP_Inquiry_Event_Data_t                     *GAP_Inquiry_Event_Data;
+      GAP_Encryption_Mode_Event_Data_t             *GAP_Encryption_Mode_Event_Data;
+      GAP_Authentication_Event_Data_t              *GAP_Authentication_Event_Data;
+      GAP_Remote_Name_Event_Data_t                 *GAP_Remote_Name_Event_Data;
+      GAP_Inquiry_Entry_Event_Data_t               *GAP_Inquiry_Entry_Event_Data;
+      GAP_Inquiry_With_RSSI_Entry_Event_Data_t     *GAP_Inquiry_With_RSSI_Entry_Event_Data;
+      GAP_Extended_Inquiry_Entry_Event_Data_t      *GAP_Extended_Inquiry_Entry_Event_Data;
+      GAP_Encryption_Refresh_Complete_Event_Data_t *GAP_Encryption_Refresh_Complete_Event_Data;
+      GAP_Remote_Features_Event_Data_t             *GAP_Remote_Features_Event_Data;
+      GAP_Remote_Version_Information_Event_Data_t  *GAP_Remote_Version_Information_Event_Data;
    } Event_Data;
 } GAP_Event_Data_t;
 
@@ -806,8 +746,7 @@ typedef enum
 {
    lcmNonConnectable,
    lcmConnectable,
-   lcmDirectConnectable,
-   lcmLowDutyCycleDirectConnectable
+   lcmDirectConnectable
 } GAP_LE_Connectability_Mode_t;
 
    /* The following enumerated type represents the supported            */
@@ -963,9 +902,6 @@ typedef struct _tagGAP_LE_Pairing_Capabilities_t
    Boolean_t                 OOB_Present;
    GAP_LE_Bonding_Type_t     Bonding_Type;
    Boolean_t                 MITM;
-   Boolean_t                 SC;
-   Boolean_t                 Keypress;
-   Boolean_t                 P256DebugMode;
    Byte_t                    Maximum_Encryption_Key_Size;
    GAP_LE_Key_Distribution_t Receiving_Keys;
    GAP_LE_Key_Distribution_t Sending_Keys;
@@ -981,16 +917,6 @@ typedef struct _tagGAP_LE_OOB_Data_t
 } GAP_LE_OOB_Data_t;
 
 #define GAP_LE_OOB_DATA_SIZE                                      (sizeof(GAP_LE_OOB_Data_t))
-
-   /* The following structure represents the structure of data that is  */
-   /* used to specify the Out Of Band Information when using Secure Connections pairing. */
-typedef struct _tagGAP_LE_SC_OOB_Data_t
-{
-   SM_Random_Value_t RemoteRand;
-   SM_Confirm_Value_t RemoteConfirmation;
-} GAP_LE_SC_OOB_Data_t;
-
-#define GAP_LE_SC_OOB_DATA_SIZE                                      (sizeof(GAP_LE_SC_OOB_Data_t))
 
    /* The following structure represents the structure of data that is  */
    /* used to specify the current encryption information.               */
@@ -1044,7 +970,6 @@ typedef enum
    larOutOfBandData,
    larPairingCapabilities,
    larPasskey,
-   larUserConfirmation, 
    larConfirmation,
    larError,
    larEncryptionInformation,
@@ -1069,8 +994,6 @@ typedef struct _tagGAP_LE_Authentication_Response_Information_t
       GAP_LE_Pairing_Capabilities_t      Pairing_Capabilities;
       GAP_LE_OOB_Data_t                  Out_Of_Band_Data;
       DWord_t                            Passkey;
-      Boolean_t							 AcceptedNumericValue;
-      GAP_LE_SC_OOB_Data_t				 SC_Out_Of_Band_Data;
       Byte_t                             Error_Code;
       GAP_LE_Encryption_Information_t    Encryption_Information;
       GAP_LE_Identity_Information_t      Identity_Information;
@@ -1088,9 +1011,6 @@ typedef struct _tagGAP_LE_Slave_Security_Information_t
 {
    GAP_LE_Bonding_Type_t Bonding_Type;
    Boolean_t             MITM;
-   Boolean_t             SC;
-   Boolean_t             Keypress;
-   Boolean_t		   	 P256DebugMode;
 } GAP_LE_Slave_Security_Information_t;
 
 #define GAP_LE_SLAVE_SECURITY_INFORMATION_SIZE                    (sizeof(GAP_LE_Slave_Security_Information_t))
@@ -1138,8 +1058,7 @@ typedef enum
    etLE_Authentication,
    etLE_Connection_Parameter_Update_Request,
    etLE_Connection_Parameter_Update_Response,
-   etLE_Connection_Parameter_Updated,
-   etLE_Authenticated_Payload_Timeout_Expired
+   etLE_Connection_Parameter_Updated
 } GAP_LE_Event_Type_t;
 
    /* The following structure defines an individual Advertising Report  */
@@ -1254,10 +1173,6 @@ typedef struct _tagGAP_LE_Encryption_Change_Event_Data_t
    BD_ADDR_t             BD_ADDR;
    Byte_t                Encryption_Change_Status;
    GAP_Encryption_Mode_t Encryption_Mode;
-   Boolean_t             SC;  	 /* This flag is used in order to let the upper layer know if we are in SC or not */
-   Long_Term_Key_t 		 LTK;    /* In case of LE SC the upper layer should save the LTK at this stage */
-   Boolean_t             Reestablish; /* This flag is set to TRUE, if the encryption was re-established */
-   Byte_t				 Encryption_Key_Size;
 } GAP_LE_Encryption_Change_Event_Data_t;
 
 #define GAP_LE_ENCRYPTION_CHANGE_EVENT_DATA_SIZE                  (sizeof(GAP_LE_Encryption_Change_Event_Data_t))
@@ -1280,7 +1195,6 @@ typedef enum
    latLongTermKeyRequest,
    latSecurityRequest,
    latPairingRequest,
-   latKeypressNotification,
    latConfirmationRequest,
    latPairingStatus,
    latEncryptionInformationRequest,
@@ -1309,8 +1223,6 @@ typedef struct _tagGAP_LE_Security_Request_t
 {
    GAP_LE_Bonding_Type_t Bonding_Type;
    Boolean_t             MITM;
-   Boolean_t             SC;
-   Boolean_t             Keypress;
 } GAP_LE_Security_Request_t;
 
 #define GAP_LE_SECURITY_REQUEST_DATA_SIZE                         (sizeof(GAP_LE_Security_Request_t))
@@ -1322,7 +1234,6 @@ typedef struct _tagGAP_LE_Security_Request_t
 typedef enum
 {
    crtNone,
-   crtNumeric,	
    crtPasskey,
    crtDisplay,
    crtOOB
@@ -1340,9 +1251,6 @@ typedef struct _tagGAP_LE_Confirmation_Request_t
 {
    GAP_LE_Confirmation_Request_Type_t Request_Type;
    DWord_t                            Display_Passkey;
-   DWord_t							  Display_Numeric;
-   Boolean_t			  			  SC;
-   GAP_LE_Bonding_Type_t     		  Remote_Bonding_Type;
    Byte_t                             Negotiated_Encryption_Key_Size;
 } GAP_LE_Confirmation_Request_t;
 
@@ -1373,8 +1281,6 @@ typedef struct _tagGAP_LE_Pairing_Status_t
 #define GAP_LE_PAIRING_STATUS_UNSPECIFIED_REASON                        0x0B
 #define GAP_LE_PAIRING_STATUS_REPEATED_ATTEMPTS                         0x0C
 #define GAP_LE_PAIRING_STATUS_INVALID_PARAMETERS                        0x0D
-#define GAP_LE_PAIRING_STATUS_DHKEY_CHECK_FAILED                    	0x0E
-#define GAP_LE_PAIRING_STATUS_NUMERIC_COMPARISON_FAILED      			0x0F
 
    /* The following structure represents the structure of data that is  */
    /* passed into a GAP_LE_Authentication_Event_Data_t structure with a */
@@ -1444,7 +1350,6 @@ typedef struct _tagGAP_LE_Authentication_Event_Data_t
       GAP_LE_Identity_Information_t            Identity_Information;
       GAP_LE_Signing_Information_t             Signing_Information;
       GAP_LE_Security_Establishment_Complete_t Security_Establishment_Complete;
-      GAP_LE_Keypress_t                        Keypress_Type;
    } Authentication_Event_Data;
 } GAP_LE_Authentication_Event_Data_t;
 
@@ -1493,18 +1398,6 @@ typedef struct _tagGAP_LE_Connection_Parameter_Updated_Event_Data_t
 
 #define GAP_LE_CONNECTION_PARAMETER_UPDATED_EVENT_DATA_SIZE (sizeof(GAP_LE_Connection_Parameter_Updated_Event_Data_t))
 
-   /* The following type declaration specifies the information that is  */
-   /* returned in a LE Authenticated Payload Timeout expired event that */
-   /* is sent by the controller whenever a packet from the remote device*/
-   /* with a valid MIC (for encrypted connections) is not received      */
-   /* within the configurable timeout period.                           */
-typedef struct _tagGAP_LE_Authenticated_Payload_Timeout_Expired_Event_Data_t
-{
-   BD_ADDR_t BD_ADDR;
-} GAP_LE_Authenticated_Payload_Timeout_Expired_Event_Data_t;
-
-#define GAP_LE_AUTHENTICATED_PAYLOAD_TIMEOUT_EXPIRED_EVENT_DATA_SIZE (sizeof(GAP_LE_Authenticated_Payload_Timeout_Expired_Event_Data_t))
-
    /* The following structure represents the container structure that   */
    /* holds all GAP LE Event Data Data.                                 */
 typedef struct _tagGAP_LE_Event_Data_t
@@ -1513,17 +1406,16 @@ typedef struct _tagGAP_LE_Event_Data_t
    Word_t              Event_Data_Size;
    union
    {
-      GAP_LE_Remote_Features_Event_Data_t                       *GAP_LE_Remote_Features_Event_Data;
-      GAP_LE_Advertising_Report_Event_Data_t                    *GAP_LE_Advertising_Report_Event_Data;
-      GAP_LE_Connection_Complete_Event_Data_t                   *GAP_LE_Connection_Complete_Event_Data;
-      GAP_LE_Disconnection_Complete_Event_Data_t                *GAP_LE_Disconnection_Complete_Event_Data;
-      GAP_LE_Encryption_Change_Event_Data_t                     *GAP_LE_Encryption_Change_Event_Data;
-      GAP_LE_Encryption_Refresh_Complete_Event_Data_t           *GAP_LE_Encryption_Refresh_Complete_Event_Data;
-      GAP_LE_Authentication_Event_Data_t                        *GAP_LE_Authentication_Event_Data;
-      GAP_LE_Connection_Parameter_Update_Request_Event_Data_t   *GAP_LE_Connection_Parameter_Update_Request_Event_Data;
-      GAP_LE_Connection_Parameter_Update_Response_Event_Data_t  *GAP_LE_Connection_Parameter_Update_Response_Event_Data;
-      GAP_LE_Connection_Parameter_Updated_Event_Data_t          *GAP_LE_Connection_Parameter_Updated_Event_Data;
-      GAP_LE_Authenticated_Payload_Timeout_Expired_Event_Data_t *GAP_LE_Authenticated_Payload_Timeout_Expired_Event_Data;
+      GAP_LE_Remote_Features_Event_Data_t                      *GAP_LE_Remote_Features_Event_Data;
+      GAP_LE_Advertising_Report_Event_Data_t                   *GAP_LE_Advertising_Report_Event_Data;
+      GAP_LE_Connection_Complete_Event_Data_t                  *GAP_LE_Connection_Complete_Event_Data;
+      GAP_LE_Disconnection_Complete_Event_Data_t               *GAP_LE_Disconnection_Complete_Event_Data;
+      GAP_LE_Encryption_Change_Event_Data_t                    *GAP_LE_Encryption_Change_Event_Data;
+      GAP_LE_Encryption_Refresh_Complete_Event_Data_t          *GAP_LE_Encryption_Refresh_Complete_Event_Data;
+      GAP_LE_Authentication_Event_Data_t                       *GAP_LE_Authentication_Event_Data;
+      GAP_LE_Connection_Parameter_Update_Request_Event_Data_t  *GAP_LE_Connection_Parameter_Update_Request_Event_Data;
+      GAP_LE_Connection_Parameter_Update_Response_Event_Data_t *GAP_LE_Connection_Parameter_Update_Response_Event_Data;
+      GAP_LE_Connection_Parameter_Updated_Event_Data_t         *GAP_LE_Connection_Parameter_Updated_Event_Data;
    } Event_Data;
 } GAP_LE_Event_Data_t;
 
@@ -2319,7 +2211,7 @@ BTPSAPI_DECLARATION int BTPSAPI GAP_Query_Connection_Handle(unsigned int Bluetoo
 
    /* The following function is provided to for Local devices that      */
    /* support Out of Band, OOB, pairing using a technology such as NFC, */
-   /* Near Field communications.  It is used to obtain the Simple       */
+   /* Near Field communications. It is used to obtain the Simple        */
    /* Pairing Hash C and the Simple Pairing Randomizer R which are      */
    /* intended to be transferred to a remote device using OOB.  This    */
    /* function will return zero on success, or a negative return error  */
@@ -2327,7 +2219,7 @@ BTPSAPI_DECLARATION int BTPSAPI GAP_Query_Connection_Handle(unsigned int Bluetoo
    /* then the OutOfBandData variable will contain a new set of C and R */
    /* values that can be used in an OOB transfer.                       */
    /* * NOTE * A new value for C and R are created each time this call  */
-   /*          is made.  Each OOB transfer will have unique C and R     */
+   /*          is made. Each OOB transfer will have unique C and R      */
    /*          values so after each OOB transfer this function should be*/
    /*          called to obtain a new set for the next OOB transfer.    */
    /* * NOTE * These values are not kept on a reset or power off in     */
@@ -2337,111 +2229,6 @@ BTPSAPI_DECLARATION int BTPSAPI GAP_Query_Local_Out_Of_Band_Data(unsigned int Bl
 
 #ifdef INCLUDE_BLUETOOTH_API_PROTOTYPES
    typedef int (BTPSAPI *PFN_GAP_Query_Local_Out_Of_Band_Data_t)(unsigned int BluetoothStackID, GAP_Out_Of_Band_Data_t *OutOfBandData);
-#endif
-
-   /* The following function is provided to for Local devices that      */
-   /* support Out of Band, OOB, pairing using a technology such as NFC, */
-   /* Near Field communications.  It is used to obtain the Simple       */
-   /* Pairing Hash C and the Simple Pairing Randomizer R, derived from  */
-   /* both the P-192 and P-256 public keys, which are intended to be    */
-   /* transferred to a remote device using OOB.  This function will     */
-   /* return zero on success, or a negative return error code if there  */
-   /* was an error.  If this function returns success, then the         */
-   /* OutOfBandData variable will contain a new set of C and R values   */
-   /* that can be used in an OOB transfer.                              */
-   /* * NOTE * A new value for C_192, R_192, C_256 and R_256 are created*/
-   /*          each time this call is made.  Each OOB transfer will have*/
-   /*          unique C_192, R_192, C_256 and R_256 values so after each*/
-   /*          OOB transfer this function should be called to obtain a  */
-   /*          new set for the next OOB transfer.                       */
-   /* * NOTE * These values are not kept on a reset or power off in     */
-   /*          which case a call to this should be invoked during time  */
-   /*          time of initialization.                                  */
-   /* * NOTE * This function can only be called if the local Bluetooth  */
-   /*          device is a 4.1 or greater chipset.                      */
-BTPSAPI_DECLARATION int BTPSAPI GAP_Query_Local_Extended_Out_Of_Band_Data(unsigned int BluetoothStackID, GAP_Extended_Out_Of_Band_Data_t *ExtendedOutOfBandData);
-
-#ifdef INCLUDE_BLUETOOTH_API_PROTOTYPES
-   typedef int (BTPSAPI *PFN_GAP_Query_Local_Extended_Out_Of_Band_Data_t)(unsigned int BluetoothStackID, GAP_Extended_Out_Of_Band_Data_t *ExtendedOutOfBandData);
-#endif
-
-   /* The following function is provided to allow a means to set the    */
-   /* Authenticated Payload Timeout of a connection to a remote         */
-   /* Bluetooth Device.  This function accepts as it's input parameters */
-   /* the Bluetooth Protocol Stack ID of the Bluetooth Protocol Stack   */
-   /* that the connection exists, the Bluetooth Board Address of the    */
-   /* Remote Bluetooth Device which is connected, and the Authenticated */
-   /* Payload Timeout for the connection to the specified Bluetooth     */
-   /* Board Address.  This function will return zero on success, or a   */
-   /* negative return error code if there was an error.                 */
-   /* * NOTE * If this function returns BTPS_ERROR_DEVICE_NOT_CONNECTED */
-   /*          a connection to the specified Bluetooth Board Address    */
-   /*          does not exist.                                          */
-   /* * NOTE * This function can only be called if the local Bluetooth  */
-   /*          device is a 4.1 or greater chipset.                      */
-   /* * NOTE * The AuthenticatedPayloadTimeout parameter is specified in*/
-   /*          milliseconds.                                            */
-   /* * NOTE * The AuthenticatedPayloadTimeout parameter must adhere to */
-   /*          the following rules based on the link state for the      */
-   /*          connection to the specified remote device:               */
-   /*                                                                   */
-   /*             1)  AuthenticatedPayloadTimeout >=                    */
-   /*                       Tsniff (if in sniff mode)                   */
-   /*             2)  AuthenticatedPayloadTimeout >=                    */
-   /*                       MaxSubrate * Tsniff (if in sniff subrating) */
-   /*             3)  AuthenticatedPayloadTimeout >=                    */
-   /*                       holdTO (if in hold mode)                    */
-   /*                                                                   */
-   /*          This function may not be called for a connection in park */
-   /*          mode.                                                    */
-   /* * NOTE * If the Authenticated Payload Timeout is the time between */
-   /*          valid packets received with MICs on an encrypted link.   */
-   /*          The etAuthenticated_Payload_Timeout event will be        */
-   /*          dispatched to the callback registered with               */
-   /*          GAP_Register_Remote_Authentication() if the timeout      */
-   /*          expires with no valid MIC received from the remote       */
-   /*          device.                                                  */
-   /* * NOTE * This function will only set the Authenticated Payload    */
-   /*          Timeout for BR/EDR connections.  For LE connections the  */
-   /*          GAP_LE_Set_Authenticated_Payload_Timeout() function must */
-   /*          be called.                                               */
-BTPSAPI_DECLARATION int BTPSAPI GAP_Set_Authenticated_Payload_Timeout(unsigned int BluetoothStackID, BD_ADDR_t BD_ADDR, Word_t AuthenticatedPayloadTimeout);
-
-#ifdef INCLUDE_BLUETOOTH_API_PROTOTYPES
-   typedef int (BTPSAPI *PFN_GAP_Set_Authenticated_Payload_Timeout_t)(unsigned int BluetoothStackID, BD_ADDR_t BD_ADDR, Word_t AuthenticatedPayloadTimeout);
-#endif
-
-   /* The following function is provided to allow a means to query the  */
-   /* Authenticated Payload Timeout of a connection to a remote         */
-   /* Bluetooth Device.  This function accepts as it's input parameters */
-   /* the Bluetooth Protocol Stack ID of the Bluetooth Protocol Stack   */
-   /* that the connection exists, the Bluetooth Board Address of the    */
-   /* Remote Bluetooth Device which is connected, and a pointer to a    */
-   /* variable that will receive the Authenticated Payload Timeout for  */
-   /* the connection to the specified Bluetooth Board Address.  This    */
-   /* function will return zero on success, or a negative return error  */
-   /* code if there was an error.  If this function returns success,    */
-   /* then the Authenticated Payload Timeout variable will contain the  */
-   /* Authenticated Payload Timeout for the connection to the specified */
-   /* Bluetooth Board Address.                                          */
-   /* * NOTE * If this function returns with an error, negative value,  */
-   /*          the value returned in the AuthenticatedPayloadTimeout    */
-   /*          variable should be considered invalid.                   */
-   /* * NOTE * If this function returns BTPS_ERROR_DEVICE_NOT_CONNECTED */
-   /*          a connection to the specified Bluetooth Board Address    */
-   /*          does not exist.                                          */
-   /* * NOTE * This function can only be called if the local Bluetooth  */
-   /*          device is a 4.1 or greater chipset.                      */
-   /* * NOTE * The AuthenticatedPayloadTimeout parameter is returned in */
-   /*          milliseconds.                                            */
-   /* * NOTE * This function will only query the Authenticated Payload  */
-   /*          Timeout for BR/EDR connections.  For LE connections the  */
-   /*          GAP_LE_Query_Authenticated_Payload_Timeout() function    */
-   /*          must be called.                                          */
-BTPSAPI_DECLARATION int BTPSAPI GAP_Query_Authenticated_Payload_Timeout(unsigned int BluetoothStackID, BD_ADDR_t BD_ADDR, Word_t *AuthenticatedPayloadTimeout);
-
-#ifdef INCLUDE_BLUETOOTH_API_PROTOTYPES
-   typedef int (BTPSAPI *PFN_GAP_Query_Authenticated_Payload_Timeout_t)(unsigned int BluetoothStackID, BD_ADDR_t BD_ADDR, Word_t *AuthenticatedPayloadTimeout);
 #endif
 
    /* The following function is provided to allow the host to cause the */
@@ -2599,10 +2386,8 @@ BTPSAPI_DECLARATION int BTPSAPI GAP_LE_Disconnect(unsigned int BluetoothStackID,
    /* function returns zero if successful, or a negative return error   */
    /* code.                                                             */
    /* * NOTE * This function is only valid to be called if the local    */
-   /*          Bluetooth device is acting in the master role for the    */
-   /*          connection specified by the device address on 4.0        */
-   /*          chipsets.  On 4.1 and later chipsets both the master and */
-   /*          slave may call this function.                            */
+   /*          Bluetooth is acting in the master role for the connection*/
+   /*          specified by the device address.                         */
    /* * NOTE * This function will not create an LE ACL connection to the*/
    /*          specified device.  The LE ACL connection to the specified*/
    /*          remote device must already exist before calling this     */
@@ -2807,9 +2592,6 @@ BTPSAPI_DECLARATION int BTPSAPI GAP_LE_Parse_Scan_Response_Data(Scan_Response_Da
    /* caused by advertising (like connection events).  This function    */
    /* will return zero on success, or a negative return error code if   */
    /* there was an error.                                               */
-   /* * NOTE * The lcmLowDutyCycleDirectConnectable connectable mode is */
-   /*          only valid to be passed to this device if the local      */
-   /*          Bluetooth device is a 4.1 or greater chipset.            */
 BTPSAPI_DECLARATION int BTPSAPI GAP_LE_Advertising_Enable(unsigned int BluetoothStackID, Boolean_t EnableScanResponse, GAP_LE_Advertising_Parameters_t *GAP_LE_Advertising_Parameters, GAP_LE_Connectability_Parameters_t *GAP_LE_Connectability_Parameters, GAP_LE_Event_Callback_t GAP_LE_Event_Callback, unsigned long CallbackParameter);
 
 #ifdef INCLUDE_BLUETOOTH_API_PROTOTYPES
@@ -3096,13 +2878,10 @@ BTPSAPI_DECLARATION int BTPSAPI GAP_LE_Reestablish_Security(unsigned int Bluetoo
    /*          specified device.  The LE ACL connection to the specified*/
    /*          remote device must already exist before calling this     */
    /*          function.                                                */
-   /* * NOTE * In case you are not using LE Secure Connections,         */
-   /*          SC, Keypress, P256Debug Boolean parameters               */
-   /*          should be set to FALSE                                   */
-BTPSAPI_DECLARATION int BTPSAPI GAP_LE_Request_Security(unsigned int BluetoothStackID, BD_ADDR_t BD_ADDR, GAP_LE_Bonding_Type_t Bonding_Type, Boolean_t MITM, Boolean_t SC, Boolean_t Keypress, Boolean_t P256Debug, GAP_LE_Event_Callback_t GAP_LE_Event_Callback, unsigned long CallbackParameter);
+BTPSAPI_DECLARATION int BTPSAPI GAP_LE_Request_Security(unsigned int BluetoothStackID, BD_ADDR_t BD_ADDR, GAP_LE_Bonding_Type_t Bonding_Type, Boolean_t MITM, GAP_LE_Event_Callback_t GAP_LE_Event_Callback, unsigned long CallbackParameter);
 
 #ifdef INCLUDE_BLUETOOTH_API_PROTOTYPES
-   typedef int (BTPSAPI *PFN_GAP_LE_Request_Security_t)(unsigned int BluetoothStackID, BD_ADDR_t BD_ADDR, GAP_LE_Bonding_Type_t Bonding_Type, Boolean_t MITM, Boolean_t SC, Boolean_t Keypress, Boolean_t P256Debug, GAP_LE_Event_Callback_t GAP_LE_Event_Callback, unsigned long CallbackParameter);
+   typedef int (BTPSAPI *PFN_GAP_LE_Request_Security_t)(unsigned int BluetoothStackID, BD_ADDR_t BD_ADDR, GAP_LE_Bonding_Type_t Bonding_Type, Boolean_t MITM, GAP_LE_Event_Callback_t GAP_LE_Event_Callback, unsigned long CallbackParameter);
 #endif
 
    /* The following function is provided to configure a fixed Display   */
@@ -3274,6 +3053,9 @@ BTPSAPI_DECLARATION int BTPSAPI GAP_LE_Diversify_Function(unsigned int Bluetooth
    /*          receive an etLE_Connection_Parameter_Update_Response     */
    /*          event through the GAP LE event callback installed for    */
    /*          this connection when the process has completed.          */
+   /* * NOTE * This function can only be issued by the slave of the     */
+   /*          connection (to request the master to change the          */
+   /*          parameters).                                             */
 BTPSAPI_DECLARATION int BTPSAPI GAP_LE_Connection_Parameter_Update_Request(unsigned int BluetoothStackID, BD_ADDR_t BD_ADDR, Word_t Connection_Interval_Min, Word_t Connection_Interval_Max, Word_t Slave_Latency, Word_t Supervision_Timeout);
 
 #ifdef INCLUDE_BLUETOOTH_API_PROTOTYPES
@@ -3293,8 +3075,9 @@ BTPSAPI_DECLARATION int BTPSAPI GAP_LE_Connection_Parameter_Update_Request(unsig
    /* This function returns zero if successful or a negative error code.*/
    /* * NOTE * If Accept is FALSE, then the final parameter to this     */
    /*          function is not used and is ignored.                     */
-   /* * NOTE * If Accept is TRUE, then the final parameter specifies the*/
-   /*          connection parameters that are to be:                    */
+   /* * NOTE * If Accept is TRUE, then the final parameter specifies    */
+   /*          the connection parameters that are to be:                */
+   /*             - Sent to the slave                                   */
    /*             - Applied to the current connection                   */
 BTPSAPI_DECLARATION int BTPSAPI GAP_LE_Connection_Parameter_Update_Response(unsigned int BluetoothStackID, BD_ADDR_t BD_ADDR, Boolean_t Accept, GAP_LE_Connection_Parameters_t *ConnectionParameters);
 
@@ -3309,143 +3092,11 @@ BTPSAPI_DECLARATION int BTPSAPI GAP_LE_Connection_Parameter_Update_Response(unsi
    /* device, and the requested connection parameters.  This function   */
    /* returns zero if successful or a negative error code.              */
    /* * NOTE * This function can only be issued by the Master of the    */
-   /*          connection on 4.0 chipsets.  On 4.1 and greater Bluetooth*/
-   /*          devices both the Master and Slave may call this function.*/
+   /*          connection.                                              */
 BTPSAPI_DECLARATION int BTPSAPI GAP_LE_Update_Connection_Parameters(unsigned int BluetoothStackID, BD_ADDR_t BD_ADDR, GAP_LE_Connection_Parameters_t *ConnectionParameters);
 
 #ifdef INCLUDE_BLUETOOTH_API_PROTOTYPES
    typedef int (BTPSAPI *PFN_GAP_LE_Update_Connection_Parameters_t)(unsigned int BluetoothStackID, BD_ADDR_t BD_ADDR, GAP_LE_Connection_Parameters_t *ConnectionParameters);
-#endif
-
-   /* The following function is provided to allow a means to set the    */
-   /* Authenticated Payload Timeout of a LE connection to a remote      */
-   /* Bluetooth Device.  This function accepts as it's input parameters */
-   /* the Bluetooth Protocol Stack ID of the Bluetooth Protocol Stack   */
-   /* that the connection exists, the Bluetooth Board Address of the    */
-   /* Remote LE Bluetooth Device which is connected, and the            */
-   /* Authenticated Payload Timeout for the LE connection to the        */
-   /* specified Bluetooth Board Address.  This function will return zero*/
-   /* on success, or a negative return error code if there was an error.*/
-   /* * NOTE * If this function returns BTPS_ERROR_DEVICE_NOT_CONNECTED */
-   /*          a connection to the specified Bluetooth Board Address    */
-   /*          does not exist.                                          */
-   /* * NOTE * This function can only be called if the local Bluetooth  */
-   /*          device is a 4.1 or greater chipset.                      */
-   /* * NOTE * The AuthenticatedPayloadTimeout parameter is specified in*/
-   /*          milliseconds.                                            */
-   /* * NOTE * The AuthenticatedPayloadTimeout parameter must adhere to */
-   /*          the following rule:                                      */
-   /*                                                                   */
-   /*             AuthenticatedPayloadTimeout >=                        */
-   /*                       ConnectionInterval * (1 + SlaveLatency)     */
-   /*                                                                   */
-   /* * NOTE * If the Authenticated Payload Timeout is the time between */
-   /*          valid packets received with MICs on an encrypted link.   */
-   /*          The etLE_Authenticated_Payload_Timeout_Expired event will*/
-   /*          be dispatched to the GAP LE event callback installed for */
-   /*          this connection if the timeout expires with no valid MIC */
-   /*          received from the remote device.                         */
-   /* * NOTE * This function will only set the Authenticated Payload    */
-   /*          Timeout for LE connections.  For BR/EDR connections the  */
-   /*          GAP_Set_Authenticated_Payload_Timeout() function must be */
-   /*          called.                                                  */
-BTPSAPI_DECLARATION int BTPSAPI GAP_LE_Set_Authenticated_Payload_Timeout(unsigned int BluetoothStackID, BD_ADDR_t BD_ADDR, Word_t AuthenticatedPayloadTimeout);
-
-#ifdef INCLUDE_BLUETOOTH_API_PROTOTYPES
-   typedef int (BTPSAPI *PFN_GAP_LE_Set_Authenticated_Payload_Timeout_t)(unsigned int BluetoothStackID, BD_ADDR_t BD_ADDR, Word_t AuthenticatedPayloadTimeout);
-#endif
-
-   /* The following function is provided to allow a means to query the  */
-   /* Authenticated Payload Timeout of a LE connection to a remote      */
-   /* Bluetooth Device.  This function accepts as it's input parameters */
-   /* the Bluetooth Protocol Stack ID of the Bluetooth Protocol Stack   */
-   /* that the connection exists, the Bluetooth Board Address of the    */
-   /* Remote LE Bluetooth Device which is connected, and a pointer to a */
-   /* variable that will receive the Authenticated Payload Timeout for  */
-   /* the connection to the specified Bluetooth Board Address.  This    */
-   /* function will return zero on success, or a negative return error  */
-   /* code if there was an error.  If this function returns success,    */
-   /* then the Authenticated Payload Timeout variable will contain the  */
-   /* Authenticated Payload Timeout for the LE connection to the        */
-   /* specified Bluetooth Board Address.                                */
-   /* * NOTE * If this function returns with an error, negative value,  */
-   /*          the value returned in the AuthenticatedPayloadTimeout    */
-   /*          variable should be considered invalid.                   */
-   /* * NOTE * If this function returns BTPS_ERROR_DEVICE_NOT_CONNECTED */
-   /*          a connection to the specified Bluetooth Board Address    */
-   /*          does not exist.                                          */
-   /* * NOTE * This function can only be called if the local Bluetooth  */
-   /*          device is a 4.1 or greater chipset.                      */
-   /* * NOTE * The AuthenticatedPayloadTimeout parameter is returned in */
-   /*          milliseconds.                                            */
-   /* * NOTE * This function will only query the Authenticated Payload  */
-   /*          Timeout for LE connections.  For BR/EDR connections the  */
-   /*          GAP_Query_Authenticated_Payload_Timeout() function must  */
-   /*          be called.                                               */
-BTPSAPI_DECLARATION int BTPSAPI GAP_LE_Query_Authenticated_Payload_Timeout(unsigned int BluetoothStackID, BD_ADDR_t BD_ADDR, Word_t *AuthenticatedPayloadTimeout);
-
-#ifdef INCLUDE_BLUETOOTH_API_PROTOTYPES
-   typedef int (BTPSAPI *PFN_GAP_LE_Query_Authenticated_Payload_Timeout_t)(unsigned int BluetoothStackID, BD_ADDR_t BD_ADDR, Word_t *AuthenticatedPayloadTimeout);
-#endif
-
-   /* The following function is provided to allow the use of LE Secure  */
-   /* Connections (SC) pairing in Out Of Band (OOB) association method. */
-   /* The upper layer will use this function to generate the the local 	*/
-   /* OOB random value, and OOB confirmation value (ra/rb and Ca/Cb) as */
-   /* defined in the Bluetooth specification. This function accepts as  */
-   /* parameters the Bluetooth stack ID of the Bluetooth device, and    */
-   /* pointers to buffers that will recieve the generated local OOB     */
-   /* random, and OOB confirmation values.                              */
-   /* This function returns zero if successful or a negative error code.*/
-BTPSAPI_DECLARATION int BTPSAPI GAP_LE_SC_OOB_Generate_Parameters(unsigned int BluetoothStackID, SM_Random_Value_t *OOB_Local_Rand_Result, SM_Confirm_Value_t *OOB_Local_Confirm_Result); 
-
-#ifdef INCLUDE_BLUETOOTH_API_PROTOTYPES
-   typedef int (BTPSAPI *PFN_GAP_LE_SC_OOB_Generate_Parameters_t)(unsigned int BluetoothStackID, SM_Random_Value_t *OOB_Local_Rand_Result, SM_Confirm_Value_t *OOB_Local_Confirm_Result);
-#endif
-
-   /* The following function is provided to allow a mechanism of sending*/
-   /* keypress notification to a remote device. The upper layer will use*/
-   /* this function during LE SC pairing, when using the passkey method.*/
-   /* Only a device with IO capabilities of keyboard-only may use this 	*/
-   /* command. This function accepts as input parameters the Bluetooth  */
-   /* stack ID of the Bluetooth device, and the keypress notification   */
-   /* type that should be sent.                                         */
-   /* This function returns zero if successful or a negative error code.*/
-BTPSAPI_DECLARATION int BTPSAPI GAP_LE_SC_Send_Keypress_Notification(unsigned int BluetoothStackID, BD_ADDR_t BD_ADDR, GAP_LE_Keypress_t *Keypress_Notification_Type);
-
-#ifdef INCLUDE_BLUETOOTH_API_PROTOTYPES
-   typedef int (BTPSAPI *PFN_GAP_LE_Send_Keypress_Notification_t)(unsigned int BluetoothStackID, BD_ADDR_t BD_ADDR, GAP_LE_Keypress_t *Keypress_Notification_Type);
-#endif
-
-   /* The following function is provided to allow a configuration       */
-   /* of LE Secure Connecions only mode. The upper layer will use this  */
-   /* function before the begining of LE SC pairing, in case it asks to */
-   /* reject a device that supports only legacy pairing.                */													
-   /* This mode should be used when it is more important for a device   */
-   /* to have high security than it is for it to maintain backwards     */
-   /* compatibility with devices that do not support SC.                */					
-   /* This function accepts as parameters the Bluetooth stack ID of the */
-   /* Bluetooth device,and a boolean EnableSCOnly that enable or disable*/
-   /* the SC only mode. This function should be used ones,              */
-   /* before the first pairing process.                                 */
-   /* This function returns zero if successful or a negative error code.*/
-BTPSAPI_DECLARATION int BTPSAPI GAP_LE_SC_Only_Mode(unsigned int BluetoothStackID, Boolean_t EnableSCOnly);
-
-#ifdef INCLUDE_BLUETOOTH_API_PROTOTYPES
-   typedef int (BTPSAPI *PFN_GAP_LE_SC_Only_Mode)(unsigned int BluetoothStackID, Boolean_t EnableSCOnly);
-#endif
-
-   /* The following function is provided to allow a regeneration        */
-   /* of the P-256 private and local public keys.                       */
-   /* This function is relevant only in case of LE Secure Connections.  */
-   /* It shall NOT be used in the middle of a pairing process.          */   
-   /* This function accepts as parameters the Bluetooth                 */
-   /* stack ID of the Bluetooth device.                                 */
-   /* This function returns zero if successful or a negative error code.*/
-BTPSAPI_DECLARATION int BTPSAPI GAP_LE_SC_Regenerate_P256_Local_Keys(unsigned int BluetoothStackID);
-
-#ifdef INCLUDE_BLUETOOTH_API_PROTOTYPES
-   typedef int (BTPSAPI *PFN_GAP_LE_SC_Regenerate_P256_Local_Keys)(unsigned int BluetoothStackID);
 #endif
 
 #endif

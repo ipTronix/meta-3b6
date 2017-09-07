@@ -2,9 +2,6 @@
 /*      Copyright 2010 - 2014 Stonestreet One.                                */
 /*      All Rights Reserved.                                                  */
 /*                                                                            */
-/*      Copyright (C) 2016 Texas Instruments Incorporated -  	              */
-/*      http://www.ti.com/ All Rights Reserved.  							  */
-/*                                                                            */
 /*  DEVMTYPE - Local Device Manager API Type Definitions and Constants for    */
 /*             Stonestreet One Bluetooth Protocol Stack Platform Manager.     */
 /*                                                                            */
@@ -15,9 +12,6 @@
 /*   mm/dd/yy  F. Lastname    Description of Modification                     */
 /*   --------  -----------    ------------------------------------------------*/
 /*   07/14/10  D. Lange       Initial creation.                               */
-/*   04/19/16  L. Gersi       Adding support for LE SC pairing.               */
-/*   07/25/16  D. Horowitz    Adding Link Layer Topology feature.			  */
-/*   07/25/16  D. Horowitz    Adding Low duty cycle feature.			      */
 /******************************************************************************/
 #ifndef __DEVMTYPEH__
 #define __DEVMTYPEH__
@@ -79,6 +73,7 @@ typedef struct _tagDEVM_Local_Device_Properties_t
 #define DEVM_LOCAL_DEVICE_FLAGS_DEVICE_DISCOVERY_IN_PROGRESS      0x00000001
 #define DEVM_LOCAL_DEVICE_FLAGS_LE_SCANNING_IN_PROGRESS           0x00010000
 #define DEVM_LOCAL_DEVICE_FLAGS_LE_ADVERTISING_IN_PROGRESS        0x00020000
+#define DEVM_LOCAL_DEVICE_FLAGS_LE_ROLE_IS_CURRENTLY_SLAVE        0x40000000
 #define DEVM_LOCAL_DEVICE_FLAGS_DEVICE_SUPPORTS_LOW_ENERGY        0x80000000
 #define DEVM_LOCAL_DEVICE_FLAGS_DEVICE_SUPPORTS_ANT_PLUS          0x01000000
 
@@ -103,7 +98,6 @@ typedef struct _tagDEVM_Advertising_Information_t
    unsigned long  AdvertisingFlags;
    unsigned long  AdvertisingDuration;
    unsigned int   AdvertisingDataLength;
-   BD_ADDR_t      Peer_BD_ADDR;
    Byte_t        *AdvertisingData;
 } DEVM_Advertising_Information_t;
 
@@ -116,15 +110,12 @@ typedef struct _tagDEVM_Advertising_Information_t
    /* The following bit definitions are used with the AdvertisingFlags  */
    /* member of the DEVM_Advertising_Information_t structure to denote  */
    /* various advertising parameters.                                   */
-#define DEVM_ADVERTISING_INFORMATION_FLAGS_USE_PUBLIC_ADDRESS                   0x00000001
-#define DEVM_ADVERTISING_INFORMATION_FLAGS_DISCOVERABLE                         0x00000002
-#define DEVM_ADVERTISING_INFORMATION_FLAGS_CONNECTABLE                          0x00000004
-#define DEVM_ADVERTISING_INFORMATION_FLAGS_ADVERTISE_DEVICE_NAME                0x00000010
-#define DEVM_ADVERTISING_INFORMATION_FLAGS_ADVERTISE_TX_POWER                   0x00000020
-#define DEVM_ADVERTISING_INFORMATION_FLAGS_ADVERTISE_APPEARANCE                 0x00000040
-#define DEVM_ADVERTISING_INFORMATION_FLAGS_PEER_USE_PUBLIC_ADDRESS              0x00000100
-#define DEVM_ADVERTISING_INFORMATION_FLAGS_DIRECT_CONNECTABLE_MODE              0X00000200
-#define DEVM_ADVERTISING_INFORMATION_FLAGS_LOW_DUTY_CYCLE_DIRECT_CONNECTABLE    0x00000400
+#define DEVM_ADVERTISING_INFORMATION_FLAGS_USE_PUBLIC_ADDRESS      0x00000001
+#define DEVM_ADVERTISING_INFORMATION_FLAGS_DISCOVERABLE            0x00000002
+#define DEVM_ADVERTISING_INFORMATION_FLAGS_CONNECTABLE             0x00000004
+#define DEVM_ADVERTISING_INFORMATION_FLAGS_ADVERTISE_DEVICE_NAME   0x00000010
+#define DEVM_ADVERTISING_INFORMATION_FLAGS_ADVERTISE_TX_POWER      0x00000020
+#define DEVM_ADVERTISING_INFORMATION_FLAGS_ADVERTISE_APPEARANCE    0x00000040
 
    /* The following structure is used with the                          */
    /* DEVM_Remote_Device_Properties_t structure to hold application     */
@@ -217,9 +208,6 @@ typedef struct _tagDEVM_LE_IO_Capability_Response_Data_t
    Boolean_t              OOB_Present;
    GAP_LE_Bonding_Type_t  Bonding_Type;
    Boolean_t              MITM;
-   Boolean_t              SC;
-   Boolean_t              P256DebugMode;
-   Boolean_t              Keypress;
 } DEVM_LE_IO_Capability_Response_Data_t;
 
 #define DEVM_LE_IO_CAPABILITY_RESPONSE_DATA_SIZE                  (sizeof(DEVM_LE_IO_Capability_Response_Data_t))
@@ -300,20 +288,17 @@ typedef struct _tagDEVM_Authentication_Information_t
    BD_ADDR_t                                BD_ADDR;
    unsigned int                             AuthenticationAction;
    unsigned int                             AuthenticationDataLength;
-   Boolean_t							 	SC;
    union
    {
       Byte_t                                AuthenticationStatus;
       PIN_Code_t                            PINCode;
       Boolean_t                             Confirmation;
       DWord_t                               Passkey;
-      Boolean_t							 	AcceptedNumericValue;	  
       GAP_Keypress_t                        Keypress;
       GAP_Out_Of_Band_Data_t                OutOfBandData;
       GAP_IO_Capabilities_t                 IOCapabilities;
       DEVM_LE_IO_Capability_Response_Data_t LEIOCapabilities;
       GAP_LE_OOB_Data_t                     LEOutOfBandData;
-      GAP_LE_SC_OOB_Data_t	  	            LESCOutOfBandData;
       DEVM_User_Confirmation_Request_Data_t UserConfirmationRequestData;
    } AuthenticationData;
 } DEVM_Authentication_Information_t;
@@ -367,8 +352,6 @@ typedef struct _tagDEVM_Authentication_Information_Legacy_1_t
 #define DEVM_AUTHENTICATION_ACTION_IO_CAPABILITIES_REQUEST        0x0000000B
 #define DEVM_AUTHENTICATION_ACTION_IO_CAPABILITIES_RESPONSE       0x0000000C
 #define DEVM_AUTHENTICATION_ACTION_AUTHENTICATION_STATUS_RESULT   0x0000000D
-#define DEVM_AUTHENTICATION_ACTION_NUMERIC_COMPARISON_REQUEST     0x0000000E
-#define DEVM_AUTHENTICATION_ACTION_NUMERIC_COMPARISON_RESPONSE    0x0000000F
 
 #define DEVM_AUTHENTICATION_ACTION_AUTHENTICATION_START           0x00000010
 #define DEVM_AUTHENTICATION_ACTION_AUTHENTICATION_END             0x00000011

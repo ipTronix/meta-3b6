@@ -12,9 +12,6 @@
 /*   --------  -----------    ------------------------------------------------*/
 /*   08/25/00  D. Lange       Initial creation.                               */
 /*   12/07/07  D. Mason       Changes for BT 2.1                              */
-/*   05/20/11  T. Cook        Changes for BT 4.0                              */
-/*   01/02/14  T. Cook        Changes for BT 4.1                              */
-/*   12/10/15  K. Leibovitch  HCIComm structure and flag were added           */
 /******************************************************************************/
 #ifndef __HCITYPESH__
 #define __HCITYPESH__
@@ -516,18 +513,6 @@ typedef struct _tagHCI_Packet_Header_t
 #define HCI_COMMAND_CODE_ENHANCED_SETUP_SYNCHRONOUS_CONNECTION_OCF            0x003D
 #define HCI_COMMAND_CODE_ENHANCED_ACCEPT_SYNCHRONOUS_CONNECTION_REQUEST_OCF   0x003E
 
-   /* HCI Command Code OCF Definitions (Link Control - Version 4.0 +    */
-   /* CSA4).                                                            */
-#define HCI_COMMAND_CODE_TRUNCATED_PAGE_OCF                             0x003F
-#define HCI_COMMAND_CODE_TRUNCATED_PAGE_CANCEL_OCF                      0x0040
-#define HCI_COMMAND_CODE_SET_CONNECTIONLESS_SLAVE_BROADCAST_OCF         0x0041
-#define HCI_COMMAND_CODE_SET_CONNECTIONLESS_SLAVE_BROADCAST_RECEIVE_OCF 0x0042
-#define HCI_COMMAND_CODE_START_SYNCHRONIZATION_TRAIN_OCF                0x0043
-#define HCI_COMMAND_CODE_RECEIVE_SYNCHRONIZATION_TRAIN_OCF              0x0044
-
-   /* HCI Command Code OCF Definitions (Link Control - Version 4.1).    */
-#define HCI_COMMAND_CODE_REMOTE_OOB_EXTENDED_DATA_REQUEST_REPLY_OCF     0x0045
-
    /* HCI Command Code OCF Definitions (Link Policy).                   */
 #define HCI_COMMAND_CODE_HOLD_MODE_OCF                                  0x0001
 #define HCI_COMMAND_CODE_SNIFF_MODE_OCF                                 0x0003
@@ -651,35 +636,6 @@ typedef struct _tagHCI_Packet_Header_t
 #define HCI_COMMAND_CODE_READ_LE_HOST_SUPPORTED_OCF                     0x006C
 #define HCI_COMMAND_CODE_WRITE_LE_HOST_SUPPORTED_OCF                    0x006D
 
-   /* HCI Command Code OCF Definitions (Host Control and Baseband -     */
-   /* Version 4.0 + CSA3).                                              */
-#define HCI_COMMAND_CODE_SET_MWS_CHANNEL_PARAMETERS_OCF                 0x006E
-#define HCI_COMMAND_CODE_SET_EXTERNAL_FRAME_CONFIGURATION_OCF           0x006F
-#define HCI_COMMAND_CODE_SET_MWS_SIGNALING_OCF                          0x0070
-#define HCI_COMMAND_CODE_SET_MWS_TRANSPORT_LAYER_OCF                    0x0071
-#define HCI_COMMAND_CODE_SET_MWS_SCAN_FREQUENCY_TABLE_OCF               0x0072
-#define HCI_COMMAND_CODE_SET_MWS_PATTERN_CONFIGURATION_OCF              0x0073
-
-   /* HCI Command Code OCF Definitions (Host Control and Baseband -     */
-   /* Version 4.0 + CSA4).                                              */
-#define HCI_COMMAND_CODE_SET_RESERVED_LT_ADDR_OCF                       0x0074
-#define HCI_COMMAND_CODE_DELETE_RESERVED_LT_ADDR_OCF                    0x0075
-#define HCI_COMMAND_CODE_SET_CONNECTIONLESS_SLAVE_BROADCAST_DATA_OCF    0x0076
-#define HCI_COMMAND_CODE_READ_SYNCHRONIZATION_TRAIN_PARAMETERS_OCF      0x0077
-#define HCI_COMMAND_CODE_WRITE_SYNCHRONIZATION_TRAIN_PARAMETERS_OCF     0x0078
-
-   /* HCI Command Code OCF Definitions (Host Control and Baseband -     */
-   /* Version 4.1).                                                     */
-#define HCI_COMMAND_CODE_READ_SECURE_CONNECTIONS_HOST_SUPPORT_OCF       0x0079
-#define HCI_COMMAND_CODE_WRITE_SECURE_CONNECTIONS_HOST_SUPPORT_OCF      0x007A
-#define HCI_COMMAND_CODE_READ_AUTHENTICATED_PAYLOAD_TIMEOUT_OCF         0x007B
-#define HCI_COMMAND_CODE_WRITE_AUTHENTICATED_PAYLOAD_TIMEOUT_OCF        0x007C
-#define HCI_COMMAND_CODE_READ_LOCAL_OOB_EXTENDED_DATA_OCF               0x007D
-#define HCI_COMMAND_CODE_READ_EXTENDED_PAGE_TIMEOUT_OCF                 0x007E
-#define HCI_COMMAND_CODE_WRITE_EXTENDED_PAGE_TIMEOUT_OCF                0x007F
-#define HCI_COMMAND_CODE_READ_EXTENDED_INQUIRY_LENGTH_OCF               0x0080
-#define HCI_COMMAND_CODE_WRITE_EXTENDED_INQUIRY_LENGTH_OCF              0x0081
-
    /* HCI Command Code OCF Definitions (Informational Parameters).      */
 #define HCI_COMMAND_CODE_READ_LOCAL_VERSION_INFORMATION_OCF             0x0001
 #define HCI_COMMAND_CODE_READ_LOCAL_SUPPORTED_FEATURES_OCF              0x0003
@@ -718,14 +674,6 @@ typedef struct _tagHCI_Packet_Header_t
 #define HCI_COMMAND_CODE_READ_LOCAL_AMP_ASSOC_OCF                       0x000A
 #define HCI_COMMAND_CODE_WRITE_REMOTE_AMP_ASSOC_OCF                     0x000B
 
-   /* HCI Command Code OCF Definitions (Status Parameters - Version 4.0 */
-   /* + CSA3).                                                          */
-#define HCI_COMMAND_CODE_GET_MWS_TRANSPORT_LAYER_CONFIGURATION_OCF      0x000C
-
-   /* HCI Command Code OCF Definitions (Status Parameters - Version 4.0 */
-   /* + CSA4).                                                          */
-#define HCI_COMMAND_CODE_SET_TRIGGERED_CLOCK_CAPTURE_OCF                0x000D
-
    /* HCI Command Code OCF Definitions (Testing Commands).              */
 #define HCI_COMMAND_CODE_READ_LOOPBACK_MODE_OCF                         0x0001
 #define HCI_COMMAND_CODE_WRITE_LOOPBACK_MODE_OCF                        0x0002
@@ -740,9 +688,6 @@ typedef struct _tagHCI_Packet_Header_t
 #define HCI_COMMAND_CODE_ENABLE_AMP_RECEIVER_REPORTS_OCF                0x0007
 #define HCI_COMMAND_CODE_AMP_TEST_END_OCF                               0x0008
 #define HCI_COMMAND_CODE_AMP_TEST_OCF                                   0x0009
-
-   /* HCI Command Code OCF Definitions (Testing Commands - Version 4.1).*/
-#define HCI_COMMAND_CODE_WRITE_SECURE_CONNECTIONS_TEST_MODE_OCF         0x000A
 
    /* HCI Command Code OCF Definitions (LE Commands - Version 4.0 + LE).*/
 #define HCI_COMMAND_CODE_LE_SET_EVENT_MASK_OCF                          0x0001
@@ -776,9 +721,6 @@ typedef struct _tagHCI_Packet_Header_t
 #define HCI_COMMAND_CODE_LE_TRANSMITTER_TEST_OCF                        0x001E
 #define HCI_COMMAND_CODE_LE_TEST_END_OCF                                0x001F
 
-   /* HCI Command Code OCF Definitions (LE Commands - Version 4.1).     */
-#define HCI_COMMAND_CODE_LE_REMOTE_CONNECTION_PARAMETER_REQUEST_REPLY_OCF            0x0020
-#define HCI_COMMAND_CODE_LE_REMOTE_CONNECTION_PARAMETER_REQUEST_NEGATIVE_REPLY_OCF   0x0021
 
    /* HCI Command Code OpCode Definitions (NULL OpCode).                */
 #define HCI_COMMAND_OPCODE_NULL                                         (HCI_MAKE_COMMAND_OPCODE(HCI_COMMAND_CODE_NULL_OGF, HCI_COMMAND_CODE_NULL_OCF))
@@ -842,18 +784,6 @@ typedef struct _tagHCI_Packet_Header_t
    /* CSA2).                                                            */
 #define HCI_COMMAND_OPCODE_ENHANCED_SETUP_SYNCHRONOUS_CONNECTION           (HCI_MAKE_COMMAND_OPCODE(HCI_COMMAND_CODE_LINK_CONTROL_OGF, HCI_COMMAND_CODE_ENHANCED_SETUP_SYNCHRONOUS_CONNECTION_OCF))
 #define HCI_COMMAND_OPCODE_ENHANCED_ACCEPT_SYNCHRONOUS_CONNECTION_REQUEST  (HCI_MAKE_COMMAND_OPCODE(HCI_COMMAND_CODE_LINK_CONTROL_OGF, HCI_COMMAND_CODE_ENHANCED_ACCEPT_SYNCHRONOUS_CONNECTION_REQUEST_OCF))
-
-   /* HCI Command Code OpCode Definitions (Link Control - Version 4.0 + */
-   /* CSA4).                                                            */
-#define HCI_COMMAND_OPCODE_TRUNCATED_PAGE                               (HCI_MAKE_COMMAND_OPCODE(HCI_COMMAND_CODE_LINK_CONTROL_OGF, HCI_COMMAND_CODE_TRUNCATED_PAGE_OCF))
-#define HCI_COMMAND_OPCODE_TRUNCATED_PAGE_CANCEL                        (HCI_MAKE_COMMAND_OPCODE(HCI_COMMAND_CODE_LINK_CONTROL_OGF, HCI_COMMAND_CODE_TRUNCATED_PAGE_CANCEL_OCF))
-#define HCI_COMMAND_OPCODE_SET_CONNECTIONLESS_SLAVE_BROADCAST           (HCI_MAKE_COMMAND_OPCODE(HCI_COMMAND_CODE_LINK_CONTROL_OGF, HCI_COMMAND_CODE_SET_CONNECTIONLESS_SLAVE_BROADCAST_OCF))
-#define HCI_COMMAND_OPCODE_SET_CONNECTIONLESS_SLAVE_BROADCAST_RECEIVE   (HCI_MAKE_COMMAND_OPCODE(HCI_COMMAND_CODE_LINK_CONTROL_OGF, HCI_COMMAND_CODE_SET_CONNECTIONLESS_SLAVE_BROADCAST_RECEIVE_OCF))
-#define HCI_COMMAND_OPCODE_START_SYNCHRONIZATION_TRAIN                  (HCI_MAKE_COMMAND_OPCODE(HCI_COMMAND_CODE_LINK_CONTROL_OGF, HCI_COMMAND_CODE_START_SYNCHRONIZATION_TRAIN_OCF))
-#define HCI_COMMAND_OPCODE_RECEIVE_SYNCHRONIZATION_TRAIN                (HCI_MAKE_COMMAND_OPCODE(HCI_COMMAND_CODE_LINK_CONTROL_OGF, HCI_COMMAND_CODE_RECEIVE_SYNCHRONIZATION_TRAIN_OCF))
-
-   /* HCI Command Code OpCode Definitions (Link Control - Version 4.1). */
-#define HCI_COMMAND_OPCODE_REMOTE_OOB_EXTENDED_DATA_REQUEST_REPLY       (HCI_MAKE_COMMAND_OPCODE(HCI_COMMAND_CODE_LINK_CONTROL_OGF, HCI_COMMAND_CODE_REMOTE_OOB_EXTENDED_DATA_REQUEST_REPLY_OCF))
 
    /* HCI Command Code OpCode Definitions (Link Policy).                */
 #define HCI_COMMAND_OPCODE_HOLD_MODE                                    (HCI_MAKE_COMMAND_OPCODE(HCI_COMMAND_CODE_LINK_POLICY_OGF, HCI_COMMAND_CODE_HOLD_MODE_OCF))
@@ -978,35 +908,6 @@ typedef struct _tagHCI_Packet_Header_t
 #define HCI_COMMAND_OPCODE_READ_LE_HOST_SUPPORTED                       (HCI_MAKE_COMMAND_OPCODE(HCI_COMMAND_CODE_CONTROL_BASEBAND_OGF, HCI_COMMAND_CODE_READ_LE_HOST_SUPPORTED_OCF))
 #define HCI_COMMAND_OPCODE_WRITE_LE_HOST_SUPPORTED                      (HCI_MAKE_COMMAND_OPCODE(HCI_COMMAND_CODE_CONTROL_BASEBAND_OGF, HCI_COMMAND_CODE_WRITE_LE_HOST_SUPPORTED_OCF))
 
-   /* HCI Command Code OpCode Definitions (Host Control and Baseband -  */
-   /* Version 4.0 + CSA3).                                              */
-#define HCI_COMMAND_OPCODE_SET_MWS_CHANNEL_PARAMETERS                   (HCI_MAKE_COMMAND_OPCODE(HCI_COMMAND_CODE_CONTROL_BASEBAND_OGF, HCI_COMMAND_CODE_SET_MWS_CHANNEL_PARAMETERS_OCF))
-#define HCI_COMMAND_OPCODE_SET_EXTERNAL_FRAME_CONFIGURATION             (HCI_MAKE_COMMAND_OPCODE(HCI_COMMAND_CODE_CONTROL_BASEBAND_OGF, HCI_COMMAND_CODE_SET_EXTERNAL_FRAME_CONFIGURATION_OCF))
-#define HCI_COMMAND_OPCODE_SET_MWS_SIGNALING                            (HCI_MAKE_COMMAND_OPCODE(HCI_COMMAND_CODE_CONTROL_BASEBAND_OGF, HCI_COMMAND_CODE_SET_MWS_SIGNALING_OCF))
-#define HCI_COMMAND_OPCODE_SET_MWS_TRANSPORT_LAYER                      (HCI_MAKE_COMMAND_OPCODE(HCI_COMMAND_CODE_CONTROL_BASEBAND_OGF, HCI_COMMAND_CODE_SET_MWS_TRANSPORT_LAYER_OCF))
-#define HCI_COMMAND_OPCODE_SET_MWS_SCAN_FREQUENCY_TABLE                 (HCI_MAKE_COMMAND_OPCODE(HCI_COMMAND_CODE_CONTROL_BASEBAND_OGF, HCI_COMMAND_CODE_SET_MWS_SCAN_FREQUENCY_TABLE_OCF))
-#define HCI_COMMAND_OPCODE_SET_MWS_PATTERN_CONFIGURATION                (HCI_MAKE_COMMAND_OPCODE(HCI_COMMAND_CODE_CONTROL_BASEBAND_OGF, HCI_COMMAND_CODE_SET_MWS_PATTERN_CONFIGURATION_OCF))
-
-   /* HCI Command Code OpCode Definitions (Host Control and Baseband -  */
-   /* Version 4.0 + CSA4).                                              */
-#define HCI_COMMAND_OPCODE_SET_RESERVED_LT_ADDR                         (HCI_MAKE_COMMAND_OPCODE(HCI_COMMAND_CODE_CONTROL_BASEBAND_OGF, HCI_COMMAND_CODE_SET_RESERVED_LT_ADDR_OCF))
-#define HCI_COMMAND_OPCODE_DELETE_RESERVED_LT_ADDR                      (HCI_MAKE_COMMAND_OPCODE(HCI_COMMAND_CODE_CONTROL_BASEBAND_OGF, HCI_COMMAND_CODE_DELETE_RESERVED_LT_ADDR_OCF))
-#define HCI_COMMAND_OPCODE_SET_CONNECTIONLESS_SLAVE_BROADCAST_DATA      (HCI_MAKE_COMMAND_OPCODE(HCI_COMMAND_CODE_CONTROL_BASEBAND_OGF, HCI_COMMAND_CODE_SET_CONNECTIONLESS_SLAVE_BROADCAST_DATA_OCF))
-#define HCI_COMMAND_OPCODE_READ_SYNCHRONIZATION_TRAIN_PARAMETERS        (HCI_MAKE_COMMAND_OPCODE(HCI_COMMAND_CODE_CONTROL_BASEBAND_OGF, HCI_COMMAND_CODE_READ_SYNCHRONIZATION_TRAIN_PARAMETERS_OCF))
-#define HCI_COMMAND_OPCODE_WRITE_SYNCHRONIZATION_TRAIN_PARAMETERS       (HCI_MAKE_COMMAND_OPCODE(HCI_COMMAND_CODE_CONTROL_BASEBAND_OGF, HCI_COMMAND_CODE_WRITE_SYNCHRONIZATION_TRAIN_PARAMETERS_OCF))
-
-   /* HCI Command Code OpCode Definitions (Host Control and Baseband -  */
-   /* Version 4.1).                                                     */
-#define HCI_COMMAND_OPCODE_READ_SECURE_CONNECTIONS_HOST_SUPPORT         (HCI_MAKE_COMMAND_OPCODE(HCI_COMMAND_CODE_CONTROL_BASEBAND_OGF, HCI_COMMAND_CODE_READ_SECURE_CONNECTIONS_HOST_SUPPORT_OCF))
-#define HCI_COMMAND_OPCODE_WRITE_SECURE_CONNECTIONS_HOST_SUPPORT        (HCI_MAKE_COMMAND_OPCODE(HCI_COMMAND_CODE_CONTROL_BASEBAND_OGF, HCI_COMMAND_CODE_WRITE_SECURE_CONNECTIONS_HOST_SUPPORT_OCF))
-#define HCI_COMMAND_OPCODE_READ_AUTHENTICATED_PAYLOAD_TIMEOUT           (HCI_MAKE_COMMAND_OPCODE(HCI_COMMAND_CODE_CONTROL_BASEBAND_OGF, HCI_COMMAND_CODE_READ_AUTHENTICATED_PAYLOAD_TIMEOUT_OCF))
-#define HCI_COMMAND_OPCODE_WRITE_AUTHENTICATED_PAYLOAD_TIMEOUT          (HCI_MAKE_COMMAND_OPCODE(HCI_COMMAND_CODE_CONTROL_BASEBAND_OGF, HCI_COMMAND_CODE_WRITE_AUTHENTICATED_PAYLOAD_TIMEOUT_OCF))
-#define HCI_COMMAND_OPCODE_READ_LOCAL_OOB_EXTENDED_DATA                 (HCI_MAKE_COMMAND_OPCODE(HCI_COMMAND_CODE_CONTROL_BASEBAND_OGF, HCI_COMMAND_CODE_READ_LOCAL_OOB_EXTENDED_DATA_OCF))
-#define HCI_COMMAND_OPCODE_READ_EXTENDED_PAGE_TIMEOUT                   (HCI_MAKE_COMMAND_OPCODE(HCI_COMMAND_CODE_CONTROL_BASEBAND_OGF, HCI_COMMAND_CODE_READ_EXTENDED_PAGE_TIMEOUT_OCF))
-#define HCI_COMMAND_OPCODE_WRITE_EXTENDED_PAGE_TIMEOUT                  (HCI_MAKE_COMMAND_OPCODE(HCI_COMMAND_CODE_CONTROL_BASEBAND_OGF, HCI_COMMAND_CODE_WRITE_EXTENDED_PAGE_TIMEOUT_OCF))
-#define HCI_COMMAND_OPCODE_READ_EXTENDED_INQUIRY_LENGTH                 (HCI_MAKE_COMMAND_OPCODE(HCI_COMMAND_CODE_CONTROL_BASEBAND_OGF, HCI_COMMAND_CODE_READ_EXTENDED_INQUIRY_LENGTH_OCF))
-#define HCI_COMMAND_OPCODE_WRITE_EXTENDED_INQUIRY_LENGTH                (HCI_MAKE_COMMAND_OPCODE(HCI_COMMAND_CODE_CONTROL_BASEBAND_OGF, HCI_COMMAND_CODE_WRITE_EXTENDED_INQUIRY_LENGTH_OCF))
-
    /* HCI Command Code OpCode Definitions (Informational Parameters).   */
 #define HCI_COMMAND_OPCODE_READ_LOCAL_VERSION_INFORMATION               (HCI_MAKE_COMMAND_OPCODE(HCI_COMMAND_CODE_INFORMATIONAL_PARAMETERS_OGF, HCI_COMMAND_CODE_READ_LOCAL_VERSION_INFORMATION_OCF))
 #define HCI_COMMAND_OPCODE_READ_LOCAL_SUPPORTED_FEATURES                (HCI_MAKE_COMMAND_OPCODE(HCI_COMMAND_CODE_INFORMATIONAL_PARAMETERS_OGF, HCI_COMMAND_CODE_READ_LOCAL_SUPPORTED_FEATURES_OCF))
@@ -1045,14 +946,6 @@ typedef struct _tagHCI_Packet_Header_t
 #define HCI_COMMAND_OPCODE_READ_LOCAL_AMP_ASSOC                         (HCI_MAKE_COMMAND_OPCODE(HCI_COMMAND_CODE_STATUS_PARAMETERS_OGF, HCI_COMMAND_CODE_READ_LOCAL_AMP_ASSOC_OCF))
 #define HCI_COMMAND_OPCODE_WRITE_REMOTE_AMP_ASSOC                       (HCI_MAKE_COMMAND_OPCODE(HCI_COMMAND_CODE_STATUS_PARAMETERS_OGF, HCI_COMMAND_CODE_WRITE_REMOTE_AMP_ASSOC_OCF))
 
-   /* HCI Command Code OpCode Definitions (Status Parameters - Version  */
-   /* 4.0 + CSA3).                                                      */
-#define HCI_COMMAND_OPCODE_GET_MWS_TRANSPORT_LAYER_CONFIGURATION        (HCI_MAKE_COMMAND_OPCODE(HCI_COMMAND_CODE_STATUS_PARAMETERS_OGF, HCI_COMMAND_CODE_GET_MWS_TRANSPORT_LAYER_CONFIGURATION_OCF))
-
-   /* HCI Command Code OpCode Definitions (Status Parameters - Version  */
-   /* 4.0 + CSA4).                                                      */
-#define HCI_COMMAND_OPCODE_SET_TRIGGERED_CLOCK_CAPTURE                  (HCI_MAKE_COMMAND_OPCODE(HCI_COMMAND_CODE_STATUS_PARAMETERS_OGF, HCI_COMMAND_CODE_SET_TRIGGERED_CLOCK_CAPTURE_OCF))
-
    /* HCI Command Code OpCode Definitions (Testing Commands).           */
 #define HCI_COMMAND_OPCODE_READ_LOOPBACK_MODE                           (HCI_MAKE_COMMAND_OPCODE(HCI_COMMAND_CODE_TESTING_COMMANDS_OGF, HCI_COMMAND_CODE_READ_LOOPBACK_MODE_OCF))
 #define HCI_COMMAND_OPCODE_WRITE_LOOPBACK_MODE                          (HCI_MAKE_COMMAND_OPCODE(HCI_COMMAND_CODE_TESTING_COMMANDS_OGF, HCI_COMMAND_CODE_WRITE_LOOPBACK_MODE_OCF))
@@ -1067,10 +960,6 @@ typedef struct _tagHCI_Packet_Header_t
 #define HCI_COMMAND_OPCODE_ENABLE_AMP_RECEIVER_REPORTS                  (HCI_MAKE_COMMAND_OPCODE(HCI_COMMAND_CODE_TESTING_COMMANDS_OGF, HCI_COMMAND_CODE_ENABLE_AMP_RECEIVER_REPORTS_OCF))
 #define HCI_COMMAND_OPCODE_AMP_TEST_END                                 (HCI_MAKE_COMMAND_OPCODE(HCI_COMMAND_CODE_TESTING_COMMANDS_OGF, HCI_COMMAND_CODE_AMP_TEST_END_OCF))
 #define HCI_COMMAND_OPCODE_AMP_TEST                                     (HCI_MAKE_COMMAND_OPCODE(HCI_COMMAND_CODE_TESTING_COMMANDS_OGF, HCI_COMMAND_CODE_AMP_TEST_OCF))
-
-   /* HCI Command Code OpCode Definitions (Testing Commands - Version   */
-   /* 4.1).                                                             */
-#define HCI_COMMAND_OPCODE_WRITE_SECURE_CONNECTIONS_TEST_MODE           (HCI_MAKE_COMMAND_OPCODE(HCI_COMMAND_CODE_TESTING_COMMANDS_OGF, HCI_COMMAND_CODE_WRITE_SECURE_CONNECTIONS_TEST_MODE_OCF))
 
    /* HCI Command Code OpCode Definitions (LE Controller Commands -     */
    /* Version 4.0 + LE).                                                */
@@ -1104,10 +993,6 @@ typedef struct _tagHCI_Packet_Header_t
 #define HCI_COMMAND_OPCODE_LE_RECEIVER_TEST                             (HCI_MAKE_COMMAND_OPCODE(HCI_COMMAND_CODE_LE_CONTROLLER_COMMANDS_OGF, HCI_COMMAND_CODE_LE_RECEIVER_TEST_OCF))
 #define HCI_COMMAND_OPCODE_LE_TRANSMITTER_TEST                          (HCI_MAKE_COMMAND_OPCODE(HCI_COMMAND_CODE_LE_CONTROLLER_COMMANDS_OGF, HCI_COMMAND_CODE_LE_TRANSMITTER_TEST_OCF))
 #define HCI_COMMAND_OPCODE_LE_TEST_END                                  (HCI_MAKE_COMMAND_OPCODE(HCI_COMMAND_CODE_LE_CONTROLLER_COMMANDS_OGF, HCI_COMMAND_CODE_LE_TEST_END_OCF))
-
-   /* HCI Command Code OpCode Definitions (LE Commands - Version 4.1).  */
-#define HCI_COMMAND_OPCODE_LE_REMOTE_CONNECTION_PARAMETER_REQUEST_REPLY          (HCI_MAKE_COMMAND_OPCODE(HCI_COMMAND_CODE_LE_CONTROLLER_COMMANDS_OGF, HCI_COMMAND_CODE_LE_REMOTE_CONNECTION_PARAMETER_REQUEST_REPLY_OCF))
-#define HCI_COMMAND_OPCODE_LE_REMOTE_CONNECTION_PARAMETER_REQUEST_NEGATIVE_REPLY (HCI_MAKE_COMMAND_OPCODE(HCI_COMMAND_CODE_LE_CONTROLLER_COMMANDS_OGF, HCI_COMMAND_CODE_LE_REMOTE_CONNECTION_PARAMETER_REQUEST_NEGATIVE_REPLY_OCF))
 
    /* HCI Event Declarations/Types/Constants.                           */
 #define HCI_EVENT_CODE_INQUIRY_COMPLETE                                 0x01
@@ -1208,30 +1093,6 @@ typedef struct _tagHCI_Packet_Header_t
 #define HCI_SUBEVENT_CODE_LE_READ_REMOTE_USED_FEATURES_COMPLETE         0x04
 #define HCI_SUBEVENT_CODE_LE_LONG_TERM_KEY_REQUEST                      0x05
 
-   /* The following block of HCI Sub Event Declarations/Type/Constants  */
-   /* are for Version 4.1.                                              */
-   /* * NOTE * All Bluetooth Low Energy (LE) events are grouped under a */
-   /*          single event called the Meta event.  The Meta event      */
-   /*          contains a Sub Event Code that actually specifies the    */
-   /*          Bluetooth Low Energy (LE) event code.                    */
-#define HCI_SUBEVENT_CODE_LE_REMOTE_CONNECTION_PARAMETER_REQUEST        0x06
-
-   /* The following block of HCI Event Declarations/Type/Constants are  */
-   /* for Version 4.0 + CSA4.                                           */
-#define HCI_EVENT_CODE_TRIGGERED_CLOCK_CAPTURE                             0x4E
-#define HCI_EVENT_CODE_SYCHRONIZATION_TRAIN_COMPLETE                       0x4F
-#define HCI_EVENT_CODE_SYCHRONIZATION_TRAIN_RECEIVED                       0x50
-#define HCI_EVENT_CODE_CONNECTIONLESS_SLAVE_BROADCAST_RECEIVE              0x51
-#define HCI_EVENT_CODE_CONNECTIONLESS_SLAVE_BROADCAST_TIMEOUT              0x52
-#define HCI_EVENT_CODE_TRUNCATED_PAGE_COMPLETE                             0x53
-#define HCI_EVENT_CODE_SLAVE_PAGE_RESPONSE_TIMEOUT                         0x54
-#define HCI_EVENT_CODE_CONNECTIONLESS_SLAVE_BROADCAST_CHANNEL_MAP_CHANGE   0x55
-#define HCI_EVENT_CODE_INQUIRY_RESPONSE_NOTIFICATION                       0x56
-
-   /* The following block of HCI Event Declarations/Type/Constants are  */
-   /* for Version 4.1.                                                  */
-#define HCI_EVENT_CODE_AUTHENTICATED_PAYLOAD_TIMEOUT_EXPIRED               0x57
-
    /* HCI Error Code Definitions/Constants.                             */
 #define HCI_ERROR_CODE_NO_ERROR                                           0x00
 #define HCI_ERROR_CODE_UNKNOWN_HCI_COMMAND                                0x01
@@ -1319,9 +1180,6 @@ typedef struct _tagHCI_Packet_Header_t
 #define HCI_ERROR_CODE_CONNECTION_FAILED_DUE_TO_MIC_FAILURE               0x3D
 #define HCI_ERROR_CODE_CONNECTION_FAILED_TO_BE_ESTABLISHED                0x3E
 #define HCI_ERROR_CODE_MAC_CONNECTION_FAILED                              0x3F
-
-   /* HCI Error Code Definitions/Constants (Version 4.1).               */
-#define HCI_ERROR_CODE_COARSE_CLOCK_ADJUST_REJECTED_USING_CLOCK_DRAGGING  0x40
 
    /* HCI Command Definitions/Constants.                                */
 
@@ -1862,90 +1720,6 @@ typedef __PACKED_STRUCT_BEGIN__ struct _tagHCI_Enhanced_Accept_Synchronous_Conne
 } __PACKED_STRUCT_END__ HCI_Enhanced_Accept_Synchronous_Connection_Request_Command_t;
 
 #define HCI_ENHANCED_ACCEPT_SYNCHRONOUS_CONNECTION_REQUEST_COMMAND_SIZE    (sizeof(HCI_Enhanced_Accept_Synchronous_Connection_Request_Command_t))
-
-   /* HCI Command Definitions (Link Control - Version 4.0 + CSA4).      */
-
-typedef __PACKED_STRUCT_BEGIN__ struct _tagHCI_Truncated_Page_Command_t
-{
-   HCI_Command_Header_t HCI_Command_Header;
-   BD_ADDR_t            BD_ADDR;
-   Byte_t               Page_Scan_Repetition_Mode;
-   NonAlignedWord_t     Clock_Offset;
-} __PACKED_STRUCT_END__ HCI_Truncated_Page_Command_t;
-
-#define HCI_TRUNCATED_PAGE_COMMAND_SIZE             (sizeof(HCI_Truncated_Page_Command_t))
-
-typedef __PACKED_STRUCT_BEGIN__ struct _tagHCI_Truncated_Page_Cancel_Command_t
-{
-   HCI_Command_Header_t HCI_Command_Header;
-   BD_ADDR_t            BD_ADDR;
-} __PACKED_STRUCT_END__ HCI_Truncated_Page_Cancel_Command_t;
-
-#define HCI_TRUNCATED_PAGE_CANCEL_COMMAND_SIZE             (sizeof(HCI_Truncated_Page_Cancel_Command_t))
-
-typedef __PACKED_STRUCT_BEGIN__ struct _tagHCI_Set_Connectionless_Slave_Broadcast_Command_t
-{
-   HCI_Command_Header_t HCI_Command_Header;
-   Byte_t               Enable;
-   Byte_t               LT_ADDR;
-   Byte_t               LPO_Allowed;
-   NonAlignedWord_t     Packet_Type;
-   NonAlignedWord_t     Interval_Min;
-   NonAlignedWord_t     Interval_Max;
-   NonAlignedWord_t     CSB_Supervision_Timeout;
-} __PACKED_STRUCT_END__ HCI_Set_Connectionless_Slave_Broadcast_Command_t;
-
-#define HCI_SET_CONNECTIONLESS_SLAVE_BROADCAST_COMMAND_SIZE             (sizeof(HCI_Set_Connectionless_Slave_Broadcast_Command_t))
-
-typedef __PACKED_STRUCT_BEGIN__ struct _tagHCI_Set_Connectionless_Slave_Broadcast_Receive_Command_t
-{
-   HCI_Command_Header_t HCI_Command_Header;
-   Byte_t               Enable;
-   BD_ADDR_t            BD_ADDR;
-   Byte_t               LT_ADDR;
-   NonAlignedWord_t     Interval;
-   NonAlignedDWord_t    Clock_Offset;
-   NonAlignedDWord_t    Next_CSB_Clock;
-   NonAlignedWord_t     CSB_Supervision_Timeout;
-   Byte_t               Remote_Timing_Accuracy;
-   Byte_t               Skip;
-   NonAlignedWord_t     Packet_Type;
-   AFH_Channel_Map_t    AFH_Channel_Map;
-} __PACKED_STRUCT_END__ HCI_Set_Connectionless_Slave_Broadcast_Receive_Command_t;
-
-#define HCI_SET_CONNECTIONLESS_SLAVE_BROADCAST_RECEIVE_COMMAND_SIZE             (sizeof(HCI_Set_Connectionless_Slave_Broadcast_Receive_Command_t))
-
-typedef __PACKED_STRUCT_BEGIN__ struct _tagHCI_Start_Synchronization_Train_Command_t
-{
-   HCI_Command_Header_t HCI_Command_Header;
-} __PACKED_STRUCT_END__ HCI_Start_Synchronization_Train_Command_t;
-
-#define HCI_START_SYNCHRONIZATION_TRAIN_COMMAND_SIZE             (sizeof(HCI_Start_Synchronization_Train_Command_t))
-
-typedef __PACKED_STRUCT_BEGIN__ struct _tagHCI_Receive_Synchronization_Train_Command_t
-{
-   HCI_Command_Header_t HCI_Command_Header;
-   BD_ADDR_t            BD_ADDR;
-   NonAlignedWord_t     Sync_Scan_Timeout;
-   NonAlignedWord_t     Sync_Scan_Window;
-   NonAlignedWord_t     Sync_Scan_Interval;
-} __PACKED_STRUCT_END__ HCI_Receive_Synchronization_Train_Command_t;
-
-#define HCI_RECEIVE_SYNCHRONIZATION_TRAIN_COMMAND_SIZE             (sizeof(HCI_Receive_Synchronization_Train_Command_t))
-
-   /* HCI Command Definitions (Link Control - Version 4.1).             */
-
-typedef __PACKED_STRUCT_BEGIN__ struct _tagHCI_Remote_OOB_Extended_Data_Request_Reply_Command_t
-{
-   HCI_Command_Header_t        HCI_Command_Header;
-   BD_ADDR_t                   BD_ADDR;
-   Simple_Pairing_Hash_t       C_192;
-   Simple_Pairing_Randomizer_t R_192;
-   Simple_Pairing_Hash_t       C_256;
-   Simple_Pairing_Randomizer_t R_256;
-} __PACKED_STRUCT_END__ HCI_Remote_OOB_Extended_Data_Request_Reply_Command_t;
-
-#define HCI_REMOTE_OOB_EXTENDED_DATA_REQUEST_REPLY_COMMAND_SIZE    (sizeof(HCI_Remote_OOB_Extended_Data_Request_Reply_Command_t))
 
    /* HCI Command Definitions (Link Policy).                            */
 
@@ -2881,334 +2655,6 @@ typedef __PACKED_STRUCT_BEGIN__ struct _tagHCI_Write_LE_Host_Supported_Command_t
 
 #define HCI_WRITE_LE_HOST_SUPPORTED_COMMAND_SIZE         (sizeof(HCI_Write_LE_Host_Supported_Command_t))
 
-   /* HCI Command Definitions (Host Control and Baseband - Version 4.0 +*/
-   /* CSA3).                                                            */
-
-typedef __PACKED_STRUCT_BEGIN__ struct _tagHCI_Set_MWS_Channel_Parameters_Command_t
-{
-   HCI_Command_Header_t HCI_Command_Header;
-   Byte_t               MWS_Channel_Enable;
-   NonAlignedWord_t     MWS_RX_Center_Frequency;
-   NonAlignedWord_t     MWS_TX_Center_Frequency;
-   NonAlignedWord_t     MWS_RX_Channel_Bandwidth;
-   NonAlignedWord_t     MWS_TX_Channel_Bandwidth;
-   Byte_t               MWS_Channel_Type;
-} __PACKED_STRUCT_END__ HCI_Set_MWS_Channel_Parameters_Command_t;
-
-#define HCI_SET_MWS_CHANNEL_PARAMETERS_COMMAND_SIZE      (sizeof(HCI_Set_MWS_Channel_Parameters_Command_t))
-
-typedef __PACKED_STRUCT_BEGIN__ struct _tagHCI_Set_External_Frame_Configuration_Command_t
-{
-   HCI_Command_Header_t HCI_Command_Header;
-   NonAlignedWord_t     Ext_Frame_Duration;
-   NonAlignedWord_t     Ext_Frame_Sync_Assert_Offset;
-   NonAlignedWord_t     Ext_Frame_Sync_Assert_Jitter;
-   Byte_t               Ext_Num_Periods;
-   Byte_t               Variable_Data[1];
-} __PACKED_STRUCT_END__ HCI_Set_External_Frame_Configuration_Command_t;
-
-   /* The following MACRO is a utility MACRO that exists to aid code    */
-   /* readability to Determine the size (in Bytes) of an HCI Set        */
-   /* External Frame Configuration Command Data Structure based upon the*/
-   /* number of periods (Ext_Num_Periods) associated with the Command.  */
-   /* The first parameter to this MACRO is the number of periods in an  */
-   /* external frame (Ext_Num_Periods) of the Data that is to be part of*/
-   /* the Set External Frame Configuration Command.                     */
-#define HCI_SET_EXTERNAL_FRAME_CONFIGURATION_COMMAND_SIZE(_x)     (sizeof(HCI_Set_External_Frame_Configuration_Command_t) - sizeof(Byte_t) + (unsigned int)(((unsigned int)(_x)) * (NON_ALIGNED_WORD_SIZE + NON_ALIGNED_BYTE_SIZE)))
-
-   /* The following definition exists to define the Total Number of     */
-   /* Period's that can be supported by a single                        */
-   /* HCI_Set_External_Frame_Configuration_Command_t Command Packet.    */
-#define HCI_SET_EXTERNAL_FRAME_CONFIGURATION_COMMAND_MAX_PERIODS  32
-
-   /* The following MACRO is a utility MACRO that exists to aid code    */
-   /* readability to Set a specified Period_Duration in the HCI Set     */
-   /* External Frame Configuration Command Data.  The first parameter is*/
-   /* a pointer to a Data Buffer that is an                             */
-   /* HCI_Set_External_Frame_Configuration_Command_t.  The Second       */
-   /* parameter is the Index of the Period_Duration to Set, and the     */
-   /* Third parameter is the Period_Duration value to set.              */
-   /* * NOTE * No Check of any of the input data is performed !         */
-#define HCI_SET_EXTERNAL_FRAME_CONFIGURATION_COMMAND_SET_PERIOD_DURATION(_x, _y, _z)                                         \
-{                                                                                                                            \
-   ASSIGN_HOST_WORD_TO_LITTLE_ENDIAN_UNALIGNED_WORD(&(((Byte_t *)((_x)->Variable_Data))[(_y)*NON_ALIGNED_WORD_SIZE]), (_z)); \
-}
-
-   /* The following MACRO is a utility MACRO that exists to aid code    */
-   /* readability to Set a specified Period_Type in the HCI Set External*/
-   /* Frame Configuration Command Data.  The first parameter is a       */
-   /* pointer to a Data Buffer that is an                               */
-   /* HCI_Set_External_Frame_Configuration_Command_t.  The Second       */
-   /* parameter is the total number of periods (Ext_Num_Periods).  The  */
-   /* third parameter is the index of the Period_Type to set and the    */
-   /* fourth parameter is the Period_Type value to set.                 */
-   /* * NOTE * No Check of any of the input data is performed !         */
-#define HCI_SET_EXTERNAL_FRAME_CONFIGURATION_COMMAND_SET_PERIOD_TYPE(_a, _b, _c, _d)                                                                          \
-{                                                                                                                                                             \
-   ASSIGN_HOST_BYTE_TO_LITTLE_ENDIAN_UNALIGNED_BYTE(&(((Byte_t *)((_a)->Variable_Data))[((_b)*NON_ALIGNED_WORD_SIZE) + ((_c)*NON_ALIGNED_BYTE_SIZE)]), (_d)); \
-}
-
-typedef __PACKED_STRUCT_BEGIN__ struct _tagHCI_Set_MWS_Signaling_Command_t
-{
-   HCI_Command_Header_t HCI_Command_Header;
-   NonAlignedWord_t     MWS_RX_Assert_Offset;
-   NonAlignedWord_t     MWS_RX_Assert_Jitter;
-   NonAlignedWord_t     MWS_RX_Deassert_Offset;
-   NonAlignedWord_t     MWS_RX_Deassert_Jitter;
-   NonAlignedWord_t     MWS_TX_Assert_Offset;
-   NonAlignedWord_t     MWS_TX_Assert_Jitter;
-   NonAlignedWord_t     MWS_TX_Deassert_Offset;
-   NonAlignedWord_t     MWS_TX_Deassert_Jitter;
-   NonAlignedWord_t     MWS_Pattern_Assert_Offset;
-   NonAlignedWord_t     MWS_Pattern_Assert_Jitter;
-   NonAlignedWord_t     MWS_Inactivity_Duration_Assert_Offset;
-   NonAlignedWord_t     MWS_Inactivity_Duration_Assert_Jitter;
-   NonAlignedWord_t     MWS_Scan_Frequency_Assert_Offset;
-   NonAlignedWord_t     MWS_Scan_Frequency_Assert_Jitter;
-   NonAlignedWord_t     MWS_Priority_Assert_Offset_Request;
-} __PACKED_STRUCT_END__ HCI_Set_MWS_Signaling_Command_t;
-
-#define HCI_SET_MWS_SIGNALING_COMMAND_SIZE               (sizeof(HCI_Set_MWS_Signaling_Command_t))
-
-typedef __PACKED_STRUCT_BEGIN__ struct _tagHCI_Set_MWS_Transport_Layer_Command_t
-{
-   HCI_Command_Header_t HCI_Command_Header;
-   Byte_t               Transport_Layer;
-   NonAlignedDWord_t    To_MWS_Baud_Rate;
-   NonAlignedDWord_t    From_MWS_Baud_Rate;
-} __PACKED_STRUCT_END__ HCI_Set_MWS_Transport_Layer_Command_t;
-
-#define HCI_SET_MWS_TRANSPORT_LAYER_COMMAND_SIZE         (sizeof(HCI_Set_MWS_Transport_Layer_Command_t))
-
-typedef __PACKED_STRUCT_BEGIN__ struct _tagHCI_Set_MWS_Scan_Frequency_Table_Command_t
-{
-   HCI_Command_Header_t HCI_Command_Header;
-   Byte_t               Num_Scan_Frequencies;
-   Byte_t               Variable_Data[1];
-} __PACKED_STRUCT_END__ HCI_Set_MWS_Scan_Frequency_Table_Command_t;
-
-   /* The following MACRO is a utility MACRO that exists to aid code    */
-   /* readability to Determine the size (in Bytes) of an HCI Set MWS    */
-   /* Scan Frequency Table Command Data Structure based upon the number */
-   /* of scan frequencies associated with the Command.  The first       */
-   /* parameter to this MACRO is the number of scan frequencies         */
-   /* (Num_Scan_Frequencies) of the Data that is to be part of the Set  */
-   /* MWS Scan Frequency Table Command.                                 */
-#define HCI_SET_MWS_SCAN_FREQUENCY_TABLE_COMMAND_SIZE(_x)     (sizeof(HCI_Set_MWS_Scan_Frequency_Table_Command_t) - sizeof(Byte_t) + (unsigned int)(((unsigned int)(_x)) * (NON_ALIGNED_WORD_SIZE*2)))
-
-   /* The following definition exists to define the Total Number of Scan*/
-   /* Frequencies's that can be supported by a single                   */
-   /* HCI_Set_MWS_Scan_Frequency_Table_Command_t Command Packet.        */
-#define HCI_SET_MWS_SCAN_FREQUENCY_TABLE_COMMAND_MAX_SCAN_FREQUENCIES   (((sizeof(Byte_t)*255) - HCI_SET_MWS_SCAN_FREQUENCY_TABLE_COMMAND_SIZE(0))/(NON_ALIGNED_WORD_SIZE*2))
-
-   /* The following MACRO is a utility MACRO that exists to aid code    */
-   /* readability to set a specified Scan_Frequency_Low in the HCI Set  */
-   /* MWS Scan Frequency Table Command.  The first parameter is a       */
-   /* pointer to a Data Buffer that is an                               */
-   /* HCI_Set_MWS_Scan_Frequency_Table_Command_t.  The Second parameter */
-   /* is the Index of the Scan_Frequency_Low to Set, and the Third      */
-   /* parameter is the Scan_Frequency_Low value to set.                 */
-   /* * NOTE * No Check of any of the input data is performed !         */
-#define HCI_SET_MWS_SCAN_FREQUENCY_TABLE_COMMAND_SET_SCAN_FREQUENCY_LOW(_x, _y, _z)                                          \
-{                                                                                                                            \
-   ASSIGN_HOST_WORD_TO_LITTLE_ENDIAN_UNALIGNED_WORD(&(((Byte_t *)((_x)->Variable_Data))[(_y)*NON_ALIGNED_WORD_SIZE]), (_z)); \
-}
-
-   /* The following MACRO is a utility MACRO that exists to aid code    */
-   /* readability to set a specified Scan_Frequency_High in the HCI Set */
-   /* MWS Scan Frequency Table Command Data.  The first parameter is a  */
-   /* pointer to a Data Buffer that is an                               */
-   /* HCI_Set_MWS_Scan_Frequency_Table_Command_t.  The Second parameter */
-   /* is the total number of scan frequencies (Num_Scan_Frequencies).   */
-   /* The third parameter is the index of the Scan_Frequency_High to set*/
-   /* and the fourth parameter is the Scan_Frequency_High value to set. */
-   /* * NOTE * No Check of any of the input data is performed !         */
-#define HCI_SET_MWS_SCAN_FREQUENCY_TABLE_COMMAND_SET_SCAN_FREQUENCY_HIGH(_a, _b, _c, _d)                                     \
-{                                                                                                                            \
-   ASSIGN_HOST_WORD_TO_LITTLE_ENDIAN_UNALIGNED_WORD(&(((Byte_t *)((_a)->Variable_Data))[((_b)*NON_ALIGNED_WORD_SIZE) + ((_c)*NON_ALIGNED_WORD_SIZE)]), (_d)); \
-}
-
-typedef __PACKED_STRUCT_BEGIN__ struct _tagHCI_Set_MWS_PATTERN_Configuration_Command_t
-{
-   HCI_Command_Header_t HCI_Command_Header;
-   Byte_t               MWS_PATTERN_Index;
-   Byte_t               MWS_PATTERN_NumIntervals;
-   Byte_t               Variable_Data[1];
-} __PACKED_STRUCT_END__ HCI_Set_MWS_PATTERN_Configuration_Command_t;
-
-   /* The following MACRO is a utility MACRO that exists to aid code    */
-   /* readability to Determine the size (in Bytes) of an HCI Set MWS    */
-   /* PATTERN Configuration Command Data Structure based upon the number*/
-   /* of pattern intervals associated with the Command.  The first      */
-   /* parameter to this MACRO is the number of intervals                */
-   /* (MWS_PATTERN_NumIntervals) of the Data that is to be part of the  */
-   /* Set MWS PATTERN Configuration Command.                            */
-#define HCI_SET_MWS_PATTERN_CONFIGURATION_COMMAND_SIZE(_x)              (sizeof(HCI_Set_MWS_PATTERN_Configuration_Command_t) - sizeof(Byte_t) + (unsigned int)(((unsigned int)(_x)) * (NON_ALIGNED_WORD_SIZE + NON_ALIGNED_BYTE_SIZE)))
-
-   /* The following definition exists to define the Total Number of     */
-   /* Pattern Interval's that can be supported by a single              */
-   /* HCI_Set_MWS_PATTERN_Configuration_Command_t Command Packet.       */
-#define HCI_SET_MWS_PATTERN_CONFIGURATION_COMMAND_MAX_PATTERN_INTERVALS (((sizeof(Byte_t)*255) - HCI_SET_MWS_PATTERN_CONFIGURATION_COMMAND_SIZE(0))/(NON_ALIGNED_WORD_SIZE + NON_ALIGNED_BYTE_SIZE))
-
-   /* The following MACRO is a utility MACRO that exists to aid code    */
-   /* readability to set a specified IntervalDuration in the HCI Set MWS*/
-   /* PATTERN Configuration Command Data.  The first parameter is a     */
-   /* pointer to a Data Buffer that is an                               */
-   /* HCI_Set_MWS_PATTERN_Configuration_Command_t.  The Second parameter*/
-   /* is the Index of the IntervalDuration to Set, and the Third        */
-   /* parameter is the IntervalDuration value to set.                   */
-   /* * NOTE * No Check of any of the input data is performed !         */
-#define HCI_SET_MWS_PATTERN_CONFIGURATION_COMMAND_SET_INTERVAL_DURATION(_x, _y, _z)                                          \
-{                                                                                                                            \
-   ASSIGN_HOST_WORD_TO_LITTLE_ENDIAN_UNALIGNED_WORD(&(((Byte_t *)((_x)->Variable_Data))[(_y)*NON_ALIGNED_WORD_SIZE]), (_z)); \
-}
-
-   /* The following MACRO is a utility MACRO that exists to aid code    */
-   /* readability to set a specified IntervalType in the HCI Set MWS    */
-   /* PATTERN Configuration Command Data.  The first parameter is a     */
-   /* pointer to a Data Buffer that is an                               */
-   /* HCI_Set_MWS_PATTERN_Configuration_Command_t.  The Second parameter*/
-   /* is the total number of intervals (MWS_PATTERN_NumIntervals).  The */
-   /* third parameter is the index of the IntervalType to set and the   */
-   /* fourth parameter is the IntervalType value to set.                */
-   /* * NOTE * No Check of any of the input data is performed !         */
-#define HCI_SET_MWS_PATTERN_CONFIGURATION_COMMAND_SET_INTERVAL_TYPE(_a, _b, _c, _d)                                                                           \
-{                                                                                                                                                             \
-   ASSIGN_HOST_BYTE_TO_LITTLE_ENDIAN_UNALIGNED_BYTE(&(((Byte_t *)((_a)->Variable_Data))[((_b)*NON_ALIGNED_WORD_SIZE) + ((_c)*NON_ALIGNED_BYTE_SIZE)]), (_d)); \
-}
-
-   /* HCI Command Definitions (Host Control and Baseband - Version 4.0 +*/
-   /* CSA4).                                                            */
-
-typedef __PACKED_STRUCT_BEGIN__ struct _tagHCI_Set_Reserved_LT_ADDR_Command_t
-{
-   HCI_Command_Header_t HCI_Command_Header;
-   Byte_t               LT_ADDR;
-} __PACKED_STRUCT_END__ HCI_Set_Reserved_LT_ADDR_Command_t;
-
-#define HCI_SET_RESERVED_LT_ADDR_COMMAND_SIZE   (sizeof(HCI_Set_Reserved_LT_ADDR_Command_t))
-
-typedef __PACKED_STRUCT_BEGIN__ struct _tagHCI_Delete_Reserved_LT_ADDR_Command_t
-{
-   HCI_Command_Header_t HCI_Command_Header;
-   Byte_t               LT_ADDR;
-} __PACKED_STRUCT_END__ HCI_Delete_Reserved_LT_ADDR_Command_t;
-
-#define HCI_DELETE_RESERVED_LT_ADDR_COMMAND_SIZE   (sizeof(HCI_Delete_Reserved_LT_ADDR_Command_t))
-
-typedef __PACKED_STRUCT_BEGIN__ struct _tagHCI_Set_Connectionless_Slave_Broadcast_Data_Command_t
-{
-   HCI_Command_Header_t HCI_Command_Header;
-   Byte_t               LT_ADDR;
-   Byte_t               Fragment;
-   Byte_t               Data_Length;
-   Byte_t               Data[1];
-} __PACKED_STRUCT_END__ HCI_Set_Connectionless_Slave_Broadcast_Data_Command_t;
-
-   /* The following MACRO is a utility MACRO that exists to aid code    */
-   /* readability to Determine the size (in Bytes) of an HCI Set        */
-   /* Connectionless Slave Broadcast Command Data Structure based upon  */
-   /* the number of individual Data bytes associated with the Command.  */
-   /* The first parameter to this MACRO is the size (in Bytes) of the   */
-   /* Data that is to be part of the Set Connectionless Slave Broadcast */
-   /* Command.                                                          */
-#define HCI_SET_CONNECTIONLESS_SLAVE_BROADCAST_DATA_COMMAND_SIZE(_x)        (sizeof(HCI_Set_Connectionless_Slave_Broadcast_Data_Command_t) - sizeof(Byte_t) + (unsigned int)(_x))
-
-   /* The following definition exists to define the Total Number of data*/
-   /* that can be supported by a single                                 */
-   /* HCI_Set_Connectionless_Slave_Broadcast_Data_Command_t Command     */
-   /* Packet.                                                           */
-#define HCI_SET_CONNECTIONLESS_SLAVE_BROADCAST_DATA_COMMAND_MAX_DATA         (((sizeof(Byte_t)*255) - HCI_SET_CONNECTIONLESS_SLAVE_BROADCAST_DATA_COMMAND_SIZE(0))/(sizeof(Byte_t)))
-
-typedef __PACKED_STRUCT_BEGIN__ struct _tagHCI_Read_Synchronization_Train_Parameters_Command_t
-{
-   HCI_Command_Header_t HCI_Command_Header;
-} __PACKED_STRUCT_END__ HCI_Read_Synchronization_Train_Parameters_Command_t;
-
-#define HCI_READ_SYNCHRONIZATION_TRAIN_PARAMETERS_COMMAND_SIZE   (sizeof(HCI_Read_Synchronization_Train_Parameters_Command_t))
-
-typedef __PACKED_STRUCT_BEGIN__ struct _tagHCI_Write_Synchronization_Train_Parameters_Command_t
-{
-   HCI_Command_Header_t HCI_Command_Header;
-   NonAlignedWord_t     Interval_Min;
-   NonAlignedWord_t     Interval_Max;
-   NonAlignedDWord_t    Sync_Train_Timeout;
-   Byte_t               Service_Data;
-} __PACKED_STRUCT_END__ HCI_Write_Synchronization_Train_Parameters_Command_t;
-
-#define HCI_WRITE_SYNCHRONIZATION_TRAIN_PARAMETERS_COMMAND_SIZE   (sizeof(HCI_Write_Synchronization_Train_Parameters_Command_t))
-
-   /* HCI Command Definitions (Host Control and Baseband - Version 4.1).*/
-
-typedef __PACKED_STRUCT_BEGIN__ struct _tagHCI_Read_Secure_Connections_Host_Support_Command_t
-{
-   HCI_Command_Header_t HCI_Command_Header;
-} __PACKED_STRUCT_END__ HCI_Read_Secure_Connections_Host_Support_Command_t;
-
-#define HCI_READ_SECURE_CONNECTIONS_HOST_SUPPORT_COMMAND_SIZE     (sizeof(HCI_Read_Secure_Connections_Host_Support_Command_t))
-
-typedef __PACKED_STRUCT_BEGIN__ struct _tagHCI_Write_Secure_Connections_Host_Support_Command_t
-{
-   HCI_Command_Header_t HCI_Command_Header;
-   Byte_t               Secure_Connections_Host_Support;
-} __PACKED_STRUCT_END__ HCI_Write_Secure_Connections_Host_Support_Command_t;
-
-#define HCI_WRITE_SECURE_CONNECTIONS_HOST_SUPPORT_COMMAND_SIZE    (sizeof(HCI_Write_Secure_Connections_Host_Support_Command_t))
-
-typedef __PACKED_STRUCT_BEGIN__ struct _tagHCI_Read_Authenticated_Payload_Timeout_Command_t
-{
-   HCI_Command_Header_t HCI_Command_Header;
-   NonAlignedWord_t     Connection_Handle;
-} __PACKED_STRUCT_END__ HCI_Read_Authenticated_Payload_Timeout_Command_t;
-
-#define HCI_READ_AUTHENTICATED_PAYLOAD_TIMEOUT_COMMAND_SIZE       (sizeof(HCI_Read_Authenticated_Payload_Timeout_Command_t))
-
-typedef __PACKED_STRUCT_BEGIN__ struct _tagHCI_Write_Authenticated_Payload_Timeout_Command_t
-{
-   HCI_Command_Header_t HCI_Command_Header;
-   NonAlignedWord_t     Connection_Handle;
-   NonAlignedWord_t     Authenticated_Payload_Timeout;
-} __PACKED_STRUCT_END__ HCI_Write_Authenticated_Payload_Timeout_Command_t;
-
-#define HCI_WRITE_AUTHENTICATED_PAYLOAD_TIMEOUT_COMMAND_SIZE      (sizeof(HCI_Write_Authenticated_Payload_Timeout_Command_t))
-
-typedef __PACKED_STRUCT_BEGIN__ struct _tagHCI_Read_Local_OOB_Extended_Data_Command_t
-{
-   HCI_Command_Header_t HCI_Command_Header;
-} __PACKED_STRUCT_END__ HCI_Read_Local_OOB_Extended_Data_Command_t;
-
-#define HCI_READ_LOCAL_OOB_EXTENDED_DATA_COMMAND_SIZE             (sizeof(HCI_Read_Local_OOB_Extended_Data_Command_t))
-
-typedef __PACKED_STRUCT_BEGIN__ struct _tagHCI_Read_Extended_Page_Timeout_Command_t
-{
-   HCI_Command_Header_t HCI_Command_Header;
-} __PACKED_STRUCT_END__ HCI_Read_Extended_Page_Timeout_Command_t;
-
-#define HCI_READ_EXTENDED_PAGE_TIMEOUT_COMMAND_SIZE               (sizeof(HCI_Read_Extended_Page_Timeout_Command_t))
-
-typedef __PACKED_STRUCT_BEGIN__ struct _tagHCI_Write_Extended_Page_Timeout_Command_t
-{
-   HCI_Command_Header_t HCI_Command_Header;
-   NonAlignedWord_t     Extended_Page_Timeout;
-} __PACKED_STRUCT_END__ HCI_Write_Extended_Page_Timeout_Command_t;
-
-#define HCI_WRITE_EXTENDED_PAGE_TIMEOUT_COMMAND_SIZE              (sizeof(HCI_Write_Extended_Page_Timeout_Command_t))
-
-typedef __PACKED_STRUCT_BEGIN__ struct _tagHCI_Read_Extended_Inquiry_Length_Command_t
-{
-   HCI_Command_Header_t HCI_Command_Header;
-} __PACKED_STRUCT_END__ HCI_Read_Extended_Inquiry_Length_Command_t;
-
-#define HCI_READ_EXTENDED_INQUIRY_LENGTH_COMMAND_SIZE             (sizeof(HCI_Read_Extended_Inquiry_Length_Command_t))
-
-typedef __PACKED_STRUCT_BEGIN__ struct _tagHCI_Write_Extended_Inquiry_Length_Command_t
-{
-   HCI_Command_Header_t HCI_Command_Header;
-   NonAlignedWord_t     Extended_Inquiry_Length;
-} __PACKED_STRUCT_END__ HCI_Write_Extended_Inquiry_Length_Command_t;
-
-#define HCI_WRITE_EXTENDED_INQUIRY_LENGTH_COMMAND_SIZE            (sizeof(HCI_Write_Extended_Inquiry_Length_Command_t))
-
    /* HCI Command Definitions (Informational Parameters).               */
 
 typedef __PACKED_STRUCT_BEGIN__ struct _tagHCI_Read_Local_Version_Information_Command_t
@@ -3383,29 +2829,6 @@ typedef __PACKED_STRUCT_BEGIN__ struct _tagHCI_Write_Remote_AMP_ASSOC_Command_t
    /* AMP ASSOC Command.                                                */
 #define HCI_WRITE_REMOTE_AMP_ASSOC_COMMAND_SIZE(_x)      (sizeof(HCI_Write_Remote_AMP_ASSOC_Command_t) - sizeof(Byte_t) + (unsigned int)(_x))
 
-   /* HCI Command Definitions (Status Parameters - Version 4.0 + CSA3). */
-
-typedef __PACKED_STRUCT_BEGIN__ struct _tagHCI_Get_MWS_Transport_Layer_Configuration_Command_t
-{
-   HCI_Command_Header_t HCI_Command_Header;
-} __PACKED_STRUCT_END__ HCI_Get_MWS_Transport_Layer_Configuration_Command_t;
-
-#define HCI_GET_MWS_TRANSPORT_LAYER_CONFIGURATION_COMMAND_SIZE     (sizeof(HCI_Get_MWS_Transport_Layer_Configuration_Command_t))
-
-   /* HCI Command Definitions (Status Parameters - Version 4.0 + CSA4). */
-
-typedef __PACKED_STRUCT_BEGIN__ struct _tagHCI_Set_Triggered_Clock_Capture_Command_t
-{
-   HCI_Command_Header_t HCI_Command_Header;
-   NonAlignedWord_t     Connection_Handle;
-   Byte_t               Enable;
-   Byte_t               Which_Clock;
-   Byte_t               LPO_Allowed;
-   Byte_t               Num_Clock_Captures_To_Filter;
-} __PACKED_STRUCT_END__ HCI_Set_Triggered_Clock_Capture_Command_t;
-
-#define HCI_SET_TRIGGERED_CLOCK_CAPTURE_COMMAND_SIZE        (sizeof(HCI_Set_Triggered_Clock_Capture_Command_t))
-
    /* HCI Command Definitions (Testing Commands).                       */
 
 typedef __PACKED_STRUCT_BEGIN__ struct _tagHCI_Read_Loopback_Mode_Command_t
@@ -3471,18 +2894,6 @@ typedef __PACKED_STRUCT_BEGIN__ struct _tagHCI_AMP_Test_Command_t
    /* MACRO is the size (in Bytes) of the Test Parameters Data that is  */
    /* to be part of the HCI AMP Command.                                */
 #define HCI_AMP_TEST_COMMAND_SIZE(_x)                    (sizeof(HCI_AMP_Test_Command_t) - sizeof(Byte_t) + (unsigned int)(_x))
-
-   /* HCI Command Definitions (Testing Commands - Version 4.1).         */
-
-typedef __PACKED_STRUCT_BEGIN__ struct _tagHCI_Write_Secure_Connections_Test_Mode_Command_t
-{
-   HCI_Command_Header_t HCI_Command_Header;
-   NonAlignedWord_t     Connection_Handle;
-   Byte_t               DM1_ACLU_Mode;
-   Byte_t               ESCO_Loopback_Mode;
-} __PACKED_STRUCT_END__ HCI_Write_Secure_Connections_Test_Mode_Command_t;
-
-#define HCI_WRITE_SECURE_CONNECTIONS_TEST_MODE_COMMAND_SIZE (sizeof(HCI_Write_Secure_Connections_Test_Mode_Command_t))
 
    /* HCI Command Definitions (LE Controller Commands - Version 4.0 +   */
    /* LE).                                                              */
@@ -3757,31 +3168,6 @@ typedef __PACKED_STRUCT_BEGIN__ struct _tagHCI_LE_Test_End_Command_t
 } __PACKED_STRUCT_END__ HCI_LE_Test_End_Command_t;
 
 #define HCI_LE_TEST_END_COMMAND_SIZE                     (sizeof(HCI_LE_Test_End_Command_t))
-
-   /* HCI Command Definitions (LE Controller Commands - Version 4.1).   */
-
-typedef __PACKED_STRUCT_BEGIN__ struct _tagHCI_LE_Remote_Connection_Parameter_Request_Reply_Command_t
-{
-   HCI_Command_Header_t HCI_Command_Header;
-   NonAlignedWord_t     Connection_Handle;
-   NonAlignedWord_t     Interval_Min;
-   NonAlignedWord_t     Interval_Max;
-   NonAlignedWord_t     Latency;
-   NonAlignedWord_t     Timeout;
-   NonAlignedWord_t     Minimum_CE_Length;
-   NonAlignedWord_t     Maximum_CE_Length;
-} __PACKED_STRUCT_END__ HCI_LE_Remote_Connection_Parameter_Request_Reply_Command_t;
-
-#define HCI_LE_REMOTE_CONNECTION_PARAMETER_REQUEST_REPLY_COMMAND_SIZE   (sizeof(HCI_LE_Remote_Connection_Parameter_Request_Reply_Command_t))
-
-typedef __PACKED_STRUCT_BEGIN__ struct _tagHCI_LE_Remote_Connection_Parameter_Request_Negative_Reply_Command_t
-{
-   HCI_Command_Header_t HCI_Command_Header;
-   NonAlignedWord_t     Connection_Handle;
-   Byte_t               Reason;
-} __PACKED_STRUCT_END__ HCI_LE_Remote_Connection_Parameter_Request_Negative_Reply_Command_t;
-
-#define HCI_LE_REMOTE_CONNECTION_PARAMETER_REQUEST_NEGATIVE_REPLY_COMMAND_SIZE   (sizeof(HCI_LE_Remote_Connection_Parameter_Request_Negative_Reply_Command_t))
 
    /* HCI Event Definitions.                                            */
 
@@ -4710,38 +4096,8 @@ typedef __PACKED_STRUCT_BEGIN__ struct _tagHCI_AMP_Receiver_Report_Event_t
 
 #define HCI_AMP_RECEIVER_REPORT_EVENT_SIZE               (sizeof(HCI_AMP_Receiver_Report_Event_t))
 
-   /* Miscellaneous Event Types (Version 1.1).                          */
-
-typedef __PACKED_STRUCT_BEGIN__ struct _tagHCI_Bluetooth_Logo_Testing_Event_t
-{
-   HCI_Event_Header_t HCI_Event_Header;
-   Byte_t             Variable_Data[1];
-} __PACKED_STRUCT_END__ HCI_Bluetooth_Logo_Testing_Event_t;
-
-   /* The following MACRO is a utility MACRO that exists to aid code    */
-   /* readability to Determine the size (in Bytes) of an                */
-   /* HCI Bluetooth Logo Testing Event Data Structure based upon the    */
-   /* size of Total Number of Bytes required for the Parameters.  The   */
-   /* first parameter to this MACRO is the Size (in Bytes) of the       */
-   /* Bluetooth Logo Testing Event Packet Parameters (total).           */
-#define HCI_BLUETOOTH_LOGO_TESTING_EVENT_SIZE(_x)        ((sizeof(HCI_Bluetooth_Logo_Testing_Event_t) - sizeof(Byte_t)) + ((unsigned int)(_x)))
-
-typedef __PACKED_STRUCT_BEGIN__ struct _tagHCI_Vendor_Specific_Debug_Event_t
-{
-   HCI_Event_Header_t HCI_Event_Header;
-   Byte_t             Variable_Data[1];
-} __PACKED_STRUCT_END__ HCI_Vendor_Specific_Debug_Event_t;
-
-   /* The following MACRO is a utility MACRO that exists to aid code    */
-   /* readability to Determine the size (in Bytes) of an                */
-   /* HCI Vendor Specific Debug Event Data Structure based upon the     */
-   /* size of Total Number of Bytes required for the Parameters.  The   */
-   /* first parameter to this MACRO is the Size (in Bytes) of the       */
-   /* Vendor Specific Debug Event Packet Parameters (total).            */
-#define HCI_VENDOR_SPECIFIC_DEBUG_EVENT_SIZE(_x)         ((sizeof(HCI_Vendor_Specific_Debug_Event_t) - sizeof(Byte_t)) + ((unsigned int)(_x)))
-
-   /* The following events represent the new LE Meta Events that are    */
-   /* part of Bluetooth Version 4.0 + LE.                               */
+   /* The following events represent the new Events that are part of    */
+   /* Bluetooth Version 4.0 + LE.                                       */
 
    /* The following type declaration represents the structure of the    */
    /* Header of an HCI LE Meta Event Packet.  This Header Information is*/
@@ -4872,130 +4228,34 @@ typedef __PACKED_STRUCT_BEGIN__ struct _tagHCI_LE_Long_Term_Key_Request_Event_t
 
 #define HCI_LE_LONG_TERM_KEY_REQUEST_EVENT_SIZE                (sizeof(HCI_LE_Long_Term_Key_Request_Event_t))
 
-   /* The following events represent the new LE Meta Events that are    */
-   /* part of Bluetooth Version 4.1.                                    */
-
-typedef __PACKED_STRUCT_BEGIN__ struct _tagHCI_LE_Remote_Connection_Parameter_Request_Event_t
-{
-   HCI_LE_Meta_Event_Header_t HCI_LE_Meta_Event_Header;
-   NonAlignedWord_t           Connection_Handle;
-   NonAlignedWord_t           Conn_Interval_Min;
-   NonAlignedWord_t           Conn_Interval_Max;
-   NonAlignedWord_t           Conn_Latency;
-   NonAlignedWord_t           Supervision_Timeout;
-} __PACKED_STRUCT_END__ HCI_LE_Remote_Connection_Parameter_Request_Event_t;
-
-#define HCI_LE_REMOTE_CONNECTION_PARAMETER_REQUEST_EVENT_SIZE  (sizeof(HCI_LE_Remote_Connection_Parameter_Request_Event_t))
-
-   /* The following events represent the new Events that are part of    */
-   /* Bluetooth Version 4.0 + CSA4.                                     */
-
-typedef __PACKED_STRUCT_BEGIN__ struct _tagHCI_Triggered_Clock_Capture_Event_t
+   /* Miscellaneous Event Types (Version 1.1).                          */
+typedef __PACKED_STRUCT_BEGIN__ struct _tagHCI_Bluetooth_Logo_Testing_Event_t
 {
    HCI_Event_Header_t HCI_Event_Header;
-   NonAlignedWord_t   Connection_Handle;
-   Byte_t             Which_Clock;
-   NonAlignedDWord_t  Clock;
-   NonAlignedWord_t   Slot_Offset;
-} __PACKED_STRUCT_END__ HCI_Triggered_Clock_Capture_Event_t;
-
-#define HCI_TRIGGERED_CLOCK_CAPTURE_EVENT_SIZE           (sizeof(HCI_Triggered_Clock_Capture_Event_t))
-
-typedef __PACKED_STRUCT_BEGIN__ struct _tagHCI_Synchronization_Train_Complete_Event_t
-{
-   HCI_Event_Header_t HCI_Event_Header;
-   Byte_t             Status;
-} __PACKED_STRUCT_END__ HCI_Synchronization_Train_Complete_Event_t;
-
-#define HCI_SYNCHRONIZATION_TRAIN_COMPLETE_EVENT_SIZE    (sizeof(HCI_Synchronization_Train_Complete_Event_t))
-
-typedef __PACKED_STRUCT_BEGIN__ struct _tagHCI_Synchronization_Train_Received_Event_t
-{
-   HCI_Event_Header_t HCI_Event_Header;
-   Byte_t             Status;
-   BD_ADDR_t          BD_ADDR;
-   NonAlignedDWord_t  Clock_Offset;
-   AFH_Channel_Map_t  AFH_Channel_Map;
-   Byte_t             LT_ADDR;
-   NonAlignedDWord_t  Next_Broadcast_Instant;
-   NonAlignedWord_t   Connectionless_Slave_Broadcast_Interval;
-   Byte_t             Service_Data;
-} __PACKED_STRUCT_END__ HCI_Synchronization_Train_Received_Event_t;
-
-#define HCI_SYNCHRONIZATION_TRAIN_RECEIVED_EVENT_SIZE    (sizeof(HCI_Synchronization_Train_Received_Event_t))
-
-typedef __PACKED_STRUCT_BEGIN__ struct _tagHCI_Connectionless_Slave_Broadcast_Receive_Event_t
-{
-   HCI_Event_Header_t HCI_Event_Header;
-   BD_ADDR_t          BD_ADDR;
-   Byte_t             LT_ADDR;
-   NonAlignedDWord_t  CLK;
-   NonAlignedDWord_t  Offset;
-   Byte_t             Receive_Status;
-   Byte_t             Fragment;
-   Byte_t             Data_Length;
-   Byte_t             Data[1];
-} __PACKED_STRUCT_END__ HCI_Connectionless_Slave_Broadcast_Receive_Event_t;
+   Byte_t             Variable_Data[1];
+} __PACKED_STRUCT_END__ HCI_Bluetooth_Logo_Testing_Event_t;
 
    /* The following MACRO is a utility MACRO that exists to aid code    */
-   /* readability to Determine the size (in Bytes) of an HCI            */
-   /* Connectionless Slave Broadcast Receive Event Data Structure based */
-   /* upon the number of individual Data bytes associated with the      */
-   /* event.  The first parameter to this MACRO is the size (in Bytes)  */
-   /* of the Data that is part of the Connectionless Slave Broadcast    */
-   /* Receive Event.                                                    */
-#define HCI_CONNECTIONLESS_SLAVE_BROADCAST_RECEIVE_EVENT_SIZE(_x) (sizeof(HCI_Connectionless_Slave_Broadcast_Receive_Event_t) - sizeof(Byte_t) + (unsigned int)(_x))
+   /* readability to Determine the size (in Bytes) of an                */
+   /* HCI Bluetooth Logo Testing Event Data Structure based upon the    */
+   /* size of Total Number of Bytes required for the Parameters.  The   */
+   /* first parameter to this MACRO is the Size (in Bytes) of the       */
+   /* Bluetooth Logo Testing Event Packet Parameters (total).           */
+#define HCI_BLUETOOTH_LOGO_TESTING_EVENT_SIZE(_x)        ((sizeof(HCI_Bluetooth_Logo_Testing_Event_t) - sizeof(Byte_t)) + ((unsigned int)(_x)))
 
-   /* The following definition exists to define the Total Number of Data*/
-   /* Bytes that can be supported by a single                           */
-   /* HCI_Connectionless_Slave_Broadcast_Receive_Event_t Command Packet.*/
-#define HCI_CONNECTIONLESS_SLAVE_BROADCAST_RECEIVE_EVENT_MAX_DATA (((sizeof(Byte_t)*255) - HCI_CONNECTIONLESS_SLAVE_BROADCAST_RECEIVE_EVENT_SIZE(0))/(sizeof(Byte_t)))
-
-typedef __PACKED_STRUCT_BEGIN__ struct _tagHCI_Connectionless_Slave_Broadcast_Timeout_Event_t
+typedef __PACKED_STRUCT_BEGIN__ struct _tagHCI_Vendor_Specific_Debug_Event_t
 {
    HCI_Event_Header_t HCI_Event_Header;
-   BD_ADDR_t          BD_ADDR;
-   Byte_t             LT_ADDR;
-} __PACKED_STRUCT_END__ HCI_Connectionless_Slave_Broadcast_Timeout_Event_t;
+   Byte_t             Variable_Data[1];
+} __PACKED_STRUCT_END__ HCI_Vendor_Specific_Debug_Event_t;
 
-#define HCI_CONNECTIONLESS_SLAVE_BROADCAST_TIMEOUT_EVENT_SIZE (sizeof(HCI_Connectionless_Slave_Broadcast_Timeout_Event_t))
-
-typedef __PACKED_STRUCT_BEGIN__ struct _tagHCI_Truncated_Page_Complete_Event_t
-{
-   HCI_Event_Header_t HCI_Event_Header;
-   Byte_t             Status;
-   BD_ADDR_t          BD_ADDR;
-} __PACKED_STRUCT_END__ HCI_Truncated_Page_Complete_Event_t;
-
-#define HCI_TRUNCATED_PAGE_COMPLETE_EVENT_SIZE           (sizeof(HCI_Truncated_Page_Complete_Event_t))
-
-typedef __PACKED_STRUCT_BEGIN__ struct _tagHCI_Connectionless_Slave_Broadcast_Channel_Map_Change_Event_t
-{
-   HCI_Event_Header_t HCI_Event_Header;
-   AFH_Channel_Map_t  Channel_Map;
-} __PACKED_STRUCT_END__ HCI_Connectionless_Slave_Broadcast_Channel_Map_Change_Event_t;
-
-#define HCI_CONNECTIONLESS_SLAVE_BROADCAST_CHANNEL_MAP_CHANGE_EVENT_SIZE (sizeof(HCI_Connectionless_Slave_Broadcast_Channel_Map_Change_Event_t))
-
-typedef __PACKED_STRUCT_BEGIN__ struct _tagHCI_Inquiry_Response_Notification_Event_t
-{
-   HCI_Event_Header_t HCI_Event_Header;
-   LAP_t              LAP;
-   Byte_t             RSSI;
-} __PACKED_STRUCT_END__ HCI_Inquiry_Response_Notification_Event_t;
-
-#define HCI_INQUIRY_RESPONSE_NOTIFICATION_EVENT_SIZE     (sizeof(HCI_Inquiry_Response_Notification_Event_t))
-
-   /* The following events represent the new Events that are part of    */
-   /* Bluetooth Version 4.1.                                            */
-
-typedef __PACKED_STRUCT_BEGIN__ struct _tagHCI_Authenticated_Payload_Timeout_Expired_Event_t
-{
-   HCI_Event_Header_t HCI_Event_Header;
-   NonAlignedWord_t   Connection_Handle;
-} __PACKED_STRUCT_END__ HCI_Authenticated_Payload_Timeout_Expired_Event_t;
-
-#define HCI_AUTHENTICATED_PAYLOAD_TIMEOUT_EXPIRED_EVENT_SIZE   (sizeof(HCI_Authenticated_Payload_Timeout_Expired_Event_t))
+   /* The following MACRO is a utility MACRO that exists to aid code    */
+   /* readability to Determine the size (in Bytes) of an                */
+   /* HCI Vendor Specific Debug Event Data Structure based upon the     */
+   /* size of Total Number of Bytes required for the Parameters.  The   */
+   /* first parameter to this MACRO is the Size (in Bytes) of the       */
+   /* Vendor Specific Debug Event Packet Parameters (total).            */
+#define HCI_VENDOR_SPECIFIC_DEBUG_EVENT_SIZE(_x)         ((sizeof(HCI_Vendor_Specific_Debug_Event_t) - sizeof(Byte_t)) + ((unsigned int)(_x)))
 
    /* HCI Command Complete Event Definitions (Link Control).            */
 
@@ -5178,50 +4438,6 @@ typedef __PACKED_STRUCT_BEGIN__ struct _tagHCI_Logical_Link_Cancel_Command_Compl
 } __PACKED_STRUCT_END__ HCI_Logical_Link_Cancel_Command_Complete_Event_t;
 
 #define HCI_LOGICAL_LINK_CANCEL_COMMAND_COMPLETE_EVENT_SIZE (sizeof(HCI_Logical_Link_Cancel_Command_Complete_Event_t))
-
-   /* HCI Command Complete Event Definitions (Link Control - Version 4.0*/
-   /* + CSA4).                                                          */
-
-typedef __PACKED_STRUCT_BEGIN__ struct _tagHCI_Truncated_Page_Cancel_Command_Complete_Event_t
-{
-   HCI_Command_Complete_Event_Header_t HCI_Event_Header;
-   Byte_t                              Status;
-   BD_ADDR_t                           BD_ADDR;
-} __PACKED_STRUCT_END__ HCI_Truncated_Page_Cancel_Command_Complete_Event_t;
-
-#define HCI_TRUNCATED_PAGE_CANCEL_COMMAND_COMPLETE_EVENT_SIZE (sizeof(HCI_Truncated_Page_Cancel_Command_Complete_Event_t))
-
-typedef __PACKED_STRUCT_BEGIN__ struct _tagHCI_Set_Connectionless_Slave_Broadcast_Command_Complete_Event_t
-{
-   HCI_Command_Complete_Event_Header_t HCI_Event_Header;
-   Byte_t                              Status;
-   Byte_t                              LT_ADDR;
-   NonAlignedWord_t                    Interval;
-} __PACKED_STRUCT_END__ HCI_Set_Connectionless_Slave_Broadcast_Command_Complete_Event_t;
-
-#define HCI_SET_CONNECTIONLESS_SLAVE_BROADCAST_COMMAND_COMPLETE_EVENT_SIZE (sizeof(HCI_Set_Connectionless_Slave_Broadcast_Command_Complete_Event_t))
-
-typedef __PACKED_STRUCT_BEGIN__ struct _tagHCI_Set_Connectionless_Slave_Broadcast_Receive_Command_Complete_Event_t
-{
-   HCI_Command_Complete_Event_Header_t HCI_Event_Header;
-   Byte_t                              Status;
-   BD_ADDR_t                           BD_ADDR;
-   Byte_t                              LT_ADDR;
-} __PACKED_STRUCT_END__ HCI_Set_Connectionless_Slave_Broadcast_Receive_Command_Complete_Event_t;
-
-#define HCI_SET_CONNECTIONLESS_SLAVE_BROADCAST_RECEIVE_COMMAND_COMPLETE_EVENT_SIZE (sizeof(HCI_Set_Connectionless_Slave_Broadcast_Receive_Command_Complete_Event_t))
-
-   /* HCI Command Complete Event Definitions (Link Control - Version    */
-   /* 4.1).                                                             */
-
-typedef __PACKED_STRUCT_BEGIN__ struct _tagHCI_Remote_OOB_Extended_Data_Request_Reply_Command_Complete_Event_t
-{
-   HCI_Command_Complete_Event_Header_t HCI_Event_Header;
-   Byte_t                              Status;
-   BD_ADDR_t                           BD_ADDR;
-} __PACKED_STRUCT_END__ HCI_Remote_OOB_Extended_Data_Request_Reply_Command_Complete_Event_t;
-
-#define HCI_REMOTE_OOB_EXTENDED_DATA_REQUEST_REPLY_COMMAND_COMPLETE_EVENT_SIZE     (sizeof(HCI_Remote_OOB_Extended_Data_Request_Reply_Command_Complete_Event_t))
 
    /* HCI Command Complete Event Definitions (Link Policy).             */
 
@@ -6063,208 +5279,6 @@ typedef __PACKED_STRUCT_BEGIN__ struct _tagHCI_Write_LE_Host_Supported_Command_C
 
 #define HCI_WRITE_LE_HOST_SUPPORTED_COMMAND_COMPLETE_EVENT_SIZE (sizeof(HCI_Write_LE_Host_Supported_Command_Complete_Event_t))
 
-   /* HCI Command Complete Event Definitions (Host Control and Baseband */
-   /* - Version 4.0 + CSA3).                                            */
-
-typedef __PACKED_STRUCT_BEGIN__ struct _tagHCI_Set_MWS_Channel_Parameters_Command_Complete_Event_t
-{
-   HCI_Command_Complete_Event_Header_t HCI_Event_Header;
-   Byte_t                              Status;
-} __PACKED_STRUCT_END__ HCI_Set_MWS_Channel_Parameters_Command_Complete_Event_t;
-
-#define HCI_SET_MWS_CHANNEL_PARAMETERS_COMMAND_COMPLETE_EVENT_SIZE   (sizeof(HCI_Set_MWS_Channel_Parameters_Command_Complete_Event_t))
-
-typedef __PACKED_STRUCT_BEGIN__ struct _tagHCI_Set_External_Frame_Configuration_Command_Complete_Event_t
-{
-   HCI_Command_Complete_Event_Header_t HCI_Event_Header;
-   Byte_t                              Status;
-} __PACKED_STRUCT_END__ HCI_Set_External_Frame_Configuration_Command_Complete_Event_t;
-
-#define HCI_SET_EXTERNAL_FRAME_CONFIGURATION_COMMAND_COMPLETE_EVENT_SIZE   (sizeof(HCI_Set_External_Frame_Configuration_Command_Complete_Event_t))
-
-typedef __PACKED_STRUCT_BEGIN__ struct _tagHCI_Set_MWS_Signaling_Command_Complete_Event_t
-{
-   HCI_Command_Complete_Event_Header_t HCI_Event_Header;
-   Byte_t                              Status;
-   NonAlignedWord_t                    Bluetooth_RX_Priority_Assert_Offset;
-   NonAlignedWord_t                    Bluetooth_RX_Priority_Assert_Jitter;
-   NonAlignedWord_t                    Bluetooth_RX_Priority_Deassert_Offset;
-   NonAlignedWord_t                    Bluetooth_RX_Priority_Deassert_Jitter;
-   NonAlignedWord_t                    _802_RX_Priority_Assert_Offset;
-   NonAlignedWord_t                    _802_RX_Priority_Assert_Jitter;
-   NonAlignedWord_t                    _802_RX_Priority_Deassert_Offset;
-   NonAlignedWord_t                    _802_RX_Priority_Deassert_Jitter;
-   NonAlignedWord_t                    Bluetooth_TX_On_Assert_Offset;
-   NonAlignedWord_t                    Bluetooth_TX_On_Assert_Jitter;
-   NonAlignedWord_t                    Bluetooth_TX_On_Deassert_Offset;
-   NonAlignedWord_t                    Bluetooth_TX_On_Deassert_Jitter;
-   NonAlignedWord_t                    _802_TX_On_Assert_Offset;
-   NonAlignedWord_t                    _802_TX_On_Assert_Jitter;
-   NonAlignedWord_t                    _802_TX_On_Deassert_Offset;
-   NonAlignedWord_t                    _802_TX_On_Deassert_Jitter;
-} __PACKED_STRUCT_END__ HCI_Set_MWS_Signaling_Command_Complete_Event_t;
-
-#define HCI_SET_MWS_SIGNALING_COMMAND_COMPLETE_EVENT_SIZE            (sizeof(HCI_Set_MWS_Signaling_Command_Complete_Event_t))
-
-typedef __PACKED_STRUCT_BEGIN__ struct _tagHCI_Set_MWS_Transport_Layer_Command_Complete_Event_t
-{
-   HCI_Command_Complete_Event_Header_t HCI_Event_Header;
-   Byte_t                              Status;
-} __PACKED_STRUCT_END__ HCI_Set_MWS_Transport_Layer_Command_Complete_Event_t;
-
-#define HCI_SET_MWS_TRANSPORT_LAYER_COMMAND_COMPLETE_EVENT_SIZE      (sizeof(HCI_Set_MWS_Transport_Layer_Command_Complete_Event_t))
-
-typedef __PACKED_STRUCT_BEGIN__ struct _tagHCI_Set_MWS_Scan_Frequency_Table_Command_Complete_Event_t
-{
-   HCI_Command_Complete_Event_Header_t HCI_Event_Header;
-   Byte_t                              Status;
-} __PACKED_STRUCT_END__ HCI_Set_MWS_Scan_Frequency_Table_Command_Complete_Event_t;
-
-#define HCI_SET_MWS_SCAN_FREQUENCY_TABLE_COMMAND_COMPLETE_EVENT_SIZE (sizeof(HCI_Set_MWS_Scan_Frequency_Table_Command_Complete_Event_t))
-
-typedef __PACKED_STRUCT_BEGIN__ struct _tagHCI_Set_MWS_PATTERN_Configuration_Command_Complete_Event_t
-{
-   HCI_Command_Complete_Event_Header_t HCI_Event_Header;
-   Byte_t                              Status;
-} __PACKED_STRUCT_END__ HCI_Set_MWS_PATTERN_Configuration_Command_Complete_Event_t;
-
-#define HCI_SET_MWS_PATTERN_CONFIGURATION_COMMAND_COMPLETE_EVENT_SIZE (sizeof(HCI_Set_MWS_PATTERN_Configuration_Command_Complete_Event_t))
-
-   /* HCI Command Complete Event Definitions (Host Control and Baseband */
-   /* - Version 4.0 + CSA4).                                            */
-
-typedef __PACKED_STRUCT_BEGIN__ struct _tagHCI_Set_Reserved_LT_ADDR_Command_Complete_Event_t
-{
-   HCI_Command_Complete_Event_Header_t HCI_Event_Header;
-   Byte_t                              Status;
-   Byte_t                              LT_ADDR;
-} __PACKED_STRUCT_END__ HCI_Set_Reserved_LT_ADDR_Command_Complete_Event_t;
-
-#define HCI_SET_RESERVED_LT_ADDR_COMMAND_COMPLETE_EVENT_SIZE   (sizeof(HCI_Set_Reserved_LT_ADDR_Command_Complete_Event_t))
-
-typedef __PACKED_STRUCT_BEGIN__ struct _tagHCI_Delete_Reserved_LT_ADDR_Command_Complete_Event_t
-{
-   HCI_Command_Complete_Event_Header_t HCI_Event_Header;
-   Byte_t                              Status;
-   Byte_t                              LT_ADDR;
-} __PACKED_STRUCT_END__ HCI_Delete_Reserved_LT_ADDR_Command_Complete_Event_t;
-
-#define HCI_DELETE_RESERVED_LT_ADDR_COMMAND_COMPLETE_EVENT_SIZE   (sizeof(HCI_Delete_Reserved_LT_ADDR_Command_Complete_Event_t))
-
-typedef __PACKED_STRUCT_BEGIN__ struct _tagHCI_Set_Connectionless_Slave_Broadcast_Data_Command_Complete_Event_t
-{
-   HCI_Command_Complete_Event_Header_t HCI_Event_Header;
-   Byte_t                              Status;
-   Byte_t                              LT_ADDR;
-} __PACKED_STRUCT_END__ HCI_Set_Connectionless_Slave_Broadcast_Data_Command_Complete_Event_t;
-
-#define HCI_SET_CONNECTIONLESS_SLAVE_BROADCAST_DATA_COMMAND_COMPLETE_EVENT_SIZE   (sizeof(HCI_Set_Connectionless_Slave_Broadcast_Data_Command_Complete_Event_t))
-
-typedef __PACKED_STRUCT_BEGIN__ struct _tagHCI_Read_Synchronization_Train_Parameters_Command_Complete_Event_t
-{
-   HCI_Command_Complete_Event_Header_t HCI_Event_Header;
-   Byte_t                              Status;
-   NonAlignedWord_t                    Sync_Train_Interval;
-   NonAlignedDWord_t                   Sync_Train_Timeout;
-   Byte_t                              Service_Data;
-} __PACKED_STRUCT_END__ HCI_Read_Synchronization_Train_Parameters_Command_Complete_Event_t;
-
-#define HCI_READ_SYNCHRONIZATION_TRAIN_PARAMETERS_COMMAND_COMPLETE_EVENT_SIZE   (sizeof(HCI_Read_Synchronization_Train_Parameters_Command_Complete_Event_t))
-
-typedef __PACKED_STRUCT_BEGIN__ struct _tagHCI_Write_Synchronization_Train_Parameters_Command_Complete_Event_t
-{
-   HCI_Command_Complete_Event_Header_t HCI_Event_Header;
-   Byte_t                              Status;
-   NonAlignedWord_t                    Sync_Train_Interval;
-} __PACKED_STRUCT_END__ HCI_Write_Synchronization_Train_Parameters_Command_Complete_Event_t;
-
-#define HCI_WRITE_SYNCHRONIZATION_TRAIN_PARAMETERS_COMMAND_COMPLETE_EVENT_SIZE   (sizeof(HCI_Write_Synchronization_Train_Parameters_Command_Complete_Event_t))
-
-   /* HCI Command Complete Event Definitions (Host Control and Baseband */
-   /* - Version 4.1).                                                   */
-
-typedef __PACKED_STRUCT_BEGIN__ struct _tagHCI_Read_Secure_Connections_Host_Support_Command_Complete_Event_t
-{
-   HCI_Command_Complete_Event_Header_t HCI_Event_Header;
-   Byte_t                              Status;
-   Byte_t                              Secure_Connections_Host_Support;
-} __PACKED_STRUCT_END__ HCI_Read_Secure_Connections_Host_Support_Command_Complete_Event_t;
-
-#define HCI_READ_SECURE_CONNECTIONS_HOST_SUPPORT_COMMAND_COMPLETE_EVENT_SIZE     (sizeof(HCI_Read_Secure_Connections_Host_Support_Command_Complete_Event_t))
-
-typedef __PACKED_STRUCT_BEGIN__ struct _tagHCI_Write_Secure_Connections_Host_Support_Command_Complete_Event_t
-{
-   HCI_Command_Complete_Event_Header_t HCI_Event_Header;
-   Byte_t                              Status;
-} __PACKED_STRUCT_END__ HCI_Write_Secure_Connections_Host_Support_Command_Complete_Event_t;
-
-#define HCI_WRITE_SECURE_CONNECTIONS_HOST_SUPPORT_COMMAND_COMPLETE_EVENT_SIZE    (sizeof(HCI_Write_Secure_Connections_Host_Support_Command_Complete_Event_t))
-
-typedef __PACKED_STRUCT_BEGIN__ struct _tagHCI_Read_Authenticated_Payload_Timeout_Command_Complete_Event_t
-{
-   HCI_Command_Complete_Event_Header_t HCI_Event_Header;
-   Byte_t                              Status;
-   NonAlignedWord_t                    Connection_Handle;
-   NonAlignedWord_t                    Authenticated_Payload_Timeout;
-} __PACKED_STRUCT_END__ HCI_Read_Authenticated_Payload_Timeout_Command_Complete_Event_t;
-
-#define HCI_READ_AUTHENTICATED_PAYLOAD_TIMEOUT_COMMAND_COMPLETE_EVENT_SIZE     (sizeof(HCI_Read_Authenticated_Payload_Timeout_Command_Complete_Event_t))
-
-typedef __PACKED_STRUCT_BEGIN__ struct _tagHCI_Write_Authenticated_Payload_Timeout_Command_Complete_Event_t
-{
-   HCI_Command_Complete_Event_Header_t HCI_Event_Header;
-   Byte_t                              Status;
-   NonAlignedWord_t                    Connection_Handle;
-} __PACKED_STRUCT_END__ HCI_Write_Authenticated_Payload_Timeout_Command_Complete_Event_t;
-
-#define HCI_WRITE_AUTHENTICATED_PAYLOAD_TIMEOUT_COMMAND_COMPLETE_EVENT_SIZE    (sizeof(HCI_Write_Authenticated_Payload_Timeout_Command_Complete_Event_t))
-
-typedef __PACKED_STRUCT_BEGIN__ struct _tagHCI_Read_Local_OOB_Extended_Data_Command_Complete_Event_t
-{
-   HCI_Command_Complete_Event_Header_t HCI_Event_Header;
-   Byte_t                              Status;
-   Simple_Pairing_Hash_t               C_192;
-   Simple_Pairing_Randomizer_t         R_192;
-   Simple_Pairing_Hash_t               C_256;
-   Simple_Pairing_Randomizer_t         R_256;
-} __PACKED_STRUCT_END__ HCI_Read_Local_OOB_Extended_Data_Command_Complete_Event_t;
-
-#define HCI_READ_LOCAL_OOB_EXTENDED_DATA_COMMAND_COMPLETE_EVENT_SIZE           (sizeof(HCI_Read_Local_OOB_Extended_Data_Command_Complete_Event_t))
-
-typedef __PACKED_STRUCT_BEGIN__ struct _tagHCI_Read_Extended_Page_Timeout_Command_Complete_Event_t
-{
-   HCI_Command_Complete_Event_Header_t HCI_Event_Header;
-   Byte_t                              Status;
-   NonAlignedWord_t                    Extended_Page_Timeout;
-} __PACKED_STRUCT_END__ HCI_Read_Extended_Page_Timeout_Command_Complete_Event_t;
-
-#define HCI_READ_EXTENDED_PAGE_TIMEOUT_COMMAND_COMPLETE_EVENT_SIZE             (sizeof(HCI_Read_Extended_Page_Timeout_Command_Complete_Event_t))
-
-typedef __PACKED_STRUCT_BEGIN__ struct _tagHCI_Write_Extended_Page_Timeout_Command_Complete_Event_t
-{
-   HCI_Command_Complete_Event_Header_t HCI_Event_Header;
-   Byte_t                              Status;
-} __PACKED_STRUCT_END__ HCI_Write_Extended_Page_Timeout_Command_Complete_Event_t;
-
-#define HCI_WRITE_EXTENDED_PAGE_TIMEOUT_COMMAND_COMPLETE_EVENT_SIZE            (sizeof(HCI_Write_Extended_Page_Timeout_Command_Complete_Event_t))
-
-typedef __PACKED_STRUCT_BEGIN__ struct _tagHCI_Read_Extended_Inquiry_Length_Command_Complete_Event_t
-{
-   HCI_Command_Complete_Event_Header_t HCI_Event_Header;
-   Byte_t                              Status;
-   NonAlignedWord_t                    Extended_Inquiry_Length;
-} __PACKED_STRUCT_END__ HCI_Read_Extended_Inquiry_Length_Command_Complete_Event_t;
-
-#define HCI_READ_EXTENDED_INQUIRY_LENGTH_COMMAND_COMPLETE_EVENT_SIZE           (sizeof(HCI_Read_Extended_Inquiry_Length_Command_Complete_Event_t))
-
-typedef __PACKED_STRUCT_BEGIN__ struct _tagHCI_Write_Extended_Inquiry_Length_Command_Complete_Event_t
-{
-   HCI_Command_Complete_Event_Header_t HCI_Event_Header;
-   Byte_t                              Status;
-} __PACKED_STRUCT_END__ HCI_Write_Extended_Inquiry_Length_Command_Complete_Event_t;
-
-#define HCI_WRITE_EXTENDED_INQUIRY_LENGTH_COMMAND_COMPLETE_EVENT_SIZE          (sizeof(HCI_Write_Extended_Inquiry_Length_Command_Complete_Event_t))
-
    /* HCI Command Complete Event Definitions (Informational Parameters).*/
 
 typedef __PACKED_STRUCT_BEGIN__ struct _tagHCI_Read_Local_Version_Information_Command_Complete_Event_t
@@ -6536,85 +5550,6 @@ typedef __PACKED_STRUCT_BEGIN__ struct _tagHCI_Write_Remote_AMP_ASSOC_Command_Co
 
 #define HCI_WRITE_REMOTE_AMP_ASSOC_COMMAND_COMPLETE_EVENT_SIZE (sizeof(HCI_Write_Remote_AMP_ASSOC_Command_Complete_Event_t))
 
-   /* HCI Command Complete Event Definitions (Status Parameters -       */
-   /* Version 4.0 + CSA3).                                              */
-
-typedef __PACKED_STRUCT_BEGIN__ struct _tagHCI_Get_MWS_Transport_Layer_Configuration_Command_Complete_Event_t
-{
-   HCI_Command_Complete_Event_Header_t HCI_Command_Complete_Event_Header;
-   Byte_t                              Status;
-   Byte_t                              Num_Transports;
-   Byte_t                              Variable_Data[1];
-} __PACKED_STRUCT_END__ HCI_Get_MWS_Transport_Layer_Configuration_Command_Complete_Event_t;
-
-   /* The following MACRO is a utility MACRO that exists to aid code    */
-   /* readability to Determine the size (in Bytes) of an HCI Get MWS    */
-   /* Transport Layer Configuration Command Complete Data Structure     */
-   /* based upon the number of individual bytes included within the     */
-   /* Command Complete Event.  The first parameter to this MACRO is the */
-   /* size (in Bytes) of the Data that is to be part of the Get MWS     */
-   /* Transport Layer Configuration Command Complete Event.             */
-#define HCI_GET_MWS_TRANSPORT_LAYER_CONFIGURATION_COMMAND_COMPLETE_EVENT_SIZE(_x)   (sizeof(HCI_Get_MWS_Transport_Layer_Configuration_Command_Complete_Event_t) - sizeof(Byte_t) + (unsigned int)(_x))
-
-   /* The following MACRO is a utility MACRO that exists to aid code    */
-   /* readability to Read a Transport_Layer in the HCI Get MWS Transport*/
-   /* Layer Configuration Command Complete Data.  The first parameter is*/
-   /* a pointer to a Data Buffer that is an                             */
-   /* HCI_Get_MWS_Transport_Layer_Configuration_Command_Complete_Event_t*/
-   /* structure.  The Second parameter is the Index of the Transport    */
-   /* Layer to Read.                                                    */
-   /* * NOTE * No Check of any of the input data is performed !         */
-#define HCI_GET_MWS_TRANSPORT_LAYER_CONFIGURATION_COMMAND_COMPLETE_EVENT_READ_TRANSPORT_LAYER(_x, _y)          \
-   READ_UNALIGNED_BYTE_LITTLE_ENDIAN(((Byte_t *)(((Byte_t *)((_x)->Variable_Data)) + ((_y)*(NON_ALIGNED_BYTE_SIZE)))))
-
-   /* The following MACRO is a utility MACRO that exists to aid code    */
-   /* readability to Read a Number of Baud Rates member in the HCI Get  */
-   /* MWS Transport Layer Configuration Command Complete Data.  The     */
-   /* first parameter is a pointer to a Data Buffer that is an          */
-   /* HCI_Get_MWS_Transport_Layer_Configuration_Command_Complete_Event_t*/
-   /* structure.  The Second parameter is the total number of transports*/
-   /* (Num_Transports) in the event.  The third parameter is the Index  */
-   /* of the Number of Baud Rates member to read.                       */
-   /* * NOTE * No Check of any of the input data is performed !         */
-#define HCI_GET_MWS_TRANSPORT_LAYER_CONFIGURATION_COMMAND_COMPLETE_EVENT_READ_NUMBER_BAUD_RATES(_x, _y, _z)          \
-   READ_UNALIGNED_BYTE_LITTLE_ENDIAN(((Byte_t *)(((Byte_t *)((_x)->Variable_Data)) + ((_y)*NON_ALIGNED_BYTE_SIZE) + ((_z)*NON_ALIGNED_BYTE_SIZE))))
-
-   /* The following MACRO is a utility MACRO that exists to aid code    */
-   /* readability to Read a To_MWS_Baud_Rate member in the HCI Get MWS  */
-   /* Transport Layer Configuration Command Complete Data.  The first   */
-   /* parameter is a pointer to a Data Buffer that is an                */
-   /* HCI_Get_MWS_Transport_Layer_Configuration_Command_Complete_Event_t*/
-   /* structure.  The Second parameter is the total number of transports*/
-   /* (Num_Transports) in the event.  The third parameter is the Index  */
-   /* of the To_MWS_Baud_Rate member to read.                           */
-   /* * NOTE * No Check of any of the input data is performed !         */
-#define HCI_GET_MWS_TRANSPORT_LAYER_CONFIGURATION_COMMAND_COMPLETE_EVENT_READ_TO_MWS_BAUD_RATE(_x, _y, _z)          \
-   READ_UNALIGNED_DWORD_LITTLE_ENDIAN(((Byte_t *)(((Byte_t *)((_x)->Variable_Data)) + ((_y)*(NON_ALIGNED_BYTE_SIZE + NON_ALIGNED_BYTE_SIZE)) + ((_z)*NON_ALIGNED_DWORD_SIZE))))
-
-   /* The following MACRO is a utility MACRO that exists to aid code    */
-   /* readability to Read a From_MWS_Baud_Rate member in the HCI Get MWS*/
-   /* Transport Layer Configuration Command Complete Data.  The first   */
-   /* parameter is a pointer to a Data Buffer that is an                */
-   /* HCI_Get_MWS_Transport_Layer_Configuration_Command_Complete_Event_t*/
-   /* structure.  The Second parameter is the total number of transports*/
-   /* (Num_Transports) in the event.  The third parameter is the total  */
-   /* number of baud rates (Sum(Num_Baud_Rates)).  The fourth parameter */
-   /* is the Index of the From_MWS_Baud_Rate member to read.            */
-   /* * NOTE * No Check of any of the input data is performed !         */
-#define HCI_GET_MWS_TRANSPORT_LAYER_CONFIGURATION_COMMAND_COMPLETE_EVENT_READ_FROM_MWS_BAUD_RATE(_a, _b, _c, _d)          \
-   READ_UNALIGNED_DWORD_LITTLE_ENDIAN(((Byte_t *)(((Byte_t *)((_a)->Variable_Data)) + ((_b)*(NON_ALIGNED_BYTE_SIZE + NON_ALIGNED_BYTE_SIZE)) + (((_c)+(_d))*NON_ALIGNED_DWORD_SIZE))))
-
-   /* HCI Command Complete Event Definitions (Status Parameters -       */
-   /* Version 4.0 + CSA4).                                              */
-
-typedef __PACKED_STRUCT_BEGIN__ struct _tagHCI_Set_Triggered_Clock_Capture_Command_Complete_Event_t
-{
-   HCI_Command_Complete_Event_Header_t HCI_Command_Complete_Event_Header;
-   Byte_t                              Status;
-} __PACKED_STRUCT_END__ HCI_Set_Triggered_Clock_Capture_Command_Complete_Event_t;
-
-#define HCI_SET_TRIGGERED_CLOCK_CAPTURE_COMMAND_COMPLETE_EVENT_SIZE  (sizeof(HCI_Set_Triggered_Clock_Capture_Command_Complete_Event_t))
-
    /* HCI Command Complete Event Definitions (Testing Commands).        */
 
 typedef __PACKED_STRUCT_BEGIN__ struct _tagHCI_Read_Loopback_Mode_Command_Complete_Event_t
@@ -6679,18 +5614,6 @@ typedef __PACKED_STRUCT_BEGIN__ struct _tagHCI_AMP_Test_Command_Complete_Event_t
 } __PACKED_STRUCT_END__ HCI_AMP_Test_Command_Complete_Event_t;
 
 #define HCI_AMP_TEST_COMMAND_COMPLETE_EVENT_SIZE         (sizeof(HCI_AMP_Test_Command_Complete_Event_t))
-
-   /* HCI Command Complete Event Definitions (Testing Commands - Version*/
-   /* 4.1).                                                             */
-
-typedef __PACKED_STRUCT_BEGIN__ struct _tagHCI_Write_Secure_Connections_Test_Mode_Command_Complete_Event_t
-{
-   HCI_Command_Complete_Event_Header_t HCI_Event_Header;
-   Byte_t                              Status;
-   NonAlignedWord_t                    Connection_Handle;
-} __PACKED_STRUCT_END__ HCI_Write_Secure_Connections_Test_Mode_Command_Complete_Event_t;
-
-#define HCI_WRITE_SECURE_CONNECTIONS_TEST_MODE_COMMAND_COMPLETE_EVENT_SIZE (sizeof(HCI_Write_Secure_Connections_Test_Mode_Command_Complete_Event_t))
 
    /* HCI Command Complete Event Definitions (LE Controller Commands -  */
    /* Version 4.0 + LE).                                                */
@@ -6916,27 +5839,6 @@ typedef __PACKED_STRUCT_BEGIN__ struct _tagHCI_LE_Test_End_Command_Complete_t
 
 #define HCI_LE_TEST_END_COMMAND_COMPLETE_EVENT_SIZE      (sizeof(HCI_LE_Test_End_Command_Complete_t))
 
-   /* HCI Command Complete Event Definitions (LE Controller Commands -  */
-   /* Version 4.1).                                                     */
-
-typedef __PACKED_STRUCT_BEGIN__ struct _tagHCI_LE_Remote_Connection_Parameter_Request_Reply_Command_Complete_t
-{
-   HCI_Command_Complete_Event_Header_t HCI_Event_Header;
-   Byte_t                              Status;
-   NonAlignedWord_t                    Connection_Handle;
-} __PACKED_STRUCT_END__ HCI_LE_Remote_Connection_Parameter_Request_Reply_Command_Complete_t;
-
-#define HCI_LE_REMOTE_CONNECTION_PARAMETER_REQUEST_REPLY_COMMAND_COMPLETE_EVENT_SIZE   (sizeof(HCI_LE_Remote_Connection_Parameter_Request_Reply_Command_Complete_t))
-
-typedef __PACKED_STRUCT_BEGIN__ struct _tagHCI_LE_Remote_Connection_Parameter_Request_Negative_Reply_Command_Complete_t
-{
-   HCI_Command_Complete_Event_Header_t HCI_Event_Header;
-   Byte_t                              Status;
-   NonAlignedWord_t                    Connection_Handle;
-} __PACKED_STRUCT_END__ HCI_LE_Remote_Connection_Parameter_Request_Negative_Reply_Command_Complete_t;
-
-#define HCI_LE_REMOTE_CONNECTION_PARAMETER_REQUEST_NEGATIVE_REPLY_COMMAND_COMPLETE_EVENT_SIZE   (sizeof(HCI_LE_Remote_Connection_Parameter_Request_Negative_Reply_Command_Complete_t))
-
    /* HCI Command Status Event Definitions (Link Control).              */
 
 typedef __PACKED_STRUCT_BEGIN__ struct _tagHCI_Inquiry_Command_Status_Event_t
@@ -7142,30 +6044,6 @@ typedef __PACKED_STRUCT_BEGIN__ struct _tagHCI_Enhanced_Accept_Synchronous_Conne
 } __PACKED_STRUCT_END__ HCI_Enhanced_Accept_Synchronous_Connection_Request_Command_Status_Event_t;
 
 #define HCI_ENHANCED_ACCEPT_SYNCHRONOUS_CONNECTION_REQUEST_COMMAND_STATUS_EVENT_SIZE   (sizeof(HCI_Enhanced_Accept_Synchronous_Connection_Request_Command_Status_Event_t))
-
-   /* HCI Command Status Event Definitions (Link Control - Version 4.0 +*/
-   /* CSA4).                                                            */
-
-typedef __PACKED_STRUCT_BEGIN__ struct _tagHCI_Truncated_Page_Command_Status_Event_t
-{
-   HCI_Command_Status_Event_t HCI_Command_Status_Event;
-} __PACKED_STRUCT_END__ HCI_Truncated_Page_Command_Status_Event_t;
-
-#define HCI_TRUNCATED_PAGE_COMMAND_STATUS_EVENT_SIZE     (sizeof(HCI_Truncated_Page_Command_Status_Event_t))
-
-typedef __PACKED_STRUCT_BEGIN__ struct _tagHCI_Start_Synchronization_Train_Command_Status_Event_t
-{
-   HCI_Command_Status_Event_t HCI_Command_Status_Event;
-} __PACKED_STRUCT_END__ HCI_Start_Synchronization_Train_Command_Status_Event_t;
-
-#define HCI_START_SYNCHRONIZATION_TRAIN_COMMAND_STATUS_EVENT_SIZE (sizeof(HCI_Start_Synchronization_Train_Command_Status_Event_t))
-
-typedef __PACKED_STRUCT_BEGIN__ struct _tagHCI_Receive_Synchronization_Train_Command_Status_Event_t
-{
-   HCI_Command_Status_Event_t HCI_Command_Status_Event;
-} __PACKED_STRUCT_END__ HCI_Receive_Synchronization_Train_Command_Status_Event_t;
-
-#define HCI_RECEIVE_SYNCHRONIZATION_TRAIN_COMMAND_STATUS_EVENT_SIZE (sizeof(HCI_Receive_Synchronization_Train_Command_Status_Event_t))
 
    /* HCI Command Status Event Definitions (Link Policy).               */
 
@@ -7691,30 +6569,20 @@ typedef __PACKED_STRUCT_BEGIN__ struct _tagHCI_eSCO_Data_t
    /* * NOTE * All of the constants specify Bit Numbers located in the  */
    /*          Page 2 of the Event Mask.  This Event Mask is set with   */
    /*          the HCI_Set_Event_Mask_Page_2 command (Version 3.0 + HS).*/
-#define HCI_EVENT_MASK_PHYSICAL_LINK_COMPLETE_BIT_NUMBER                         0x00
-#define HCI_EVENT_MASK_CHANNEL_SELECTED_BIT_NUMBER                               0x01
-#define HCI_EVENT_MASK_DISCONNECTION_PHYSICAL_LINK_COMPLETE_BIT_NUMBER           0x02
-#define HCI_EVENT_MASK_PHYSICAL_LINK_LOSS_EARLY_WARNING_BIT_NUMBER               0x03
-#define HCI_EVENT_MASK_PHYSICAL_LINK_RECOVERY_BIT_NUMBER                         0x04
-#define HCI_EVENT_MASK_LOGICAL_LINK_COMPLETE_BIT_NUMBER                          0x05
-#define HCI_EVENT_MASK_DISCONNECTION_LOGICAL_LINK_COMPLETE_BIT_NUMBER            0x06
-#define HCI_EVENT_MASK_FLOW_SPEC_MODIFY_COMPLETE_BIT_NUMBER                      0x07
-#define HCI_EVENT_MASK_NUMBER_OF_COMPLETED_DATA_BLOCKS_BIT_NUMBER                0x08
-#define HCI_EVENT_MASK_AMP_START_TEST_BIT_NUMBER                                 0x09
-#define HCI_EVENT_MASK_AMP_TEST_END_BIT_NUMBER                                   0x0A
-#define HCI_EVENT_MASK_AMP_RECEIVER_REPORT_BIT_NUMBER                            0x0B
-#define HCI_EVENT_MASK_SHORT_RANGE_MODE_CHANGE_COMPLETE_BIT_NUMBER               0x0C
-#define HCI_EVENT_MASK_AMP_STATUS_CHANGE_BIT_NUMBER                              0x0D
-#define HCI_EVENT_MASK_TRIGGERED_CLOCK_CAPTURE_EVENT                             0x0E
-#define HCI_EVENT_MASK_SYNCHRONIZATION_TRAIN_COMPLETE_EVENT                      0x0F
-#define HCI_EVENT_MASK_SYNCHRONIZATION_TRAIN_RECEIVED_EVENT                      0x10
-#define HCI_EVENT_MASK_CONNECTIONLESS_SLAVE_BROADCAST_RECEIVE_EVENT              0x11
-#define HCI_EVENT_MASK_CONNECTIONLESS_SLAVE_BROADCAST_TIMEOUT_EVENT              0x12
-#define HCI_EVENT_MASK_TRUNCATED_PAGE_COMPLETE_EVENT                             0x13
-#define HCI_EVENT_MASK_SLAVE_PAGE_RESPONSE_TIMEOUT_EVENT                         0x14
-#define HCI_EVENT_MASK_CONNECTIONLESS_SLAVE_BROADCAST_CHANNEL_MAP_CHANGE_EVENT   0x15
-#define HCI_EVENT_MASK_INQUIRY_RESPONSE_NOTIFICATION_EVENT                       0x16
-#define HCI_EVENT_MASK_AUTHENTICATED_PAYLOAD_TIMEOUT_EXPIRED_EVENT               0x17
+#define HCI_EVENT_MASK_PHYSICAL_LINK_COMPLETE_BIT_NUMBER                0x00
+#define HCI_EVENT_MASK_CHANNEL_SELECTED_BIT_NUMBER                      0x01
+#define HCI_EVENT_MASK_DISCONNECTION_PHYSICAL_LINK_COMPLETE_BIT_NUMBER  0x02
+#define HCI_EVENT_MASK_PHYSICAL_LINK_LOSS_EARLY_WARNING_BIT_NUMBER      0x03
+#define HCI_EVENT_MASK_PHYSICAL_LINK_RECOVERY_BIT_NUMBER                0x04
+#define HCI_EVENT_MASK_LOGICAL_LINK_COMPLETE_BIT_NUMBER                 0x05
+#define HCI_EVENT_MASK_DISCONNECTION_LOGICAL_LINK_COMPLETE_BIT_NUMBER   0x06
+#define HCI_EVENT_MASK_FLOW_SPEC_MODIFY_COMPLETE_BIT_NUMBER             0x07
+#define HCI_EVENT_MASK_NUMBER_OF_COMPLETED_DATA_BLOCKS_BIT_NUMBER       0x08
+#define HCI_EVENT_MASK_AMP_START_TEST_BIT_NUMBER                        0x09
+#define HCI_EVENT_MASK_AMP_TEST_END_BIT_NUMBER                          0x0A
+#define HCI_EVENT_MASK_AMP_RECEIVER_REPORT_BIT_NUMBER                   0x0B
+#define HCI_EVENT_MASK_SHORT_RANGE_MODE_CHANGE_COMPLETE_BIT_NUMBER      0x0C
+#define HCI_EVENT_MASK_AMP_STATUS_CHANGE_BIT_NUMBER                     0x0D
 
    /* The following MACRO is a utility MACRO that exists to aid the user*/
    /* in Enabling ALL defined HCI Events in the HCI Event Mask Page 2   */
@@ -7722,33 +6590,23 @@ typedef __PACKED_STRUCT_BEGIN__ struct _tagHCI_eSCO_Data_t
    /* Event_Mask_t) to enable all defined Events for (Version 3.0 + HS).*/
    /* * NOTE * This MACRO is only valid for Events located in the Page 2*/
    /*          Event Mask NOT the Page 1 Event Mask !!!!!!!!!!!!!!!!!   */
-#define HCI_ENABLE_ALL_HCI_EVENTS_IN_EVENT_MASK_PAGE_2(_x)                                            \
-{                                                                                                     \
-   ASSIGN_EVENT_MASK((_x), 0, 0, 0, 0, 0, 0, 0, 0);                                                   \
-   SET_EVENT_MASK_BIT((_x), HCI_EVENT_MASK_PHYSICAL_LINK_COMPLETE_BIT_NUMBER);                        \
-   SET_EVENT_MASK_BIT((_x), HCI_EVENT_MASK_CHANNEL_SELECTED_BIT_NUMBER);                              \
-   SET_EVENT_MASK_BIT((_x), HCI_EVENT_MASK_DISCONNECTION_PHYSICAL_LINK_COMPLETE_BIT_NUMBER);          \
-   SET_EVENT_MASK_BIT((_x), HCI_EVENT_MASK_PHYSICAL_LINK_LOSS_EARLY_WARNING_BIT_NUMBER );             \
-   SET_EVENT_MASK_BIT((_x), HCI_EVENT_MASK_PHYSICAL_LINK_RECOVERY_BIT_NUMBER);                        \
-   SET_EVENT_MASK_BIT((_x), HCI_EVENT_MASK_LOGICAL_LINK_COMPLETE_BIT_NUMBER);                         \
-   SET_EVENT_MASK_BIT((_x), HCI_EVENT_MASK_DISCONNECTION_LOGICAL_LINK_COMPLETE_BIT_NUMBER);           \
-   SET_EVENT_MASK_BIT((_x), HCI_EVENT_MASK_FLOW_SPEC_MODIFY_COMPLETE_BIT_NUMBER);                     \
-   SET_EVENT_MASK_BIT((_x), HCI_EVENT_MASK_NUMBER_OF_COMPLETED_DATA_BLOCKS_BIT_NUMBER);               \
-   SET_EVENT_MASK_BIT((_x), HCI_EVENT_MASK_AMP_START_TEST_BIT_NUMBER);                                \
-   SET_EVENT_MASK_BIT((_x), HCI_EVENT_MASK_AMP_TEST_END_BIT_NUMBER);                                  \
-   SET_EVENT_MASK_BIT((_x), HCI_EVENT_MASK_AMP_RECEIVER_REPORT_BIT_NUMBER);                           \
-   SET_EVENT_MASK_BIT((_x), HCI_EVENT_MASK_SHORT_RANGE_MODE_CHANGE_COMPLETE_BIT_NUMBER);              \
-   SET_EVENT_MASK_BIT((_x), HCI_EVENT_MASK_AMP_STATUS_CHANGE_BIT_NUMBER);                             \
-   SET_EVENT_MASK_BIT((_x), HCI_EVENT_MASK_TRIGGERED_CLOCK_CAPTURE_EVENT);                            \
-   SET_EVENT_MASK_BIT((_x), HCI_EVENT_MASK_SYNCHRONIZATION_TRAIN_COMPLETE_EVENT);                     \
-   SET_EVENT_MASK_BIT((_x), HCI_EVENT_MASK_SYNCHRONIZATION_TRAIN_RECEIVED_EVENT);                     \
-   SET_EVENT_MASK_BIT((_x), HCI_EVENT_MASK_CONNECTIONLESS_SLAVE_BROADCAST_RECEIVE_EVENT);             \
-   SET_EVENT_MASK_BIT((_x), HCI_EVENT_MASK_CONNECTIONLESS_SLAVE_BROADCAST_TIMEOUT_EVENT);             \
-   SET_EVENT_MASK_BIT((_x), HCI_EVENT_MASK_TRUNCATED_PAGE_COMPLETE_EVENT);                            \
-   SET_EVENT_MASK_BIT((_x), HCI_EVENT_MASK_SLAVE_PAGE_RESPONSE_TIMEOUT_EVENT);                        \
-   SET_EVENT_MASK_BIT((_x), HCI_EVENT_MASK_CONNECTIONLESS_SLAVE_BROADCAST_CHANNEL_MAP_CHANGE_EVENT);  \
-   SET_EVENT_MASK_BIT((_x), HCI_EVENT_MASK_INQUIRY_RESPONSE_NOTIFICATION_EVENT);                      \
-   SET_EVENT_MASK_BIT((_x), HCI_EVENT_MASK_AUTHENTICATED_PAYLOAD_TIMEOUT_EXPIRED_EVENT);              \
+#define HCI_ENABLE_ALL_HCI_EVENTS_IN_EVENT_MASK_PAGE_2(_x)                                   \
+{                                                                                            \
+   ASSIGN_EVENT_MASK((_x), 0, 0, 0, 0, 0, 0, 0, 0);                                          \
+   SET_EVENT_MASK_BIT((_x), HCI_EVENT_MASK_PHYSICAL_LINK_COMPLETE_BIT_NUMBER);               \
+   SET_EVENT_MASK_BIT((_x), HCI_EVENT_MASK_CHANNEL_SELECTED_BIT_NUMBER);                     \
+   SET_EVENT_MASK_BIT((_x), HCI_EVENT_MASK_DISCONNECTION_PHYSICAL_LINK_COMPLETE_BIT_NUMBER); \
+   SET_EVENT_MASK_BIT((_x), HCI_EVENT_MASK_PHYSICAL_LINK_LOSS_EARLY_WARNING_BIT_NUMBER );    \
+   SET_EVENT_MASK_BIT((_x), HCI_EVENT_MASK_PHYSICAL_LINK_RECOVERY_BIT_NUMBER);               \
+   SET_EVENT_MASK_BIT((_x), HCI_EVENT_MASK_LOGICAL_LINK_COMPLETE_BIT_NUMBER);                \
+   SET_EVENT_MASK_BIT((_x), HCI_EVENT_MASK_DISCONNECTION_LOGICAL_LINK_COMPLETE_BIT_NUMBER);  \
+   SET_EVENT_MASK_BIT((_x), HCI_EVENT_MASK_FLOW_SPEC_MODIFY_COMPLETE_BIT_NUMBER);            \
+   SET_EVENT_MASK_BIT((_x), HCI_EVENT_MASK_NUMBER_OF_COMPLETED_DATA_BLOCKS_BIT_NUMBER);      \
+   SET_EVENT_MASK_BIT((_x), HCI_EVENT_MASK_AMP_START_TEST_BIT_NUMBER);                       \
+   SET_EVENT_MASK_BIT((_x), HCI_EVENT_MASK_AMP_TEST_END_BIT_NUMBER);                         \
+   SET_EVENT_MASK_BIT((_x), HCI_EVENT_MASK_AMP_RECEIVER_REPORT_BIT_NUMBER);                  \
+   SET_EVENT_MASK_BIT((_x), HCI_EVENT_MASK_SHORT_RANGE_MODE_CHANGE_COMPLETE_BIT_NUMBER);     \
+   SET_EVENT_MASK_BIT((_x), HCI_EVENT_MASK_AMP_STATUS_CHANGE_BIT_NUMBER);                    \
 }
 
    /* The following MACRO is a utility MACRO that exists to aid the user*/
@@ -7758,33 +6616,23 @@ typedef __PACKED_STRUCT_BEGIN__ struct _tagHCI_eSCO_Data_t
    /* HS).                                                              */
    /* * NOTE * This MACRO is only valid for Events located in the Page 2*/
    /*          Event Mask NOT the Page 1 Event Mask !!!!!!!!!!!!!!!!!   */
-#define HCI_DISABLE_ALL_HCI_EVENTS_IN_EVENT_MASK_PAGE_2(_x)                                              \
-{                                                                                                        \
-   ASSIGN_EVENT_MASK((_x), 0, 0, 0, 0, 0, 0, 0, 0);                                                      \
-   RESET_EVENT_MASK_BIT((_x), HCI_EVENT_MASK_PHYSICAL_LINK_COMPLETE_BIT_NUMBER);                         \
-   RESET_EVENT_MASK_BIT((_x), HCI_EVENT_MASK_CHANNEL_SELECTED_BIT_NUMBER);                               \
-   RESET_EVENT_MASK_BIT((_x), HCI_EVENT_MASK_DISCONNECTION_PHYSICAL_LINK_COMPLETE_BIT_NUMBER);           \
-   RESET_EVENT_MASK_BIT((_x), HCI_EVENT_MASK_PHYSICAL_LINK_LOSS_EARLY_WARNING_BIT_NUMBER );              \
-   RESET_EVENT_MASK_BIT((_x), HCI_EVENT_MASK_PHYSICAL_LINK_RECOVERY_BIT_NUMBER);                         \
-   RESET_EVENT_MASK_BIT((_x), HCI_EVENT_MASK_LOGICAL_LINK_COMPLETE_BIT_NUMBER);                          \
-   RESET_EVENT_MASK_BIT((_x), HCI_EVENT_MASK_DISCONNECTION_LOGICAL_LINK_COMPLETE_BIT_NUMBER);            \
-   RESET_EVENT_MASK_BIT((_x), HCI_EVENT_MASK_FLOW_SPEC_MODIFY_COMPLETE_BIT_NUMBER);                      \
-   RESET_EVENT_MASK_BIT((_x), HCI_EVENT_MASK_NUMBER_OF_COMPLETED_DATA_BLOCKS_BIT_NUMBER);                \
-   RESET_EVENT_MASK_BIT((_x), HCI_EVENT_MASK_AMP_START_TEST_BIT_NUMBER);                                 \
-   RESET_EVENT_MASK_BIT((_x), HCI_EVENT_MASK_AMP_TEST_END_BIT_NUMBER);                                   \
-   RESET_EVENT_MASK_BIT((_x), HCI_EVENT_MASK_AMP_RECEIVER_REPORT_BIT_NUMBER);                            \
-   RESET_EVENT_MASK_BIT((_x), HCI_EVENT_MASK_SHORT_RANGE_MODE_CHANGE_COMPLETE_BIT_NUMBER);               \
-   RESET_EVENT_MASK_BIT((_x), HCI_EVENT_MASK_AMP_STATUS_CHANGE_BIT_NUMBER);                              \
-   RESET_EVENT_MASK_BIT((_x), HCI_EVENT_MASK_TRIGGERED_CLOCK_CAPTURE_EVENT);                             \
-   RESET_EVENT_MASK_BIT((_x), HCI_EVENT_MASK_SYNCHRONIZATION_TRAIN_COMPLETE_EVENT);                      \
-   RESET_EVENT_MASK_BIT((_x), HCI_EVENT_MASK_SYNCHRONIZATION_TRAIN_RECEIVED_EVENT);                      \
-   RESET_EVENT_MASK_BIT((_x), HCI_EVENT_MASK_CONNECTIONLESS_SLAVE_BROADCAST_RECEIVE_EVENT);              \
-   RESET_EVENT_MASK_BIT((_x), HCI_EVENT_MASK_CONNECTIONLESS_SLAVE_BROADCAST_TIMEOUT_EVENT);              \
-   RESET_EVENT_MASK_BIT((_x), HCI_EVENT_MASK_TRUNCATED_PAGE_COMPLETE_EVENT);                             \
-   RESET_EVENT_MASK_BIT((_x), HCI_EVENT_MASK_SLAVE_PAGE_RESPONSE_TIMEOUT_EVENT);                         \
-   RESET_EVENT_MASK_BIT((_x), HCI_EVENT_MASK_CONNECTIONLESS_SLAVE_BROADCAST_CHANNEL_MAP_CHANGE_EVENT);   \
-   RESET_EVENT_MASK_BIT((_x), HCI_EVENT_MASK_INQUIRY_RESPONSE_NOTIFICATION_EVENT);                       \
-   RESET_EVENT_MASK_BIT((_x), HCI_EVENT_MASK_AUTHENTICATED_PAYLOAD_TIMEOUT_EXPIRED_EVENT);               \
+#define HCI_DISABLE_ALL_HCI_EVENTS_IN_EVENT_MASK_PAGE_2(_x)                                    \
+{                                                                                              \
+   ASSIGN_EVENT_MASK((_x), 0, 0, 0, 0, 0, 0, 0, 0);                                            \
+   RESET_EVENT_MASK_BIT((_x), HCI_EVENT_MASK_PHYSICAL_LINK_COMPLETE_BIT_NUMBER);               \
+   RESET_EVENT_MASK_BIT((_x), HCI_EVENT_MASK_CHANNEL_SELECTED_BIT_NUMBER);                     \
+   RESET_EVENT_MASK_BIT((_x), HCI_EVENT_MASK_DISCONNECTION_PHYSICAL_LINK_COMPLETE_BIT_NUMBER); \
+   RESET_EVENT_MASK_BIT((_x), HCI_EVENT_MASK_PHYSICAL_LINK_LOSS_EARLY_WARNING_BIT_NUMBER );    \
+   RESET_EVENT_MASK_BIT((_x), HCI_EVENT_MASK_PHYSICAL_LINK_RECOVERY_BIT_NUMBER);               \
+   RESET_EVENT_MASK_BIT((_x), HCI_EVENT_MASK_LOGICAL_LINK_COMPLETE_BIT_NUMBER);                \
+   RESET_EVENT_MASK_BIT((_x), HCI_EVENT_MASK_DISCONNECTION_LOGICAL_LINK_COMPLETE_BIT_NUMBER);  \
+   RESET_EVENT_MASK_BIT((_x), HCI_EVENT_MASK_FLOW_SPEC_MODIFY_COMPLETE_BIT_NUMBER);            \
+   RESET_EVENT_MASK_BIT((_x), HCI_EVENT_MASK_NUMBER_OF_COMPLETED_DATA_BLOCKS_BIT_NUMBER);      \
+   RESET_EVENT_MASK_BIT((_x), HCI_EVENT_MASK_AMP_START_TEST_BIT_NUMBER);                       \
+   RESET_EVENT_MASK_BIT((_x), HCI_EVENT_MASK_AMP_TEST_END_BIT_NUMBER);                         \
+   RESET_EVENT_MASK_BIT((_x), HCI_EVENT_MASK_AMP_RECEIVER_REPORT_BIT_NUMBER);                  \
+   RESET_EVENT_MASK_BIT((_x), HCI_EVENT_MASK_SHORT_RANGE_MODE_CHANGE_COMPLETE_BIT_NUMBER);     \
+   RESET_EVENT_MASK_BIT((_x), HCI_EVENT_MASK_AMP_STATUS_CHANGE_BIT_NUMBER);                    \
 }
 
    /* The following Constants represent the defined Bluetooth HCI       */
@@ -8014,13 +6862,6 @@ typedef __PACKED_STRUCT_BEGIN__ struct _tagHCI_eSCO_Data_t
 #define HCI_IO_CAPABILITY_OOB_AUTHENTICATION_DATA_NOT_PRESENT           0x00
 #define HCI_IO_CAPABILITY_OOB_AUTHENTICATION_DATA_PRESENT               0x01
 
-   /* The following constants are used with the additional HCI I/O      */
-   /* Capabilities values used with the I/O Capability Events (Version  */
-   /* 4.1).                                                             */
-#define HCI_IO_CAPABILITY_OOB_AUTHENTICATION_DATA_P192_PRESENT          0x01
-#define HCI_IO_CAPABILITY_OOB_AUTHENTICATION_DATA_P256_PRESENT          0x02
-#define HCI_IO_CAPABILITY_OOB_AUTHENTICATION_DATA_P192_P256_PRESENT     0x03
-
    /* The following constants are used with the HCI I/O Capabilities    */
    /* values with the I/O Capability Events (Version 2.1 + EDR).        */
 #define HCI_AUTHENTICATION_REQUIREMENTS_MITM_PROTECTION_NOT_REQUIRED_NO_BONDING        0x00
@@ -8187,15 +7028,10 @@ typedef __PACKED_STRUCT_BEGIN__ struct _tagHCI_eSCO_Data_t
 #define HCI_AUTHENTICATION_ENABLE_AUTHENTICATION_ENABLED_ALL_CONNECTIONS 0x01
 
    /* The following Constants represent the defined Bluetooth HCI       */
-   /* Encryption Mode Types (legacy).                                   */
+   /* Encryption Mode Types.                                            */
 #define HCI_ENCRYPTION_MODE_ENCRYPTION_DISABLED                         0x00
 #define HCI_ENCRYPTION_MODE_ENCRYPTION_POINT_TO_POINT_PACKETS           0x01
 #define HCI_ENCRYPTION_MODE_ENCRYPTION_POINT_TO_POINT_BROADCAST_PACKETS 0x02
-
-   /* The following Constants represent the defined Bluetooth HCI       */
-   /* Encryption Mode Types (Version 4.1).                              */
-#define HCI_ENCRYPTION_MODE_ENCRYPTION_ENABLED                          0x01
-#define HCI_ENCRYPTION_MODE_ENCRYPTION_ENABLED_AES_CCM_BR_EDR           0x02
 
    /* The following Constants represent the defined Bluetooth HCI Bit   */
    /* Mask's to apply to the Bluetooth HCI Voice Setting Values.        */
@@ -8489,171 +7325,6 @@ typedef __PACKED_STRUCT_BEGIN__ struct _tagHCI_eSCO_Data_t
    /* LE).                                                              */
 #define HCI_SIMULTANEOUS_LE_HOST_SUPPORTED_DISABLED                     0x00
 #define HCI_SIMULTANEOUS_LE_HOST_SUPPORTED_ENABLED                      0x01
-
-   /* The following constants represent the MWS Channel Enables values  */
-   /* that can be specified with the Set MWS Channel Parameters command */
-   /* (Version 4.0 + CSA3).                                             */
-#define HCI_MWS_CHANNEL_ENABLE_CHANNEL_DISABLED                         0x00
-#define HCI_MWS_CHANNEL_ENABLE_CHANNEL_ENABLED                          0x01
-
-   /* The following constants represent the MWS Period Type values that */
-   /* can be specified with the Set External Frame Configuration command*/
-   /* (Version 4.0 + CSA3).                                             */
-#define HCI_MWS_PERIOD_TYPE_DOWNLINK                                    0x00
-#define HCI_MWS_PERIOD_TYPE_UPLINK                                      0x01
-#define HCI_MWS_PERIOD_TYPE_BIDIRECTIONAL                               0x02
-#define HCI_MWS_PERIOD_TYPE_GUARD_PERIOD                                0x03
-
-   /* The following constants represent the MWS PATTERN Interval Type   */
-   /* values that can be specified with the Set MWS PATTERN             */
-   /* Configuration command (Version 4.0 + CSA3).                       */
-#define HCI_MWS_PATTERN_INTERVAL_TYPE_TX_RX_NOT_ALLOWED                 0x00
-#define HCI_MWS_PATTERN_INTERVAL_TYPE_TX_ALLOWED                        0x01
-#define HCI_MWS_PATTERN_INTERVAL_TYPE_RX_ALLOWED                        0x02
-#define HCI_MWS_PATTERN_INTERVAL_TYPE_TX_RX_ALLOWED                     0x03
-#define HCI_MWS_PATTERN_INTERVAL_TYPE_INTERVAL_FOR_MWS_FRAME            0x04
-
-   /* The following constants represents the MWS Transport Layer values */
-   /* that can be specified with the Set MWS Transport Layer command    */
-   /* (Version 4.0 + CSA3).                                             */
-#define HCI_MWS_TRANSPORT_LAYER_DISABLED                                0x00
-#define HCI_MWS_TRANSPORT_LAYER_WCI_1_TRANSPORT                         0x01
-#define HCI_MWS_TRANSPORT_LAYER_WCI_2_TRANSPORT                         0x02
-
-   /* The following constants represents the MWS Channel Type values    */
-   /* that can be specified with the Set MWS Channel Parameters command */
-   /* (Version 4.0 + CSA3).                                             */
-#define HCI_MWS_CHANNEL_TYPE_TDD                                        0x00
-#define HCI_MWS_CHANNEL_TYPE_FDD                                        0x01
-
-   /* The following constants represents the enable values that may be  */
-   /* used with the Set Connectionless Slave Broadcoast and Set         */
-   /* Connectionless Slave Broadcast Receive commands (Version 4.0 +    */
-   /* CSA4).                                                            */
-#define HCI_CONNECTIONLESS_SLAVE_BROADCAST_DISABLED                     0x00
-#define HCI_CONNECTIONLESS_SLAVE_BROADCAST_ENABLED                      0x01
-
-   /* The following constants represents the LPO_Allowed values that may*/
-   /* be used with the Set Connectionless Slave Broadcoast and Set      */
-   /* Connectionless Slave Broadcast Receive commands (Version 4.0 +    */
-   /* CSA4).                                                            */
-#define HCI_CONNECTIONLESS_SLAVE_BROADCAST_LPO_NOT_ALLOWED              0x00
-#define HCI_CONNECTIONLESS_SLAVE_BROADCAST_LPO_ALLOWED                  0x01
-
-   /* The following contstants represent the minimum and maximum values */
-   /* that may be used with the Interval values that can be specified   */
-   /* with the Set Connectionless Slave Broadcast and Set Connectionless*/
-   /* Slave Broadcast Receive commands (Version 4.0 + CSA4).            */
-#define HCI_CONNECTIONLESS_SLAVE_BROADCAST_INTERVAL_MINIMUM             0x0002
-#define HCI_CONNECTIONLESS_SLAVE_BROADCAST_INTERVAL_MAXIMUM             0xFFFE
-
-   /* The following MACRO is a utility MACRO that is used to determine  */
-   /* if the specified Interval value (used with the Set Connectionless */
-   /* Slave Broadcast and Set Connectionless Slave Broadcast Receive    */
-   /* commands) is valid (Version 4.0 + CSA4).                          */
-#define HCI_CONNECTIONLESS_SLAVE_BROADCAST_INTERVAL_VALID(_x)           ((((_x) >= HCI_CONNECTIONLESS_SLAVE_BROADCAST_INTERVAL_MINIMUM) && ((_x) <= HCI_CONNECTIONLESS_SLAVE_BROADCAST_INTERVAL_MAXIMUM)) && (!((_x) & 0x0001)))
-
-   /* The following contstants represent the minimum and maximum values */
-   /* that may be used with the CSB Supervision Timeout value that can  */
-   /* be specified with the Set Connectionless Slave Broadcast and Set  */
-   /* Connectionless Slave Broadcast Receive commands (Version 4.0 +    */
-   /* CSA4).                                                            */
-#define HCI_CONNECTIONLESS_SLAVE_BROADCAST_SUPERVISION_TIMEOUT_MINIMUM  0x0002
-#define HCI_CONNECTIONLESS_SLAVE_BROADCAST_SUPERVISION_TIMEOUT_MAXIMUM  0xFFFE
-
-   /* The following MACRO is a utility MACRO that is used to determine  */
-   /* if the specified CSB Supervision Timeout value (used with the Set */
-   /* Connectionless Slave Broadcast and Set Connectionless Slave       */
-   /* Broadcast Receive commands) is valid (Version 4.0 + CSA4).        */
-#define HCI_CONNECTIONLESS_SLAVE_BROADCAST_SUPERVISION_TIMEOUT_VALID(_x) ((((_x) >= HCI_CONNECTIONLESS_SLAVE_BROADCAST_SUPERVISION_TIMEOUT_MINIMUM) && ((_x) <= HCI_CONNECTIONLESS_SLAVE_BROADCAST_SUPERVISION_TIMEOUT_MAXIMUM)) && (!((_x) & 0x00000001)))
-
-   /* The following contstants represent the minimum and maximum values */
-   /* that may be used with the LT_ADDR value that can be specified with*/
-   /* various HCI Commands (Version 4.0 + CSA4).                        */
-#define HCI_LT_ADDR_MINIMUM                                             0x01
-#define HCI_LT_ADDR_MAXIMUM                                             0x07
-
-   /* The following constants represent the Fragment values that can be */
-   /* specified with the Set Connectionlesss Slave Broadcast Data       */
-   /* command (Version 4.0 + CSA4).                                     */
-#define HCI_CONNECTIONLESS_SLAVE_DATA_CONTINUATION_FRAGMENT             0x00
-#define HCI_CONNECTIONLESS_SLAVE_DATA_STARTING_FRAGMENT                 0x01
-#define HCI_CONNECTIONLESS_SLAVE_DATA_ENDING_FRAGMENT                   0x02
-#define HCI_CONNECTIONLESS_SLAVE_DATA_SINGLE_FRAGMENT                   0x03
-
-   /* The following contstants represent the minimum and maximum values */
-   /* that may be used with the Sync Train Interval values that can be  */
-   /* specified with the Read and Write Synchronization Train Parameters*/
-   /* commands (Version 4.0 + CSA4).                                    */
-#define HCI_SYNCHRONIZATION_TRAIN_INTERVAL_MINIMUM                      0x0020
-#define HCI_SYNCHRONIZATION_TRAIN_INTERVAL_MAXIMUM                      0xFFFE
-
-   /* The following MACRO is a utility MACRO that is used to determine  */
-   /* if the specified Synchronization Train Interval value (used with  */
-   /* the Read and Write Synchronization Train Parameters commands) is  */
-   /* valid (Version 4.0 + CSA4).                                       */
-#define HCI_SYNCHRONIZATION_TRAIN_INTERVAL_VALID(_x)                   ((((_x) >= HCI_SYNCHRONIZATION_TRAIN_INTERVAL_MINIMUM) && ((_x) <= HCI_SYNCHRONIZATION_TRAIN_INTERVAL_MAXIMUM)) && (!((_x) & 0x0001)))
-
-   /* The following contstants represent the minimum and maximum values */
-   /* that may be used with the Synchronization Train Timeout values    */
-   /* that can be specified with the Read and Write Synchronization     */
-   /* Train Parameters commands (Version 4.0 + CSA4).                   */
-#define HCI_SYNCHRONIZATION_TRAIN_TIMEOUT_MINIMUM                       0x00000002
-#define HCI_SYNCHRONIZATION_TRAIN_TIMEOUT_MAXIMUM                       0x07FFFFFE
-
-   /* The following MACRO is a utility MACRO that is used to determine  */
-   /* if the specified Synchronization Train Timeout value (used with   */
-   /* the Read and Write Synchronization Train Parameters commands) is  */
-   /* valid (Version 4.0 + CSA4).                                       */
-#define HCI_SYNCHRONIZATION_TRAIN_TIMEOUT_VALID(_x)                     ((((_x) >= HCI_SYNCHRONIZATION_TRAIN_TIMEOUT_MINIMUM) && ((_x) <= HCI_SYNCHRONIZATION_TRAIN_TIMEOUT_MAXIMUM)) && (!((_x) & 0x00000001)))
-
-   /* The following constants represent the Enable values that can be   */
-   /* specified with the Set Triggered Clock Capture command (Version   */
-   /* 4.0 + CSA4).                                                      */
-#define HCI_TRIGGERED_CLOCK_CAPTURE_DISABLED                            0x00
-#define HCI_TRIGGERED_CLOCK_CAPTURE_ENABLED                             0x01
-
-   /* The following constants represent the LPO_Allowed values that can */
-   /* be specified with the Set Triggered Clock Capture command (Version*/
-   /* 4.0 + CSA4).                                                      */
-#define HCI_TRIGGERED_CLOCK_CAPTURE_LPO_NOT_ALLOWED                     0x00
-#define HCI_TRIGGERED_CLOCK_CAPTURE_LPO_ALLOWED                         0x01
-
-   /* The following contants represent the minimum and maximum value of */
-   /* the Slot_Offset member of the Triggered Clock Capture Event.      */
-   /* (Version 4.0 + CSA4).                                             */
-#define HCI_TRIGGERED_CLOCK_CAPTURE_EVENT_SLOT_OFFSET_MINIMUM           0
-#define HCI_TRIGGERED_CLOCK_CAPTURE_EVENT_SLOT_OFFSET_MAXIMUM           1249
-
-   /* The following contants represent the possile Receive Status of the*/
-   /* Connectionless Slave Broadcast Receive Event.  (Version 4.0 +     */
-   /* CSA4).                                                            */
-#define HCI_CONNECTIONLESS_SLAVE_DATA_RECEIVE_STATUS_SUCCESS            0x00
-#define HCI_CONNECTIONLESS_SLAVE_DATA_RECEIVE_STATUS_RECEIVE_ERROR      0x01
-
-   /* The following constants represent the Bluetooth Host supported    */
-   /* values that are used to inform the Host Controller whether or not */
-   /* a Bluetooth Host supports the Secure Connections feature for      */
-   /* BR/EDR (Version 4.1).                                             */
-#define HCI_SECURE_CONNECTIONS_HOST_SUPPORTED_DISABLED                  0x00
-#define HCI_SECURE_CONNECTIONS_HOST_SUPPORTED_ENABLED                   0x01
-
-   /* The following Constants represent the defined Bluetooth HCI Secure*/
-   /* Connections Modes (Version 4.1).                                  */
-#define HCI_SECURE_CONNECTIONS_NOT_ENABLED                              0x00
-#define HCI_SECURE_CONNECTIONS_ENABLED                                  0x01
-
-   /* The following constants represent the DM1 ACL-U Mode values that  */
-   /* can be specified with the Write Secure Connections Test Mode      */
-   /* command (Version 4.1).                                            */
-#define HCI_SECURE_CONNECTIONS_DM1_ACLU_MODE_DISABLED                   0x00
-#define HCI_SECURE_CONNECTIONS_DM1_ACLU_MODE_ENABLED                    0x01
-
-   /* The following constants represent the eSCO Loopback Mode values   */
-   /* that can be specified with the Write Secure Connections Test Mode */
-   /* command (Version 4.1).                                            */
-#define HCI_SECURE_CONNECTIONS_ESCO_LOOPBACK_MODE_DISABLED              0x00
-#define HCI_SECURE_CONNECTIONS_ESCO_LOOPBACK_MODE_ENABLED               0x01
 
    /* The following Constants represent Bit Number Constants that are to*/
    /* be used with the SUPPORTED_COMMANDS MACRO's (Set/Reset/Test).     */
@@ -8999,15 +7670,15 @@ typedef __PACKED_STRUCT_BEGIN__ struct _tagHCI_eSCO_Data_t
    /* Constants are used as the second parameter in those MACRO's to    */
    /* specify the correct LMP Feature in the LMP_Features Mask (Version */
    /* 3.0 + HS).                                                        */
-#define HCI_LMP_FEATURE_ENHANCED_POWER_CONTROL_BIT_NUMBER                  0x3A
+#define HCI_LMP_FEATURE_ENHANCED_POWER_CONTROL_BIT_NUMBER               0x3A
 
    /* The following Constants represent Bit Number Constants that are to*/
    /* be used with the FEATURE MACRO's (Set/Reset/Test).  These         */
    /* Constants are used as the second parameter in those MACRO's to    */
    /* specify the correct LMP Feature in the LMP_Features Mask (Version */
    /* 4.0 + LE).                                                        */
-   /* * NOTE * See note (above) about how to determine the correct Page */
-   /*          number for these bits (two of these are on Page 1) and   */
+   /* * NOTE * See note (above) about how to determine the correct      */
+   /*          Page number for these bits (these are on Page 1) and     */
    /*          the actual BIT Number (within the Page) needs to be      */
    /*          logical AND'ed with the Page Bit Mask constant           */
    /*          (HCI_LMP_FEATURE_PAGE_BIT_NUMBER_MASK) to determine the  */
@@ -9016,42 +7687,7 @@ typedef __PACKED_STRUCT_BEGIN__ struct _tagHCI_eSCO_Data_t
 #define HCI_LMP_FEATURE_LE_SUPPORTED_BIT_NUMBER                                        0x26
 #define HCI_LMP_FEATURE_SIMULTANEOUS_LE_BR_EDR_TO_SAME_DEVICE_SUPPORTED_BIT_NUMBER     0x31
 #define HCI_LMP_FEATURE_LE_SUPPORTED_HOST_BIT_NUMBER                                   0x41
-#define HCI_LMP_FEATURE_SIMULTANEOUS_LE_AND_BR_EDR_TO_SAME_DEVICE_CAPABLE_BIT_NUMBER   0x42
-
-   /* The following Constants represent Bit Number Constants that are to*/
-   /* be used with the FEATURE MACRO's (Set/Reset/Test).  These         */
-   /* Constants are used as the second parameter in those MACRO's to    */
-   /* specify the correct LMP Feature in the LMP_Features Mask (Version */
-   /* 4.0 + Core Spec Addendum 4).                                      */
-   /* * NOTE * See note (above) about how to determine the correct      */
-   /*          Page number for these bits (these are on Page 2) and     */
-   /*          the actual BIT Number (within the Page) needs to be      */
-   /*          logical AND'ed with the Page Bit Mask constant           */
-   /*          (HCI_LMP_FEATURE_PAGE_BIT_NUMBER_MASK) to determine the  */
-   /*          bit number within the Page.                              */
-#define HCI_LMP_FEATURE_CONNECTIONLESS_SLAVE_BROADCAST_MASTER_OPERATION_BIT_NUMBER     0x80
-#define HCI_LMP_FEATURE_CONNECTIONLESS_SLAVE_BROADCAST_SLAVE_OPERATION_BIT_NUMBER      0x81
-#define HCI_LMP_FEATURE_SYNCHRONIZATION_TRAIN_BIT_NUMBER                               0x82
-#define HCI_LMP_FEATURE_SYNCHRONIZATION_SCAN_BIT_NUMBER                                0x83
-#define HCI_LMP_FEATURE_INQUIRY_RESPONSE_NOTIFICATION_EVENT_BIT_NUMBER                 0x84
-
-   /* The following Constants represent Bit Number Constants that are to*/
-   /* be used with the FEATURE MACRO's (Set/Reset/Test).  These         */
-   /* Constants are used as the second parameter in those MACRO's to    */
-   /* specify the correct LMP Feature in the LMP_Features Mask (Version */
-   /* 4.1).                                                             */
-   /* * NOTE * See note (above) about how to determine the correct Page */
-   /*          number for these bits (1 of these is on Page 1, the      */
-   /*          others on page 2) and the actual BIT Number (within the  */
-   /*          Page) needs to be logical AND'ed with the Page Bit Mask  */
-   /*          constant (HCI_LMP_FEATURE_PAGE_BIT_NUMBER_MASK) to       */
-   /*          determine the bit number within the Page.                */
-#define HCI_LMP_FEATURE_SECURE_CONNECTIONS_HOST_SUPPORT                                0x43
-#define HCI_LMP_FEATURE_GENERALIZED_INTERLACED_SCAN                                    0x85
-#define HCI_LMP_FEATURE_COARSE_CLOCK_ADJUSTMENT                                        0x86
-#define HCI_LMP_FEATURE_SECURE_CONNECTIONS_CONTROLLER_SUPPORT                          0x88
-#define HCI_LMP_FEATURE_PING                                                           0x89
-#define HCI_LMP_FEATURE_TRAIN_NUDGING                                                  0x8B
+#define HCI_LMP_FEATURE_SIMULTANEOUS_LE_AND_BR_EDR_TO_SAME_DEVICE_CAPABILE_BIT_NUMBER  0x42
 
    /* The following constants are used with the HCI Physical Link Loss  */
    /* Early Warning Event to denote the defined Logical Link Loss       */
@@ -9081,7 +7717,6 @@ typedef __PACKED_STRUCT_BEGIN__ struct _tagHCI_eSCO_Data_t
 #define HCI_VERSION_SPECIFICATION_3_0                                   0x05
 #define HCI_VERSION_SPECIFICATION_4_0                                   0x06
 #define HCI_VERSION_SPECIFICATION_4_1                                   0x07
-#define HCI_VERSION_SPECIFICATION_4_2                                   0x08
 
    /* The following Constants represent the defined Bluetooth Link      */
    /* Manager Protocol (LMP) Version values for the LMP Version HCI     */
@@ -9094,7 +7729,6 @@ typedef __PACKED_STRUCT_BEGIN__ struct _tagHCI_eSCO_Data_t
 #define HCI_LMP_VERSION_BLUETOOTH_3_0                                   0x05
 #define HCI_LMP_VERSION_BLUETOOTH_4_0                                   0x06
 #define HCI_LMP_VERSION_BLUETOOTH_4_1                                   0x07
-#define HCI_LMP_VERSION_BLUETOOTH_4_2                                   0x08
 
    /* The following Constants represent the defined Bluetooth Link      */
    /* Manger Protocol LMP_CompID Codes (Manufacturer Names in HCI       */
@@ -9445,13 +8079,6 @@ typedef __PACKED_STRUCT_BEGIN__ struct _tagHCI_eSCO_Data_t
 #define HCI_LINK_KEY_TYPE_CHANGED_COMBINATION_KEY                       0x06
 #define HCI_LINK_KEY_TYPE_INVALID_KEY_TYPE                              0xFF
 
-   /* The following Constants represent the additional defined Bluetooth*/
-   /* HCI Link Key Types (Version 4.1).                                 */
-#define HCI_LINK_KEY_TYPE_UNAUTHENTICATED_COMBINATION_KEY_P129          0x04
-#define HCI_LINK_KEY_TYPE_AUTHENTICATED_COMBINATION_KEY_P192            0x05
-#define HCI_LINK_KEY_TYPE_UNAUTHENTICATED_COMBINATION_KEY_P256          0x07
-#define HCI_LINK_KEY_TYPE_AUTHENTICATED_COMBINATION_KEY_P256            0x08
-
    /* The following Constants represent Bit Number Constants that are to*/
    /* be used with the LE_EVENT_MASK_BIT MACRO's (Set/Reset/Test). These*/
    /* Constants are used as the second parameter in those MACRO's to    */
@@ -9463,28 +8090,20 @@ typedef __PACKED_STRUCT_BEGIN__ struct _tagHCI_eSCO_Data_t
 #define HCI_LE_EVENT_MASK_READ_REMOTE_USED_FEATURES_COMPLETE_BIT_NUMBER 0x03
 #define HCI_LE_EVENT_MASK_LONG_TERM_KEY_REQUEST_BIT_NUMBER              0x04
 
-   /* The following Constants represent Bit Number Constants that are to*/
-   /* be used with the LE_EVENT_MASK_BIT MACRO's (Set/Reset/Test).      */
-   /* These Constants are used as the second parameter in those MACRO's */
-   /* to specify the correct HCI Bluetooth LE Event in the LE Event Mask*/
-   /* (Version 4.1).                                                    */
-#define HCI_LE_EVENT_MASK_REMOTE_CONNECTION_PARAMETER_REQUEST_BIT_NUMBER   0x05
-
    /* The following MACRO is a utility MACRO that exists to aid the user*/
    /* in Enabling ALL defined HCI LE Events in the HCI LE Event Mask.   */
    /* This MACRO accepts as input the Event Mask (of type Event_Mask_t) */
    /* to enable all defined Events for.                                 */
    /* * NOTE * This MACRO is only valid for LE Events in the LE Event   */
    /*          Mask and not the BR/EDR Page 1/2 Event Masks !!!!!!!!!!! */
-#define HCI_ENABLE_ALL_HCI_LE_EVENTS_IN_EVENT_MASK(_x)                                          \
-{                                                                                               \
-   ASSIGN_EVENT_MASK((_x), 0, 0, 0, 0, 0, 0, 0, 0);                                             \
-   SET_EVENT_MASK_BIT((_x), HCI_LE_EVENT_MASK_CONNECTION_COMPLETE_BIT_NUMBER);                  \
-   SET_EVENT_MASK_BIT((_x), HCI_LE_EVENT_MASK_ADVERTISING_REPORT_BIT_NUMBER);                   \
-   SET_EVENT_MASK_BIT((_x), HCI_LE_EVENT_MASK_CONNECTION_UPDATE_COMPLETE_BIT_NUMBER);           \
-   SET_EVENT_MASK_BIT((_x), HCI_LE_EVENT_MASK_READ_REMOTE_USED_FEATURES_COMPLETE_BIT_NUMBER);   \
-   SET_EVENT_MASK_BIT((_x), HCI_LE_EVENT_MASK_LONG_TERM_KEY_REQUEST_BIT_NUMBER);                \
-   SET_EVENT_MASK_BIT((_x), HCI_LE_EVENT_MASK_REMOTE_CONNECTION_PARAMETER_REQUEST_BIT_NUMBER);  \
+#define HCI_ENABLE_ALL_HCI_LE_EVENTS_IN_EVENT_MASK(_x)                                        \
+{                                                                                             \
+   ASSIGN_EVENT_MASK((_x), 0, 0, 0, 0, 0, 0, 0, 0);                                           \
+   SET_EVENT_MASK_BIT((_x), HCI_LE_EVENT_MASK_CONNECTION_COMPLETE_BIT_NUMBER);                \
+   SET_EVENT_MASK_BIT((_x), HCI_LE_EVENT_MASK_ADVERTISING_REPORT_BIT_NUMBER);                 \
+   SET_EVENT_MASK_BIT((_x), HCI_LE_EVENT_MASK_CONNECTION_UPDATE_COMPLETE_BIT_NUMBER);         \
+   SET_EVENT_MASK_BIT((_x), HCI_LE_EVENT_MASK_READ_REMOTE_USED_FEATURES_COMPLETE_BIT_NUMBER); \
+   SET_EVENT_MASK_BIT((_x), HCI_LE_EVENT_MASK_LONG_TERM_KEY_REQUEST_BIT_NUMBER);              \
 }
 
    /* The following MACRO is a utility MACRO that exists to aid the user*/
@@ -9493,15 +8112,14 @@ typedef __PACKED_STRUCT_BEGIN__ struct _tagHCI_eSCO_Data_t
    /* to disable all defined Events for.                                */
    /* * NOTE * This MACRO is only valid for LE Events in the LE Event   */
    /*          Mask and not the BR/EDR Page 1/2 Event Masks !!!!!!!!!!! */
-#define HCI_DISABLE_ALL_HCI_LE_EVENTS_IN_EVENT_MASK(_x)                                            \
-{                                                                                                  \
-   ASSIGN_EVENT_MASK((_x), 0, 0, 0, 0, 0, 0, 0, 0);                                                \
-   RESET_EVENT_MASK_BIT((_x), HCI_LE_EVENT_MASK_CONNECTION_COMPLETE_BIT_NUMBER);                   \
-   RESET_EVENT_MASK_BIT((_x), HCI_LE_EVENT_MASK_ADVERTISING_REPORT_BIT_NUMBER);                    \
-   RESET_EVENT_MASK_BIT((_x), HCI_LE_EVENT_MASK_CONNECTION_UPDATE_COMPLETE_BIT_NUMBER);            \
-   RESET_EVENT_MASK_BIT((_x), HCI_LE_EVENT_MASK_READ_REMOTE_USED_FEATURES_COMPLETE_BIT_NUMBER);    \
-   RESET_EVENT_MASK_BIT((_x), HCI_LE_EVENT_MASK_LONG_TERM_KEY_REQUEST_BIT_NUMBER);                 \
-   RESET_EVENT_MASK_BIT((_x), HCI_LE_EVENT_MASK_REMOTE_CONNECTION_PARAMETER_REQUEST_BIT_NUMBER);   \
+#define HCI_DISABLE_ALL_HCI_LE_EVENTS_IN_EVENT_MASK(_x)                                         \
+{                                                                                               \
+   ASSIGN_EVENT_MASK((_x), 0, 0, 0, 0, 0, 0, 0, 0);                                             \
+   RESET_EVENT_MASK_BIT((_x), HCI_LE_EVENT_MASK_CONNECTION_COMPLETE_BIT_NUMBER);                \
+   RESET_EVENT_MASK_BIT((_x), HCI_LE_EVENT_MASK_ADVERTISING_REPORT_BIT_NUMBER);                 \
+   RESET_EVENT_MASK_BIT((_x), HCI_LE_EVENT_MASK_CONNECTION_UPDATE_COMPLETE_BIT_NUMBER);         \
+   RESET_EVENT_MASK_BIT((_x), HCI_LE_EVENT_MASK_READ_REMOTE_USED_FEATURES_COMPLETE_BIT_NUMBER); \
+   RESET_EVENT_MASK_BIT((_x), HCI_LE_EVENT_MASK_LONG_TERM_KEY_REQUEST_BIT_NUMBER);              \
 }
 
    /* The following Constants represent Bit Number Constants that are to*/
@@ -9510,16 +8128,6 @@ typedef __PACKED_STRUCT_BEGIN__ struct _tagHCI_eSCO_Data_t
    /* specify the correct HCI Bluetooth LE Feature in the LE Feature    */
    /* Mask (Version 4.0 + LE).                                          */
 #define HCI_LE_FEATURE_LE_ENCRYPTION_BIT_NUMBER                         0x00
-
-   /* The following Constants represent Bit Number Constants that are to*/
-   /* be used with the FEATURE MACRO's (Set/Reset/Test).  These         */
-   /* Constants are used as the second parameter in those MACRO's to    */
-   /* specify the correct HCI Bluetooth LE Feature in the LE Feature    */
-   /* Mask (Version 4.1).                                               */
-#define HCI_LE_FEATURE_LE_CONNECTION_PARAMETER_REQUEST_PROCEDURE_BIT_NUMBER   0x01
-#define HCI_LE_FEATURE_LE_EXTENDED_REJECT_INDICATION_BIT_NUMBER               0x02
-#define HCI_LE_FEATURE_LE_SLAVE_INITIATED_FEATURES_EXCHANGE_BIT_NUMBER        0x03
-#define HCI_LE_FEATURE_LE_PING_BIT_NUMBER                                     0x04
 
    /* The following constants represent some basic constants that define*/
    /* the number of channels and their indexes for Bluetooth LE         */
@@ -9549,19 +8157,15 @@ typedef __PACKED_STRUCT_BEGIN__ struct _tagHCI_eSCO_Data_t
 #define HCI_LE_ADVERTISING_TYPE_SCANNABLE_UNDIRECTED                    0x02
 #define HCI_LE_ADVERTISING_TYPE_NON_CONNECTABLE_UNDIRECTED              0x03
 
-   /* The following Constants represent the various types of LE         */
-   /* Advertising Reports.  (Version 4.1).                              */
-#define HCI_LE_ADVERTISING_TYPE_CONNECTABLE_LOW_DUTY_CYCLE_DIRECTED     0x04
-
-   /* The following constants represent the address type that is passed */
-   /* to LE Controller Commands that take Address Type parameters.      */
-   /* (Version 4.0 + LE).                                               */
+   /* The following constants represent the address type that is passed  */
+   /* to LE Controller Commands that take Address Type parameters.       */
+   /* (Version 4.0 + LE).                                                */
 #define HCI_LE_ADDRESS_TYPE_PUBLIC                                      0x00
 #define HCI_LE_ADDRESS_TYPE_RANDOM                                      0x01
 
-   /* The following constants represent the constants that can be passed*/
-   /* into Advertising_Channel_Map parameter of LE Set Advertising      */
-   /* Parameters Command.  (Version 4.0 + LE).                          */
+   /* The following constants represent the constants that can be passed */
+   /* into Advertising_Channel_Map parameter of LE Set Advertising       */
+   /* Parameters Command. (Version 4.0 + LE).                            */
 #define HCI_LE_ADVERTISING_CHANNEL_MAP_ENABLE_CHANNEL_37                0x01
 #define HCI_LE_ADVERTISING_CHANNEL_MAP_ENABLE_CHANNEL_38                0x02
 #define HCI_LE_ADVERTISING_CHANNEL_MAP_ENABLE_CHANNEL_39                0x04
@@ -9805,14 +8409,6 @@ typedef __PACKED_STRUCT_BEGIN__ struct _tagHCI_eSCO_Data_t
 #define HCI_LE_ADVERTISING_FLAGS_SECURITY_MANAGER_OOB_FLAGS_LE_HOST_SUPPORT_BIT_MASK        0x02
 #define HCI_LE_ADVERTISING_FLAGS_SECURITY_MANAGER_OOB_FLAGS_SIMULTANEOUS_LE_BR_EDR_BIT_MASK 0x04
 #define HCI_LE_ADVERTISING_FLAGS_SECURITY_MANAGER_OOB_FLAGS_ADDRESS_TYPE_BIT_MASK           0x08
-
-   /* The following constants represent the defined Bit Mask values of  */
-   /* the bit mask values in the Bluetooth HCI Advertising Report Data  */
-   /* LE Role Field (Version 4.0 + CSS v4).                             */
-#define HCI_LE_ROLE_ONLY_PERIPHERAL_SUPPORTED                           0x00
-#define HCI_LE_ROLE_ONLY_CENTRAL_SUPPORTED                              0x01
-#define HCI_LE_ROLE_PERIPHERAL_CENTRAL_SUPPORTED_PERIPHERAL_PREFERRED   0x02
-#define HCI_LE_ROLE_PERIPHERAL_CENTRAL_SUPPORTED_CENTRAL_PREFERRED      0x03
 
    /* The following constants represent the defined values that can be  */
    /* used in the Data_Path paramter to the Enhanced Setup/Accept       */

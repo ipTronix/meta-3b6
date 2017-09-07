@@ -2,9 +2,6 @@
 /*      Copyright 2000 - 2014 Stonestreet One.                                */
 /*      All Rights Reserved.                                                  */
 /*                                                                            */
-/*      Copyright 2015 Texas Instruments Incorporated.                        */
-/*      All Rights Reserved.                                                  */
-/*									      									  */	
 /*  BTERRORS - Stonestreet One Bluetooth Protocol Stack Error Codes.          */
 /*                                                                            */
 /*  Author:  Tim Thomas                                                       */
@@ -14,7 +11,6 @@
 /*   mm/dd/yy  F. Lastname    Description of Modification                     */
 /*   --------  -----------    ------------------------------------------------*/
 /*   12/21/00  T. Thomas      Initial creation.                               */
-/*   12/07/15  L. Gersi	         Updates for BT 4.2 - LE SC		      		  */
 /******************************************************************************/
 #ifndef __BTERRORSH__
 #define __BTERRORSH__
@@ -139,8 +135,6 @@
 #define BTPS_ERROR_PAIRING_NOT_ACTIVE                           (-118)
 #define BTPS_ERROR_INVALID_STATE                                (-119)
 #define BTPS_ERROR_FEATURE_NOT_CURRENTLY_ACTIVE                 (-120)
-#define BTPS_ERROR_CONNECTION_UPDATE_PROCEDURE_OUTSTANDING      (-121)
-#define BTPS_ERROR_NUMERIC_COMPARISON_FAILED                	(-122)
 
    /* The following defines the start of the HCI Status Code Error Base.*/
    /* Errors between (-500) -> (-755) are errors returned due to a Error*/

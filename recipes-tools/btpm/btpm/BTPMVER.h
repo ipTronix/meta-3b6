@@ -20,12 +20,12 @@
 
    /* Bluetooth Protocol Stack Platform Manager Release Number.         */
 #ifndef BTPM_MAJOR_VERSION_NUMBER
-   #define BTPM_MAJOR_VERSION_NUMBER                            1
+   #define BTPM_MAJOR_VERSION_NUMBER                            2
 #endif
 
    /* Bluetooth Protocol Stack Platform Manager Revision Number.        */
 #ifndef BTPM_MINOR_VERSION_NUMBER
-   #define BTPM_MINOR_VERSION_NUMBER                            0
+   #define BTPM_MINOR_VERSION_NUMBER                            1
 #endif
 
 

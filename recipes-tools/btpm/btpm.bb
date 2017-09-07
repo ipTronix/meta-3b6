@@ -92,6 +92,7 @@ SRC_URI = " \
   file://client/SPPMAPI.h \
   file://client/SPPMGR.h \
   file://client/HDSMAPI.h \
+  file://client/HFRMAPI.h \
   file://HDSMMSG.h \
   file://HDSMType.h \
   file://SS1BTHDS.h \
@@ -101,7 +102,6 @@ SRC_URI = " \
   file://SS1BTHFR.h \
   file://HFREAPI.h \
   file://HFRMType.h \
-  file://client/HFRMAPI.h \
   file://libBTPM_S.a \
   file://libBTPM_HAL_S.a \
   file://libSS1BTAUD.a \
@@ -126,7 +126,6 @@ SRC_URI = " \
   file://libSS1BTDIS.a \
   file://libSS1BTGAT.a \
   file://libSS1BTGAPS.a \
-  file://libSS1BTCSCS.a \
   file://libSS1BTHIDS.a \
   file://libSS1BTNDC.a \
   file://libSS1BTRTU.a \
@@ -154,7 +153,7 @@ do_compile() {
 	                 libSS1BTPAN.a libBTPS_VNET.a libSS1BTPBA.a libSS1BTHFR.a \
 	                 libSS1BTMAP.a libSS1BTOPP.a libSS1BTCTS.a libSS1BTNDCS.a \
 	                 libSS1BTRTUS.a libSS1BTDIS.a libSS1BTGAT.a libSS1BTGAPS.a \
-	                 libSS1BTCSCS.a libSS1BTHIDS.a libSS1BTNDC.a libSS1BTRTU.a \
+	                 libSS1BTHIDS.a libSS1BTNDC.a libSS1BTRTU.a \
 	                 libSS1BTIAS.a libSS1BTHRS.a libSS1BTSCP.a libSS1BTLLS.a \
 	                 libSS1BTBAS.a libSS1BTTPS.a libBTPS.a libBTPS_PLA.a \
 	                 libBTPS_OSA.a \
