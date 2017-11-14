@@ -1,0 +1,40 @@
+Index: git/drivers/media/platform/mxc/capture/altera-cvifw.c
+===================================================================
+--- git.orig/drivers/media/platform/mxc/capture/altera-cvifw.c	2017-11-14 13:18:59.144450162 +0100
++++ git/drivers/media/platform/mxc/capture/altera-cvifw.c	2017-11-14 13:20:27.956449054 +0100
+@@ -643,6 +643,7 @@
+ 
+ static inline int valid_mode(u32 palette)
+ {
++/*
+   return ((palette == V4L2_PIX_FMT_RGB565 ) ||
+           (palette == V4L2_PIX_FMT_BGR24  ) ||
+           (palette == V4L2_PIX_FMT_RGB24  ) ||
+@@ -654,6 +655,9 @@
+           (palette == V4L2_PIX_FMT_YUV420 ) ||
+           (palette == V4L2_PIX_FMT_YVU420 ) ||
+           (palette == V4L2_PIX_FMT_NV12   ) );
++*/
++  return ((palette == V4L2_PIX_FMT_UYVY   ) ||
++          (palette == V4L2_PIX_FMT_YUYV   ) );
+ }
+ 
+ static int s_fmt(struct file *file, void  *priv, struct v4l2_format *f)
+@@ -1047,7 +1051,7 @@
+   /*
+    * set initial frame to skip to clear deinterlacer buffers
+    */
+-  dev->skip_frames = 4;
++  dev->skip_frames = 0;
+ 
+   /*
+    * get next buffer from inqueue, put it in the dma queue and
+@@ -1970,7 +1974,7 @@
+   dev->v2f.fmt.pix.bytesperline = 288 * 3 / 2;
+   dev->v2f.fmt.pix.width        = 288;
+   dev->v2f.fmt.pix.height       = 352;
+-  dev->v2f.fmt.pix.pixelformat  = V4L2_PIX_FMT_YUV420;
++  dev->v2f.fmt.pix.pixelformat  = V4L2_PIX_FMT_UYVY;//V4L2_PIX_FMT_YUV420;
+ 
+ DBG_PRINT("v2f.fmt.pix sizeimage %d, width %d, height %d\n",
+           dev->v2f.fmt.pix.sizeimage,
