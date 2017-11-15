@@ -1,8 +1,29 @@
 Index: git/drivers/media/platform/mxc/capture/altera-cvifw.c
 ===================================================================
---- git.orig/drivers/media/platform/mxc/capture/altera-cvifw.c	2017-11-14 13:18:59.144450162 +0100
-+++ git/drivers/media/platform/mxc/capture/altera-cvifw.c	2017-11-14 13:20:27.956449054 +0100
-@@ -643,6 +643,7 @@
+--- git.orig/drivers/media/platform/mxc/capture/altera-cvifw.c	2017-11-15 14:08:49.631335206 +0100
++++ git/drivers/media/platform/mxc/capture/altera-cvifw.c	2017-11-15 14:12:41.839332310 +0100
+@@ -87,6 +87,12 @@
+ #define CVIFW_TIMEOUT  100000
+ 
+ 
++/**
++ * Custom controls in set/get ctrl ioctls
++ */
++#define ALTERAFW_CONTROL_FORMAT     (V4L2_CID_PRIVATE_BASE + 0)
++
++
+ //#define FLG_DEVICE_IN_USE    0x00000001
+ //#define FLG_STREAM_ON        0x00000002
+ //#define FLG_STREAM_STOP      0x00000004
+@@ -291,6 +297,7 @@
+                        unsigned short hres,
+                        unsigned short vres,
+                        int format);
++void altera_fw_hw_cs_set(void *regb, int format);
+ void altera_fw_hw_stop(void *regb);
+ void altera_fw_hw_start(void *regb);
+ void altera_fw_hw_int_ena(void *regb);
+@@ -643,6 +650,7 @@
  
  static inline int valid_mode(u32 palette)
  {
@@ -10,7 +31,7 @@ Index: git/drivers/media/platform/mxc/capture/altera-cvifw.c
    return ((palette == V4L2_PIX_FMT_RGB565 ) ||
            (palette == V4L2_PIX_FMT_BGR24  ) ||
            (palette == V4L2_PIX_FMT_RGB24  ) ||
-@@ -654,6 +655,9 @@
+@@ -654,6 +662,9 @@
            (palette == V4L2_PIX_FMT_YUV420 ) ||
            (palette == V4L2_PIX_FMT_YVU420 ) ||
            (palette == V4L2_PIX_FMT_NV12   ) );
@@ -20,7 +41,7 @@ Index: git/drivers/media/platform/mxc/capture/altera-cvifw.c
  }
  
  static int s_fmt(struct file *file, void  *priv, struct v4l2_format *f)
-@@ -1047,7 +1051,7 @@
+@@ -1047,7 +1058,7 @@
    /*
     * set initial frame to skip to clear deinterlacer buffers
     */
@@ -29,7 +50,95 @@ Index: git/drivers/media/platform/mxc/capture/altera-cvifw.c
  
    /*
     * get next buffer from inqueue, put it in the dma queue and
-@@ -1970,7 +1974,7 @@
+@@ -1297,18 +1308,14 @@
+ 
+ static int g_ctrl(struct file *file, void  *fh, struct v4l2_control *ctrl)
+ {
+-//  struct cvifw_vdev    *dev = video_drvdata(file);
++  struct cvifw_vdev    *dev = video_drvdata(file);
+   DBG_PRINT("ctrl id %d\n", ctrl->id);
+ 
+   switch (ctrl->id) {
+-    /*TODO
+-  case ALTERAFW_CONTROL_SYNC_TYPE:
+-    ctrl->value = dev->sync_type;
++  // custom controls
++  case ALTERAFW_CONTROL_FORMAT:
++    ctrl->value = dev->v2f.fmt.pix.pixelformat;
+     break;
+-  case ALTERAFW_CONTROL_DOUBLE_BUF:
+-    ctrl->value = dev->double_buf;
+-    break;
+-    */
+   }
+   return 0;
+ }
+@@ -1334,16 +1341,15 @@
+   case V4L2_CID_SATURATION: CALL_SENSOR_CTRL(); break;
+   case V4L2_CID_SHARPNESS : CALL_SENSOR_CTRL(); break;
+ 
+-/*TODO
+-  case ALTERAFW_CONTROL_SYNC_TYPE:
+-    dev->sync_type = ctrl->value;
+-    regs_update(dev);
+-    break;
+-  case ALTERAFW_CONTROL_DOUBLE_BUF:
+-    dev->double_buf = ctrl->value;
+-    regs_update(dev);
++  // custom controls
++  case ALTERAFW_CONTROL_FORMAT:
++    if (!valid_mode(ctrl->value)) {
++      DBG_ERROR("Format not supported\n");
++      return -EINVAL;
++    }
++    dev->v2f.fmt.pix.pixelformat = ctrl->value;
++    altera_fw_hw_cs_set(dev->fw_regs, dev->v2f.fmt.pix.pixelformat);
+     break;
+-*/
+   }
+   return ret;
+ }
+@@ -1689,7 +1695,7 @@
+ }
+ #ifdef DEBUG
+ char* v4l2_ioctl_des(unsigned int ioctlnr){
+-	switch (ioctlnr) {
++  switch (ioctlnr) {
+   case VIDIOC_DBG_G_CHIP_IDENT: return "VIDIOC_DBG_G_CHIP_IDENT";
+   case VIDIOC_QUERYCAP        : return "VIDIOC_QUERYCAP        ";
+   case VIDIOC_ENUM_FMT        : return "VIDIOC_ENUM_FMT        ";
+@@ -1715,8 +1721,8 @@
+   case VIDIOC_S_PARM          : return "VIDIOC_S_PARM          ";
+   case VIDIOC_G_CTRL          : return "VIDIOC_G_CTRL          ";
+   case VIDIOC_S_CTRL          : return "VIDIOC_S_CTRL          ";
+-	}
+-	return "UNKNOWN";
++  }
++  return "UNKNOWN";
+ }
+ #endif
+ 
+@@ -1726,7 +1732,7 @@
+ 
+ //DBG_PRINT("ioctlnr %08X %s\n", ioctlnr, v4l2_ioctl_des(ioctlnr));
+ //TODO controlli e attesa evento (vedi mxc_v4l2_capture.c
+-	switch (ioctlnr) {
++  switch (ioctlnr) {
+   case VIDIOC_DBG_G_CHIP_IDENT: return g_chip_ident   (file, NULL, (void*)arg);
+   case VIDIOC_QUERYCAP        : return querycap       (file, NULL, (struct v4l2_capability *)arg);
+   case VIDIOC_ENUM_FMT        : return enum_fmt       (file, NULL, (struct v4l2_fmtdesc *)arg);
+@@ -1752,8 +1758,8 @@
+   case VIDIOC_S_PARM          : return s_parm         (file, NULL, (struct v4l2_streamparm *)arg);
+   case VIDIOC_G_CTRL          : return g_ctrl         (file, NULL, (struct v4l2_control *)arg);
+   case VIDIOC_S_CTRL          : return s_ctrl         (file, NULL, (struct v4l2_control *)arg);
+-	}
+-	return 0;
++  }
++  return 0;
+ }
+ 
+ static unsigned int cvifw_poll(struct file *file, poll_table *wait)
+@@ -1970,7 +1976,7 @@
    dev->v2f.fmt.pix.bytesperline = 288 * 3 / 2;
    dev->v2f.fmt.pix.width        = 288;
    dev->v2f.fmt.pix.height       = 352;
@@ -38,3 +147,114 @@ Index: git/drivers/media/platform/mxc/capture/altera-cvifw.c
  
  DBG_PRINT("v2f.fmt.pix sizeimage %d, width %d, height %d\n",
            dev->v2f.fmt.pix.sizeimage,
+Index: git/drivers/media/platform/mxc/capture/altera-cvifw-hw.c
+===================================================================
+--- git.orig/drivers/media/platform/mxc/capture/altera-cvifw-hw.c	2017-11-15 14:08:49.419335209 +0100
++++ git/drivers/media/platform/mxc/capture/altera-cvifw-hw.c	2017-11-15 14:13:05.615332013 +0100
+@@ -45,6 +45,7 @@
+ #define FW_PACKER_RGB565      3
+ #define FW_PACKER_RGBA555     4
+ #define FW_PACKER_YCBCR8      5
++#define FW_PACKER_YCBCR8R     6
+ 
+ #define FW_STRIDE_OFS       0x0010
+ 
+@@ -125,36 +126,38 @@
+   case 1: ctrl |= FW_CTRL_SYNC_SLAVE ; break;
+   case 2: ctrl |= FW_CTRL_SYNC_MANUAL; break;
+   }
+-/* TODO
++
+   switch (format) {
+   default:
+   case V4L2_PIX_FMT_RGB32  : pack = FW_PACKER_RGBA8888; bpp = 4; break;
+-//  case V4L2_PIX_FMT_RGB24: pack = FW_PACKER_RGBX888 ; bpp = 4; break;
+   case V4L2_PIX_FMT_RGB24  : pack = FW_PACKER_RGB888  ; bpp = 3; break;
+   case V4L2_PIX_FMT_RGB565X: pack = FW_PACKER_RGB565  ; bpp = 2; break;
+   case V4L2_PIX_FMT_RGB555X: pack = FW_PACKER_RGBA555 ; bpp = 2; break;
+-  case V4L2_PIX_FMT_UYVY   : pack = FW_PACKER_YCBCR8  ; bpp = 2; break;
+-  }*/
+-bpp = 2;
+-ppw = 4;
+-wlen   = hres / ppw;
+-pack   = FW_PACKER_YCBCR8;
+-stride = hres * bpp;
+-res    = ((vres)<<16) | (hres);
+-DBG_PRINT("dbuf %d, sync_type %d, hres %d, vres %d, format %08X\n"
+-          "CTRL       %08X\n"
+-          "WORD_LEN   %08X\n"
+-          "PACKER     %08X\n"
+-          "STRIDE     %08X\n"
+-          "BURST_SIZE %08X\n"
+-          "IMG_SIZE   %08X\n",
+-          dbuf, sync_type, hres, vres, format,
+-          ctrl  ,
+-          wlen  ,
+-          pack  ,
+-          stride,
+-          4     ,
+-          res   );
++  case V4L2_PIX_FMT_YUYV   : pack = FW_PACKER_YCBCR8  ; bpp = 2; break;
++  case V4L2_PIX_FMT_UYVY   : pack = FW_PACKER_YCBCR8R ; bpp = 2; break;
++  }
++  //bpp    = 2;
++  ppw    = 4;
++  wlen   = hres / ppw;
++  //pack   = FW_PACKER_YCBCR8;
++  stride = hres * bpp;
++  res    = ((vres)<<16) | (hres);
++
++  DBG_PRINT("dbuf %d, sync_type %d, hres %d, vres %d, format %08X\n"
++            "CTRL       %08X\n"
++            "WORD_LEN   %08X\n"
++            "PACKER     %08X\n"
++            "STRIDE     %08X\n"
++            "BURST_SIZE %08X\n"
++            "IMG_SIZE   %08X\n",
++            dbuf, sync_type, hres, vres, format,
++            ctrl  ,
++            wlen  ,
++            pack  ,
++            stride,
++            4     ,
++            res   );
++
+   __raw_writel(ctrl  , regb + FW_CTRL_OFS      );
+   __raw_writel(wlen  , regb + FW_WORD_LEN_OFS  );
+   __raw_writel(pack  , regb + FW_PACKER_OFS    );
+@@ -164,6 +167,26 @@
+ }
+ 
+ /**
++ * Set color space
++ */
++void altera_fw_hw_cs_set(void *regb, int format)
++{
++  unsigned long pack;
++
++  switch (format) {
++  default:
++  case V4L2_PIX_FMT_RGB32  : pack = FW_PACKER_RGBA8888; break;
++  case V4L2_PIX_FMT_RGB24  : pack = FW_PACKER_RGB888  ; break;
++  case V4L2_PIX_FMT_RGB565X: pack = FW_PACKER_RGB565  ; break;
++  case V4L2_PIX_FMT_RGB555X: pack = FW_PACKER_RGBA555 ; break;
++  case V4L2_PIX_FMT_YUYV   : pack = FW_PACKER_YCBCR8  ; break;
++  case V4L2_PIX_FMT_UYVY   : pack = FW_PACKER_YCBCR8R ; break;
++  }
++
++  __raw_writel(pack, regb + FW_PACKER_OFS);
++}
++
++/**
+  */
+ void altera_fw_hw_stop(void *regb)
+ {
+@@ -175,7 +198,7 @@
+ }
+ 
+ /**
+- * @brief Start framewriter wint int disabled
++ * @brief Start framewriter with int disabled
+  */
+ void altera_fw_hw_start(void *regb)
+ {
