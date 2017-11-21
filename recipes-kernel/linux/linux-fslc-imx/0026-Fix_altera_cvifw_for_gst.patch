@@ -1,7 +1,7 @@
 Index: git/drivers/media/platform/mxc/capture/altera-cvifw.c
 ===================================================================
---- git.orig/drivers/media/platform/mxc/capture/altera-cvifw.c	2017-11-15 14:08:49.631335206 +0100
-+++ git/drivers/media/platform/mxc/capture/altera-cvifw.c	2017-11-15 14:12:41.839332310 +0100
+--- git.orig/drivers/media/platform/mxc/capture/altera-cvifw.c	2017-11-20 17:57:19.460609944 +0100
++++ git/drivers/media/platform/mxc/capture/altera-cvifw.c	2017-11-20 17:57:56.020609238 +0100
 @@ -87,6 +87,12 @@
  #define CVIFW_TIMEOUT  100000
  
@@ -41,6 +41,15 @@ Index: git/drivers/media/platform/mxc/capture/altera-cvifw.c
  }
  
  static int s_fmt(struct file *file, void  *priv, struct v4l2_format *f)
+@@ -986,7 +997,7 @@
+   }
+ 
+   altera_dcdi_hw_init(dev->dc_regs, dev->di_regs,
+-                      720, 576, dev->dcdi_buf0_p, dev->dcdi_buf1_p);
++                      720, 578, dev->dcdi_buf0_p, dev->dcdi_buf1_p);
+ 
+   altera_fw_hw_init(dev->fw_regs,                   // device regs base address
+                     0,                              // double buffer
 @@ -1047,7 +1058,7 @@
    /*
     * set initial frame to skip to clear deinterlacer buffers
@@ -149,8 +158,8 @@ Index: git/drivers/media/platform/mxc/capture/altera-cvifw.c
            dev->v2f.fmt.pix.sizeimage,
 Index: git/drivers/media/platform/mxc/capture/altera-cvifw-hw.c
 ===================================================================
---- git.orig/drivers/media/platform/mxc/capture/altera-cvifw-hw.c	2017-11-15 14:08:49.419335209 +0100
-+++ git/drivers/media/platform/mxc/capture/altera-cvifw-hw.c	2017-11-15 14:13:05.615332013 +0100
+--- git.orig/drivers/media/platform/mxc/capture/altera-cvifw-hw.c	2017-11-20 17:57:19.248609948 +0100
++++ git/drivers/media/platform/mxc/capture/altera-cvifw-hw.c	2017-11-20 17:57:19.536609942 +0100
 @@ -45,6 +45,7 @@
  #define FW_PACKER_RGB565      3
  #define FW_PACKER_RGBA555     4
