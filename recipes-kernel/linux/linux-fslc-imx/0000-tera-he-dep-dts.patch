@@ -813,7 +813,7 @@ Index: git/arch/arm/boot/dts/imx6q-tera-he-dep-iomux.dtsi
 ===================================================================
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
 +++ git/arch/arm/boot/dts/imx6q-tera-he-dep-iomux.dtsi	2016-06-28 11:27:43.621240562 +0200
-@@ -0,0 +1,383 @@
+@@ -0,0 +1,384 @@
 +/*
 + * Copyright 2015
 + *
@@ -872,6 +872,7 @@ Index: git/arch/arm/boot/dts/imx6q-tera-he-dep-iomux.dtsi
 +				MX6QDL_PAD_ENET_RXD1__GPIO1_IO26     0x80000000		/* RGMII_INT            */
 +				MX6QDL_PAD_ENET_CRS_DV__GPIO1_IO25   0x80000000		/* RGMII_nRST           */
 +				MX6QDL_PAD_GPIO_0__CCM_CLKO1         0x1b0b0
++				MX6QDL_PAD_GPIO_9__GPIO1_IO09        0x17071
 +			>;
 +		};
 +
@@ -1126,7 +1127,7 @@ Index: git/arch/arm/boot/dts/imx6q-tera-he-dep-iomux.dtsi
 +				MX6QDL_PAD_SD1_DAT2__SD1_DATA2   0x17071
 +				MX6QDL_PAD_SD1_DAT3__SD1_DATA3   0x17071
 +				MX6QDL_PAD_GPIO_1__SD1_CD_B      0x17071
-+				MX6QDL_PAD_GPIO_9__SD1_WP        0x17071
++				/* MX6QDL_PAD_GPIO_9__SD1_WP        0x17071 */
 +			>;
 +		};
 +

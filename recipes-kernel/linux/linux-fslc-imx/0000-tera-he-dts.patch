@@ -695,7 +695,7 @@ Index: git/arch/arm/boot/dts/imx6q-tera-he.dtsi
 +        pinctrl-0 = <&pinctrl_usdhc1>;
 +        bus-width = <4>;
 +        cd-gpios = <&gpio1 1 GPIO_ACTIVE_LOW>;
-+        wp-gpios = <&gpio1 9 GPIO_ACTIVE_HIGH>;
++        /* wp-gpios = <&gpio1 9 GPIO_ACTIVE_HIGH>; */
 +        no-1-8-v;
 +        keep-power-in-suspend;
 +        enable-sdio-wakeup;
