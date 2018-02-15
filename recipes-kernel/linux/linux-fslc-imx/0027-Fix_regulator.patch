@@ -1,0 +1,70 @@
+Index: git/arch/arm/boot/dts/imx6q-tera-he.dts
+===================================================================
+--- git.orig/arch/arm/boot/dts/imx6q-tera-he.dts	2018-02-15 13:39:45.358685192 +0100
++++ git/arch/arm/boot/dts/imx6q-tera-he.dts	2018-02-15 13:41:44.050682900 +0100
+@@ -31,15 +31,16 @@
+ &cpu0 {
+ 	arm-supply = <&sw3_reg>;
+ 	soc-supply = <&sw1_reg>;
+-	pu-supply  = <&reg_pu>;
++	pu-supply  = <&pu_dummy>;
+ 
+ 	operating-points = <
+ 		/* kHz    uV */
+ 		996000  1252125
+ 		852000  1252125
+-		792000  1275750
+-		396000  992250
++		792000  1157625
++		396000   992250
+ 	>;
++
+ 	fsl,soc-operating-points = <
+ 		/* ARM kHz  SOC-PU uV */
+ 		996000        1252125
+@@ -49,6 +50,15 @@
+ 	>;
+ };
+ 
++&gpc {
++	fsl,ldo-bypass = <1>; /* use ldo-bypass, u-boot will check it and configure */
++	pu-supply = <&pu_dummy>; /* ldo-bypass:use pu_dummy if VDDSOC share with VDDPU */
++};
++
++&vpu {
++	pu-supply = <&pu_dummy>; /* ldo-bypass:use pu_dummy if VDDSOC share with VDDPU */
++};
++
+ &i2c1 {
+ 	bq32000: rtc@68 {
+ 		compatible = "nxp,bq32000";
+Index: git/arch/arm/boot/dts/imx6q-tera-he.dtsi
+===================================================================
+--- git.orig/arch/arm/boot/dts/imx6q-tera-he.dtsi	2018-02-15 13:39:45.358685192 +0100
++++ git/arch/arm/boot/dts/imx6q-tera-he.dtsi	2018-02-15 13:41:57.266682645 +0100
+@@ -235,6 +235,10 @@
+ 
+ 	};
+ 
++	pu_dummy: pudummy_reg {
++		compatible = "fsl,imx6-dummy-pureg"; /* only used in ldo-bypass */
++	};
++
+ 	sound {
+ 		compatible = "fsl,imx-audio-sgtl5000";
+ 		model = "sgtl5000";
+Index: git/drivers/regulator/ltc3676.c
+===================================================================
+--- git.orig/drivers/regulator/ltc3676.c	2018-02-15 13:39:44.294685213 +0100
++++ git/drivers/regulator/ltc3676.c	2018-02-15 13:42:29.306682026 +0100
+@@ -477,8 +477,8 @@
+                                        IRQF_TRIGGER_LOW | IRQF_ONESHOT,
+                                        client->name, ltc3676);
+        if (ret) {
+-               dev_err(dev, "Failed to request IRQ: %d\n", ret);
+-               return ret;
++               dev_err(dev, "Failed to request IRQ(%d): %d\n", client->irq, ret);
++               //return ret;
+        }
+ 
+        return 0;

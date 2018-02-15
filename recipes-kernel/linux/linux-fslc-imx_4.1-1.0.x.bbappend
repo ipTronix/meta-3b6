@@ -32,6 +32,8 @@ SRC_URI_append_tera-he = " \
   file://0022-DTB_display_timing_to_1280x800-60.patch \
   file://0023-FIX-deadlock-altera_cvifw.patch \
   file://0025-Add_wilink8_bt.patch \
+  file://0026-Fix_altera_cvifw_for_gst.patch \
+  file://0027-Fix_regulator.patch \
 "
 
 SRC_URI_append_tera-he-dep = " \
@@ -54,6 +56,5 @@ do_configure_append_tera-he-dep() {
 do_configure_append_tera-he() {
     install -m 0755 ${WORKDIR}/defconfig .config
 }
-
 
 KERNEL_IMAGE_BASE_NAME ?= "${KERNEL_IMAGETYPE}-${PKGE}-${PKGV}-${PKGR}"
