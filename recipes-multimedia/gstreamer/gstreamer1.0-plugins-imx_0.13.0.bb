@@ -15,7 +15,8 @@ RDEPENDS_gstreamer1.0-plugins-imx-imxvpu = "gstreamer1.0-plugins-bad-videoparser
 
 SRCBRANCH ?= "master"
 SRCREV = "ecd884a7199938301307123dc92d5c3cc9b1becb"
-SRC_URI = "git://github.com/Freescale/gstreamer-imx.git;branch=${SRCBRANCH}"
+SRC_URI = "git://github.com/Freescale/gstreamer-imx.git;branch=${SRCBRANCH} \
+           file://0001-Fix_G2D_to_HW.patch"
 
 S = "${WORKDIR}/git"
 

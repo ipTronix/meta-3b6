@@ -1,0 +1,126 @@
+Index: git/drivers/media/platform/mxc/capture/mxc_v4l2_capture.h
+===================================================================
+--- git.orig/drivers/media/platform/mxc/capture/mxc_v4l2_capture.h	2018-02-27 11:53:08.322785380 +0100
++++ git/drivers/media/platform/mxc/capture/mxc_v4l2_capture.h	2018-02-27 11:55:15.434782925 +0100
+@@ -54,6 +54,9 @@
+ struct mxc_v4l_frame {
+ 	u32 paddress;
+ 	void *vaddress;
++
++	dma_addr_t daddress;
++
+ 	int count;
+ 	int width;
+ 	int height;
+Index: git/drivers/media/platform/mxc/capture/mxc_tvp5150.c
+===================================================================
+--- git.orig/drivers/media/platform/mxc/capture/mxc_tvp5150.c	2018-02-27 11:53:11.574785317 +0100
++++ git/drivers/media/platform/mxc/capture/mxc_tvp5150.c	2018-02-27 11:56:01.486782036 +0100
+@@ -500,7 +500,7 @@
+ 	{ TVP5150_CHROMA_PROC_CTL_1, 0x0c },
+ 	{ TVP5150_CHROMA_PROC_CTL_2, 0x54 },
+ 	{ 0x27                     , 0x20 },	/* Non documented, but initialized on WinTV USB2 */
+-	{ 0xff,0xff }
++	{ 0xff                     , 0xff }
+ };
+ 
+ struct tvp5150_vbi_type {
+@@ -1383,6 +1383,8 @@
+ 
+ 	clk_disable_unprepare(core->sen.sensor_clk);
+ 
++	dev_set_drvdata(dev, core);
++
+ 	DBG_PRINT("DONE ret %d,Registered to v4l2 master %s\n",
+ 				 ret, core->int_dev.u.slave->attach_to);
+ 
+@@ -1396,13 +1398,12 @@
+ 
+ static int tvp5150_remove(struct i2c_client *c)
+ {
+-//	struct v4l2_subdev *sd = i2c_get_clientdata(c);
+-//	struct tvp5150 *decoder = to_tvp5150(sd);
++	struct tvp5150     *core = dev_get_drvdata(&c->dev);
+ 
+ 	DBG_PRINT("tvp5150: removing tvp5150 adapter on address 0x%x\n", c->addr<<1);
+ 
+-//TODO	v4l2_int_device_unregister(&tvp5150_int_device);
+-//TODO	kfree(to_tvp5150(sd));
++	v4l2_int_device_unregister(&core->int_dev);
++	kfree(core);
+ 	return 0;
+ }
+ 
+Index: git/drivers/media/platform/mxc/capture/mxc_v4l2_capture.c
+===================================================================
+--- git.orig/drivers/media/platform/mxc/capture/mxc_v4l2_capture.c	2018-02-27 11:53:08.322785380 +0100
++++ git/drivers/media/platform/mxc/capture/mxc_v4l2_capture.c	2018-02-27 11:55:30.602782632 +0100
+@@ -11,6 +11,8 @@
+  * http://www.gnu.org/copyleft/gpl.html
+  */
+ 
++#define debug
++#define DEBUG
+ /*!
+  * @file drivers/media/video/mxc/capture/mxc_v4l2_capture.c
+  *
+@@ -244,9 +246,20 @@
+ 
+ 	for (i = 0; i < FRAME_NUM; i++) {
+ 		if (cam->frame[i].vaddress != 0) {
++/*
+ 			dma_free_coherent(0, cam->frame[i].buffer.length,
+ 					  cam->frame[i].vaddress,
+ 					  cam->frame[i].paddress);
++*/
++      if ( cam->frame[i].daddress ){
++        dma_unmap_page(NULL,
++                      cam->frame[i].paddress,
++                      PAGE_ALIGN(cam->v2f.fmt.pix.sizeimage),
++                      DMA_BIDIRECTIONAL);
++        cam->frame[i].daddress = 0;
++      }
++      kfree(cam->frame[i].vaddress);
++/**/
+ 			cam->frame[i].vaddress = 0;
+ 		}
+ 	}
+@@ -270,6 +283,7 @@
+ 		cam->v2f.fmt.pix.sizeimage);
+ 
+ 	for (i = 0; i < count; i++) {
++/*
+ 		cam->frame[i].vaddress =
+ 		    dma_alloc_coherent(0,
+ 				       PAGE_ALIGN(cam->v2f.fmt.pix.sizeimage),
+@@ -281,6 +295,30 @@
+ 			mxc_free_frame_buf(cam);
+ 			return -ENOBUFS;
+ 		}
++*/
++		cam->frame[i].vaddress = kmalloc(PAGE_ALIGN(cam->v2f.fmt.pix.sizeimage),
++		                                 GFP_DMA);
++		if (cam->frame[i].vaddress == NULL) {
++			pr_err("ERROR: v4l2 capture: "
++				"mxc_allocate_frame_buf failed.\n");
++			mxc_free_frame_buf(cam);
++			return -ENOBUFS;
++		}
++
++		cam->frame[i].paddress = (dma_addr_t)virt_to_phys(cam->frame[i].vaddress);
++
++		cam->frame[i].daddress = dma_map_single(NULL,
++                                            cam->frame[i].vaddress,
++                                            PAGE_ALIGN(cam->v2f.fmt.pix.sizeimage),
++                                            DMA_BIDIRECTIONAL);
++		if ( !cam->frame[i].daddress ){
++			pr_err("ERROR: v4l2 capture: "
++				"mxc_allocate_frame_buf failed.\n");
++			mxc_free_frame_buf(cam);
++			return -ENOBUFS;
++		}
++
++/**/
+ 		cam->frame[i].buffer.index = i;
+ 		cam->frame[i].buffer.flags = V4L2_BUF_FLAG_MAPPED;
+ 		cam->frame[i].buffer.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;

@@ -1,0 +1,36 @@
+Index: git/src/g2d/blitter.c
+===================================================================
+--- git.orig/src/g2d/blitter.c	2018-02-22 15:36:28.834869646 +0100
++++ git/src/g2d/blitter.c	2018-02-22 16:02:23.386839623 +0100
+@@ -269,7 +269,8 @@
+ 		return FALSE;
+ 	}
+ 
+-	if (g2d_make_current(g2d_blitter->handle, G2D_HARDWARE_2D) != 0)
++//	if (g2d_make_current(g2d_blitter->handle, G2D_HARDWARE_2D) != 0)
++	if (g2d_make_current(g2d_blitter->handle, G2D_HARDWARE_VG) != 0)
+ 	{
+ 		GST_ERROR_OBJECT(g2d_blitter, "g2d_make_current() failed");
+ 		if (g2d_close(g2d_blitter->handle) != 0)
+@@ -325,7 +326,8 @@
+ 		return FALSE;
+ 	}
+ 
+-	if (g2d_make_current(g2d_blitter->handle, G2D_HARDWARE_2D) != 0)
++	//if (g2d_make_current(g2d_blitter->handle, G2D_HARDWARE_2D) != 0)
++	if (g2d_make_current(g2d_blitter->handle, G2D_HARDWARE_VG) != 0)
+ 	{
+ 		GST_ERROR_OBJECT(g2d_blitter, "g2d_make_current() failed");
+ 		if (g2d_close(g2d_blitter->handle) != 0)
+@@ -614,7 +616,10 @@
+ 		case GST_VIDEO_FORMAT_NV21: FORMAT_DETAILS(G2D_NV21, 8);
+ 		case GST_VIDEO_FORMAT_YUY2: FORMAT_DETAILS(G2D_YUYV, 16);
+ 		//case GST_VIDEO_FORMAT_YVYU: FORMAT_DETAILS(G2D_YVYU, 16);
+-		case GST_VIDEO_FORMAT_UYVY: FORMAT_DETAILS(G2D_UYVY, 16);
++
++//		case GST_VIDEO_FORMAT_UYVY: FORMAT_DETAILS(G2D_UYVY, 16);
++		case GST_VIDEO_FORMAT_UYVY: FORMAT_DETAILS(G2D_YUYV, 16);
++
+ 		//case GST_VIDEO_FORMAT_NV16: FORMAT_DETAILS(G2D_NV16, 16);
+ 
+ 		default: return NULL;

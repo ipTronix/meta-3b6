@@ -34,6 +34,7 @@ SRC_URI_append_tera-he = " \
   file://0025-Add_wilink8_bt.patch \
   file://0026-Fix_altera_cvifw_for_gst.patch \
   file://0027-Fix_regulator.patch \
+  file://0028-Fix_mxc_v4l2_capture_memory_allocation.patch \
 "
 
 SRC_URI_append_tera-he-dep = " \
