@@ -1,0 +1,1221 @@
+Index: git/drivers/media/platform/mxc/capture/altera-cvifw.c
+===================================================================
+--- git.orig/drivers/media/platform/mxc/capture/altera-cvifw.c	2019-02-11 09:19:31.468338321 +0100
++++ git/drivers/media/platform/mxc/capture/altera-cvifw.c	2019-02-11 17:32:23.235453630 +0100
+@@ -82,6 +82,11 @@
+ #define BAR0_CTRL_OFS 0x4800    ///< SYS_ID [0x0000] = 0x1B8F0001
+ 
+ /**
++ * defines number of buffers
++ */
++#define CVIFW_FRAME_NUM   10
++
++/**
+  * defines cvifw timeout for start acquisition
+  */
+ #define CVIFW_TIMEOUT  100000
+@@ -92,16 +97,11 @@
+  */
+ #define ALTERAFW_CONTROL_FORMAT     (V4L2_CID_PRIVATE_BASE + 0)
+ 
+-
+-//#define FLG_DEVICE_IN_USE    0x00000001
+-//#define FLG_STREAM_ON        0x00000002
+-//#define FLG_STREAM_STOP      0x00000004
+-
+ #define FLAG_DEVICE_IN_USE      0x00000001
+ #define FLAG_BUFFERS_AVAILABLE  0x00000002
+-#define FLAG_BUFFER_IN_SYNC     0x00000004
++//#define FLAG_BUFFER_IN_SYNC     0x00000004
+ //#define FLAG_BUFFER_SYNC_CHG    0x00000008
+-#define FLAG_DO_UPDATE          0x00000010
++//#define FLAG_DO_UPDATE          0x00000010
+ //#define FLAG_DEINTERLACE        0x00000020
+ #define FLAG_STREAM_ON          0x00000040
+ //#define FLAG_FIRST_FRAME        0x00000080
+@@ -109,14 +109,13 @@
+ #define FLAG_SET(f)     (dev->flags |= (f))
+ #define FLAG_CLR(f)     (dev->flags &=~(f))
+ #define FLAG_ISSET(f)   (dev->flags & (f))
+-#define FLAG_ISCLR(f)   (~(dev->flags & (f)))
++#define FLAG_ISCLR(f)   (!(dev->flags & (f)))
+ 
+ #define FW_STS_BUSY           0x00000002
+ #define FW_STS_BUFFER         0x00000004
+ #define FW_STS_INT_E          0x00000010
+ #define FW_STS_INT_S          0x00000020
+ 
+-
+ /**
+  * List of TV input video formats supported. The video formats is corresponding
+  * to the v4l2_id in video_fmt_t.
+@@ -196,24 +195,14 @@
+ 
+ /**
+  */
+-enum altera_frame_state {
+-  F_UNUSED = 0,
+-  F_QUEUED,
+-  F_GRABBING,
+-  F_DONE,
+-  F_ERROR
+-};
+-
+-/**
+- */
+ struct altera_frame {
+   struct v4l2_buffer        buf;
+   struct list_head          frame;
+-  enum altera_frame_state   state;
+   unsigned long             vma_use_count;
+   phys_addr_t               buf_phys;
+   void                     *buf_virt;
+   dma_addr_t                buf_dmaa;
++  int                       buf_num;
+ };
+ 
+ /**
+@@ -236,7 +225,6 @@
+   spinlock_t                queue_lock;
+   wait_queue_head_t         wait;
+   unsigned long             flags;
+-  int                       skip_frames; // initial frame to skip
+ 
+   video_fmt_idx             video_idx; // Standard index of TV.
+ 
+@@ -260,12 +248,16 @@
+   void                     *dcdi_buf1_v;
+   phys_addr_t               dcdi_buf1_p;
+ 
+-  struct altera_frame      *frame;
++  struct altera_frame       frame[CVIFW_FRAME_NUM];
+   unsigned int              frame_buf_size;
+   unsigned int              frames_num;
+   struct list_head          inqueue;
+   struct list_head          dmaqueue;
+   struct list_head          outqueue;
++
++  struct altera_frame       dummy_frame;
++  int                       enc_counter;
++  int                       buf_num;
+ };
+ 
+ /**
+@@ -309,6 +301,8 @@
+                         unsigned long base,
+                         unsigned long size);
+ 
++static int streamoff(struct file *file, void  *priv, enum v4l2_buf_type type);
++
+ 
+ /**
+  * device structure
+@@ -339,7 +333,7 @@
+     return -1;
+   }
+ 
+-  if(pIor->dir!=DMA_NONE){
++  if (pIor->dir != DMA_NONE) {
+     pIor->dma = dma_map_single(cvifwDevice->vdev[0].dev,
+                                pIor->virt,
+                                pIor->size,
+@@ -421,7 +415,7 @@
+   INIT_LIST_HEAD(&dev->outqueue);
+ 
+   for (i=0; i<dev->frames_num; i++) {
+-    dev->frame[i].state = F_UNUSED;
++    dev->frame[i].buf.flags = V4L2_BUF_FLAG_MAPPED;
+     dev->frame[i].buf.bytesused = 0;
+   }
+ 
+@@ -429,52 +423,83 @@
+ }
+ 
+ /**
+- * Reinit framequeues
++ * Release buffers
+  */
+-static void reinit_framequeues(struct cvifw_vdev *dev)
++static void release_buffers(struct cvifw_vdev *dev)
+ {
+-  unsigned long flags;
+   int i;
+ 
+-  spin_lock_irqsave(&dev->queue_lock, flags);
+-
+-  INIT_LIST_HEAD(&dev->inqueue);
+-  INIT_LIST_HEAD(&dev->dmaqueue);
+-  INIT_LIST_HEAD(&dev->outqueue);
++  for (i = dev->frames_num-1; i >= 0; i--) {
++    DBG_PRINT("csi_id %d: release buffer %d\n", dev->csi_id, i);
++    if (dev->frame[i].buf_dmaa) {
++      dma_unmap_page(NULL,
++                    dev->frame[i].buf_phys,
++                    dev->frame_buf_size,
++                    DMA_BIDIRECTIONAL);
++      dev->frame[i].buf_dmaa = 0;
++    }
++    kfree(dev->frame[i].buf_virt);
++    dev->frame[i].buf_virt = 0;
++  }
++  dev->frames_num = 0;
+ 
+-  for (i=0; i<dev->frames_num; i++) {
+-    list_add_tail(&dev->frame[i].frame, &dev->inqueue);
+-    dev->frame[i].state = F_UNUSED;
+-    dev->frame[i].buf.bytesused = 0;
++  if (dev->dummy_frame.buf_virt) {
++    if (dev->dummy_frame.buf_dmaa){
++      dma_unmap_page(NULL,
++                    dev->dummy_frame.buf_phys,
++                    dev->frame_buf_size,
++                    DMA_BIDIRECTIONAL);
++      dev->dummy_frame.buf_dmaa = 0;
++    }
++    kfree(dev->dummy_frame.buf_virt);
++    dev->dummy_frame.buf_virt = NULL;
+   }
+ 
+-  spin_unlock_irqrestore(&dev->queue_lock, flags);
++  FLAG_CLR(FLAG_BUFFERS_AVAILABLE);
+ }
+ 
+ /**
+- * Release buffers
+  */
+-static void release_buffers(struct cvifw_vdev *dev)
++static int alloc_frame(struct cvifw_vdev *dev, struct altera_frame* frame, unsigned int size)
+ {
+-  int i;
++  frame->buf_virt = kmalloc(dev->frame_buf_size, GFP_DMA);
++  if (frame->buf_virt == NULL) {
++    DBG_ERROR("csi_id %d: Fail to allocate %d B of DMA memory\n",
++              dev->csi_id, size);
++    return -1;
++  }
++  frame->buf_phys = (dma_addr_t)virt_to_phys(frame->buf_virt);
+ 
+-  if(dev->frame){
+-    for (i = dev->frames_num-1; i >= 0; i--){
+-      DBG_PRINT("release buffer %d\n", i);
+-      if ( dev->frame[i].buf_dmaa ){
+-        dma_unmap_page(NULL,
+-                      dev->frame[i].buf_phys,
+-                      dev->frame_buf_size,
+-                      DMA_BIDIRECTIONAL);
+-        dev->frame[i].buf_dmaa = 0;
+-      }
+-      kfree(dev->frame[i].buf_virt);
+-    }
+-    kfree(dev->frame);
+-    dev->frame = NULL;
++  DBG_PRINT("csi_id %d: PA %p : VA %p Size %X\n",
++            dev->csi_id,
++            (void*)frame->buf_phys,
++            (void*)frame->buf_virt,
++            size);
++
++  frame->buf_dmaa = dma_map_single(NULL,
++                                   frame->buf_virt,
++                                   size,
++                                   DMA_BIDIRECTIONAL);
++  if ( !frame->buf_dmaa ){
++    return -1;
+   }
+-  dev->frames_num = 0;
+-  dev->flags &= ~FLAG_BUFFERS_AVAILABLE;
++
++  return 0;
++}
++
++/**
++ */
++static void init_frame(struct cvifw_vdev *dev, struct altera_frame* frame, int idx)
++{
++  frame->buf.index     = idx;
++  frame->buf.m.offset  = frame->buf_phys;
++  frame->buf.length    = dev->v2f.fmt.pix.sizeimage;
++  frame->buf.bytesused = 0;
++  frame->buf.type      = V4L2_BUF_TYPE_VIDEO_CAPTURE;
++  frame->buf.sequence  = 0;
++  frame->buf.field     = V4L2_FIELD_INTERLACED;//V4L2_FIELD_NONE;
++  frame->buf.memory    = V4L2_MEMORY_MMAP;
++  frame->buf.flags     = V4L2_BUF_FLAG_MAPPED;
+ }
+ 
+ /**
+@@ -485,15 +510,15 @@
+                                      int mem_type)
+ {
+   int i;
++  int ret;
+ 
+   release_buffers(dev);
+-  DBG_PRINT("request %d buffers\n", count);
++  DBG_PRINT("csi_id %d: request %d buffers\n", dev->csi_id, count);
+ 
+-  dev->frame = kzalloc((sizeof(struct altera_frame) * count), GFP_KERNEL);
+-  if (dev->frame == NULL) {
+-    DBG_ERROR("Memory error on frame struct allocate\n");
+-    return 0;
++  if (count > CVIFW_FRAME_NUM) {
++    count = CVIFW_FRAME_NUM;
+   }
++
+   dev->frames_num = 0;
+ 
+   if (!dev->v2f.fmt.pix.sizeimage) {
+@@ -501,81 +526,49 @@
+       dev->v2f.fmt.pix.sizeimage = dev->v2f.fmt.pix.width *
+                                    dev->v2f.fmt.pix.height * 4;
+     } else {
+-      DBG_ERROR("Image size is 0\n");
+-      kfree(dev->frame);
+-      dev->frame = NULL;
++      DBG_ERROR("csi_id %d: Image size is 0\n", dev->csi_id);
+       return 0;
+     }
+   }
+ 
++  dev->frame_buf_size = (dev->v2f.fmt.pix.sizeimage + PAGE_SIZE - 1) & PAGE_MASK;
+   /* try to create "count" buffers, or try to create at least one buffer */
+-  dev->frame_buf_size = (dev->v2f.fmt.pix.sizeimage+PAGE_SIZE-1) & PAGE_MASK;
+   for (i=0; i<count; i++) {
+-    dev->frame[i].buf_virt = kmalloc(dev->frame_buf_size, GFP_DMA);
+-    if (dev->frame[i].buf_virt == NULL) {
+-      DBG_ERROR("Fail to allocate %d B of DMA memory\n", dev->frame_buf_size);
+-      break;
+-    }
+-    dev->frame[i].buf_phys = (dma_addr_t)virt_to_phys(dev->frame[i].buf_virt);
+-
+-    DBG_PRINT("PA %p : VA %p Size %X\n",
+-              dev->frame[i].buf_phys,
+-              dev->frame[i].buf_virt,
+-              dev->frame_buf_size);
+-//TODO è il caso di mettere un adma????
+-    dev->frame[i].buf_dmaa = dma_map_single(NULL,
+-                                            dev->frame[i].buf_virt,
+-                                            dev->frame_buf_size,
+-                                            DMA_BIDIRECTIONAL);
+-    if ( !dev->frame[i].buf_dmaa ){
+-      DBG_ERROR("Failed to DMA map buffer %d\n", i);
++    ret = alloc_frame(dev, &(dev->frame[i]), dev->frame_buf_size);
++    if (ret) {
++      DBG_ERROR("csi_id %d: Failed to DMA map buffer %d\n", dev->csi_id, i);
+       break;
+     }
+     dev->frames_num++;
+   }
+-  DBG_PRINT("DMA frame buffers created %d\n", dev->frames_num);
++  DBG_PRINT("csi_id %d: DMA frame buffers created %d\n",
++            dev->csi_id, dev->frames_num);
+   if (dev->frames_num == 0) {
+-    DBG_ERROR("Failed to create any buffer! free and go out\n");
+-    kfree(dev->frame);
+-    dev->frame = NULL;
++    DBG_ERROR("csi_id %d: Failed to create any buffer! free and go out\n",
++              dev->csi_id);
+     return 0;
+   }
+ 
+   /* fill frame buffer handles and parameters */
+   /* initialize all frame buffers */
+   for (i=0; i<dev->frames_num; i++) {
+-    dev->frame[i].state         = F_UNUSED;
+-    dev->frame[i].buf.index     = i;
+-    dev->frame[i].buf.m.offset  = dev->frame[i].buf_phys;
+-    dev->frame[i].buf.length    = dev->v2f.fmt.pix.sizeimage;
+-    dev->frame[i].buf.bytesused = 0;
+-    dev->frame[i].buf.type      = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+-    dev->frame[i].buf.sequence  = 0;
+-    dev->frame[i].buf.field     = V4L2_FIELD_INTERLACED;//V4L2_FIELD_NONE;
+-    dev->frame[i].buf.memory    = V4L2_MEMORY_MMAP;
+-    dev->frame[i].buf.flags     = 0;
++    init_frame(dev, &(dev->frame[i]), i);
+   }
+ 
+-  dev->flags |= FLAG_BUFFERS_AVAILABLE;
+-  DBG_PRINT("return %d\n", dev->frames_num);
+-  return dev->frames_num;
++  /* alloc dummy frame */
++  ret = alloc_frame(dev, &(dev->dummy_frame), dev->frame_buf_size);
++  if (ret) {
++    DBG_ERROR("csi_id %d: Failed to create dummy buffer! free and go out\n",
++              dev->csi_id);
++    release_buffers(dev);
++    return -ENOMEM;
++  }
++  init_frame(dev, &(dev->dummy_frame), 0);
+ 
+-// TODO error_frame:
++  FLAG_SET(FLAG_BUFFERS_AVAILABLE);
++  DBG_PRINT("return %d\n", dev->frames_num);
+ 
+-  for (i=dev->frames_num-1; i>=0; i--) {
+-    if ( dev->frame[i].buf_dmaa ){
+-      dma_unmap_page(NULL,
+-                    dev->frame[i].buf_phys,
+-                    dev->frame_buf_size,
+-                    DMA_BIDIRECTIONAL);
+-      dev->frame[i].buf_dmaa = 0;
+-    }
+-    kfree(dev->frame[i].buf_virt);
+-  }
+-  kfree(dev->frame);
+-  dev->frame = NULL;
+-  DBG_PRINT("return %d\n", -ENOMEM);
+-  return -ENOMEM;
++  return dev->frames_num;
+ }
+ 
+ /** ***************************************************************************
+@@ -596,15 +589,15 @@
+   return vidioc_int_g_chip_ident(dev->sensor, (int*)chip);
+ }
+ 
+-static int querycap(struct file *file, void  *priv,
+-                    struct v4l2_capability *cap)
++static int querycap(struct file *file, void *priv, struct v4l2_capability *cap)
+ {
+   DBG_PRINT("cap %p\n", cap);
+   memset(cap, 0, sizeof(*cap));
+ DBG_PRINT("memset done, copy card & driver\n");
+   strncpy((char*)cap->card  , CARD_NAME  , sizeof(cap->card  )-1);
+-  strncpy((char*)cap->driver, DRIVER_NAME, sizeof(cap->driver)-1);
+-  cap->version = KERNEL_VERSION(0, 1, 11);
++  //strncpy((char*)cap->driver, DRIVER_NAME, sizeof(cap->driver)-1);
++  strcpy((char*)cap->driver, "mxc_v4l2");
++  cap->version      = KERNEL_VERSION(0, 1, 11);
+   cap->capabilities = V4L2_CAP_VIDEO_CAPTURE |
+                       V4L2_CAP_STREAMING     |
+                       V4L2_CAP_VIDEO_OVERLAY ;
+@@ -616,8 +609,7 @@
+ /**
+  * Enumerate formats, that the device can accept from the user
+  */
+-static int enum_fmt(struct file *file, void  *priv,
+-                    struct v4l2_fmtdesc *fmt)
++static int enum_fmt(struct file *file, void *priv, struct v4l2_fmtdesc *fmt)
+ {
+   struct cvifw_vdev *dev = video_drvdata(file);
+   DBG_PRINT("\n");
+@@ -628,7 +620,7 @@
+   return vidioc_int_enum_fmt_cap(dev->sensor, fmt);
+ }
+ 
+-static int g_fmt(struct file *file, void *fh, struct v4l2_format *f)
++static int g_fmt(struct file *file, void *priv, struct v4l2_format *f)
+ {
+   struct cvifw_vdev *dev = video_drvdata(file);
+ 
+@@ -684,10 +676,6 @@
+ 
+     f->fmt.pix.width  = video_fmts[dev->video_idx].active_width;
+     f->fmt.pix.height = video_fmts[dev->video_idx].active_height;
+-/*TODO togliere
+-    f->fmt.pix.width  = dev->v2f.fmt.pix.width;
+-    f->fmt.pix.height = dev->v2f.fmt.pix.height;
+-*/
+ 
+     switch (f->fmt.pix.pixelformat) {
+     case V4L2_PIX_FMT_RGB565:
+@@ -750,7 +738,7 @@
+ 
+   case V4L2_BUF_TYPE_VIDEO_OVERLAY:
+     DBG_PRINT("type is V4L2_BUF_TYPE_VIDEO_OVERLAY\n");
+-    //TODO serve???   retval = verify_preview(cam, &f->fmt.win);
++    //TODO retval = verify_preview(cam, &f->fmt.win);
+     dev->win = f->fmt.win;
+     break;
+ 
+@@ -761,8 +749,7 @@
+   return 0;
+ }
+ 
+-static int enum_input(struct file *file, void  *priv,
+-                     struct v4l2_input *inp)
++static int enum_input(struct file *file, void *priv, struct v4l2_input *inp)
+ {
+   DBG_PRINT("\n");
+   if (inp->index != 0)
+@@ -793,7 +780,7 @@
+   return 0;
+ }
+ 
+-static int enum_framesizes(struct file *file, void  *priv,
++static int enum_framesizes(struct file *file, void *priv,
+                            struct v4l2_frmsizeenum *fsize)
+ {
+   struct cvifw_vdev    *dev = video_drvdata(file);
+@@ -805,51 +792,96 @@
+   return vidioc_int_enum_framesizes(dev->sensor, fsize);
+ }
+ 
+-static int reqbufs(struct file *file, void  *priv,
++static int reqbufs(struct file *file, void *priv,
+                    struct v4l2_requestbuffers *req)
+ {
+   struct cvifw_vdev    *dev = video_drvdata(file);
+ 
+-  DBG_PRINT("Count %d\n", req->count);
++  DBG_PRINT("csi_id %d: Count %d\n", dev->csi_id, req->count);
+ 
+   if (req->type != V4L2_BUF_TYPE_VIDEO_CAPTURE) {
+     return -EINVAL;
+   }
+-  if (req->memory != V4L2_MEMORY_MMAP) {
+-    return -EINVAL;
+-  }
++
++  streamoff(file, NULL, V4L2_BUF_TYPE_VIDEO_CAPTURE);
+   empty_framequeues(dev);
+-  if (req->count && !(dev->flags & FLAG_BUFFERS_AVAILABLE)) {
++
++  if (req->memory & V4L2_MEMORY_MMAP) {
++    release_buffers(dev);
+     req->count = request_buffers(dev, req->count, req->memory);
++    if (req->count == 0) {
++      return -ENOMEM;
++    }
+   }
+-  if (req->count == 0) {
+-    return -ENOMEM;
+-  }
++
+   return 0;
+ }
+ 
+ static int querybuf(struct file *file, void  *priv, struct v4l2_buffer *b)
+ {
+-  struct cvifw_vdev    *dev = video_drvdata(file);
++  struct cvifw_vdev  *dev = video_drvdata(file);
+ 
+-  DBG_PRINT("Index %d\n", b->index);
+-  if (!(dev->flags & FLAG_BUFFERS_AVAILABLE)) {
+-    DBG_ERROR("No available buffers!\n");
++  DBG_PRINT("csi_id %d: Index %d buf %p\n", dev->csi_id, b->index, (void*)b);
++  if (FLAG_ISCLR(FLAG_BUFFERS_AVAILABLE)) {
++    DBG_ERROR("csi_id %d: No available buffers!\n", dev->csi_id);
+     return -ENOMEM;
+   }
+   if (b->type != V4L2_BUF_TYPE_VIDEO_CAPTURE || b->index >= dev->frames_num) {
+-    DBG_ERROR("Type is not V4L2_BUF_TYPE_VIDEO_CAPTURE  or index is greater than maximum!\n");
++    DBG_ERROR("csi_id %d: Type is not V4L2_BUF_TYPE_VIDEO_CAPTURE or "
++              "index is greater than maximum!\n",
++              dev->csi_id);
+     return -EINVAL;
+   }
+-  memcpy(b, &dev->frame[b->index].buf, sizeof(*b));
+-  if (dev->frame[b->index].vma_use_count) {
+-    b->flags |= V4L2_BUF_FLAG_MAPPED;
++
++  if (b->memory & V4L2_MEMORY_USERPTR) {
++    DBG_PRINT("memory V4L2_MEMORY_USERPTR input\n"
++              "  b->index    %08X\n"
++              "  b->length   %08X\n"
++              "  b->m.offset %08X\n"
++              "  b->type     %08X\n",
++              b->index   ,
++              b->length  ,
++              b->m.offset,
++              b->type    );
++
++    if (b->index < 0 ||
++        b->index >= dev->frames_num ||
++        b->length < PAGE_ALIGN(dev->v2f.fmt.pix.sizeimage)) {
++      DBG_ERROR("buffers not allocated, index=%d, length=%d\n",
++                b->index, b->length);
++      return -EINVAL;
++    }
++
++    dev->frame[b->index].buf.index    = b->index;
++    dev->frame[b->index].buf_phys     = b->m.offset;
++    dev->frame[b->index].buf.flags    = V4L2_BUF_FLAG_MAPPED;
++    dev->frame[b->index].buf.length   = b->length;
++    dev->frame[b->index].buf.m.offset = b->m.offset;
++    dev->frame[b->index].buf.type     = b->type;
++    dev->frame[b->index].buf.memory   = V4L2_MEMORY_USERPTR;
+   }
+-  if (dev->frame[b->index].state == F_DONE) {
+-    b->flags |= V4L2_BUF_FLAG_DONE;
+-  } else if (dev->frame[b->index].state != F_UNUSED) {
+-    b->flags |= V4L2_BUF_FLAG_QUEUED;
++
++  if (b->memory & V4L2_MEMORY_MMAP) {
++    DBG_PRINT("memory V4L2_MEMORY_MMAP\n");
++    if (b->index < 0 || b->index >= dev->frames_num) {
++      DBG_ERROR("buffers not allocated\n");
++      return -EINVAL;
++    }
++
++    memcpy(b, &(dev->frame[b->index].buf), sizeof(*b));
++
++    DBG_PRINT("memory V4L2_MEMORY_MMAP frame %p \n"
++              "  b->index    %08X\n"
++              "  b->length   %08X\n"
++              "  b->m.offset %08X\n"
++              "  b->type     %08X\n",
++              (void*)&(dev->frame[b->index].frame),
++              b->index   ,
++              b->length  ,
++              b->m.offset,
++              b->type    );
+   }
++
+   return 0;
+ }
+ 
+@@ -857,111 +889,99 @@
+ {
+   struct cvifw_vdev  *dev = video_drvdata(file);
+   unsigned long       flags;
++  int                 index = b->index;
++  int                 retval = 0;
+ 
+-//  DBG_PRINT("index %d\n", b->index);
+-  if (!(dev->flags & FLAG_BUFFERS_AVAILABLE)) {
+-    DBG_ERROR("csi_id: %d, NO BUFFERS_AVAILABLE\n", dev->csi_id);
++  //DBG_PRINT("csi_id %d: enqueue buffer %d\n", dev->csi_id, index);
++  if (FLAG_ISCLR(FLAG_BUFFERS_AVAILABLE)) {
++    DBG_ERROR("NO BUFFERS_AVAILABLE\n");
+     return -ENOMEM;
+   }
+   if (b->type != V4L2_BUF_TYPE_VIDEO_CAPTURE || b->index >= dev->frames_num) {
+-    DBG_ERROR("csi_id: %d, Buffer type isn't VIDEO_CAPTURE  or index is greater than max\n",
++    DBG_ERROR("csi_id %d: Buffer type isn't VIDEO_CAPTURE  or index is greater than max\n",
+               dev->csi_id);
+     return -EINVAL;
+   }
+-  if (dev->frame[b->index].state != F_UNUSED) {
+-    DBG_ERROR("csi_id: %d, Buffer state isn't UNUSED\n", dev->csi_id);
+-    return -EAGAIN;
+-  }
+-  if (b->memory != V4L2_MEMORY_MMAP) {
+-    DBG_ERROR("csi_id: %d, Memory type isn't MEMORY_MMAP\n", dev->csi_id);
+-    return -EINVAL;
++  spin_lock_irqsave(&dev->queue_lock, flags);
++  if ((dev->frame[index].buf.flags & 0x7) == V4L2_BUF_FLAG_MAPPED) {
++    dev->frame[index].buf.flags |= V4L2_BUF_FLAG_QUEUED;
++    dma_sync_single_for_device(dev->dev,
++                               dev->frame[index].buf_dmaa,
++                               dev->frame[index].buf.length,
++                               DMA_TO_DEVICE);
++    list_add_tail(&dev->frame[index].frame, &dev->inqueue);
++    DBG_PRINT("csi_id: %d: enqueue buffer %d flags %08X\n",
++              dev->csi_id, index, dev->frame[index].buf.flags);
++  } else if (dev->frame[index].buf.flags & V4L2_BUF_FLAG_QUEUED) {
++    DBG_ERROR("csi_id: %d: buffer already queued\n", dev->csi_id);
++    retval = -EINVAL;
++  } else if (dev->frame[index].buf.flags & V4L2_BUF_FLAG_DONE) {
++    DBG_ERROR("csi_id: %d: overwrite done buffer.\n", dev->csi_id);
++    dev->frame[index].buf.flags &= ~V4L2_BUF_FLAG_DONE;
++    dev->frame[index].buf.flags |= V4L2_BUF_FLAG_QUEUED;
++    retval = -EINVAL;
+   }
+-  dma_sync_single_for_device(dev->dev,
+-                             dev->frame[b->index].buf_dmaa,
+-                             dev->frame[b->index].buf.length,
+-                             DMA_TO_DEVICE);
+ 
+-  dev->frame[b->index].state = F_QUEUED;
+-  DBG_PRINT("csi_id: %d, index: %d\n", dev->csi_id, b->index);
+-  spin_lock_irqsave(&dev->queue_lock, flags);
+-  list_add_tail(&dev->frame[b->index].frame, &dev->inqueue);
++  b->flags = dev->frame[index].buf.flags;
++
+   spin_unlock_irqrestore(&dev->queue_lock, flags);
+-//DBG_PRINT("dev @%p index %d\n", (void*)dev, b->index);
+-  return 0;
++
++  return retval;
+ }
+ 
+ static int dqbuf(struct file *file, void  *priv, struct v4l2_buffer *b)
+ {
+   struct cvifw_vdev    *dev = video_drvdata(file);
+   struct altera_frame  *frame;
+-  unsigned long         flags;
+-  int                   ret = 0;
++  unsigned long         lock_flags;
++  int                   retval = 0;
+ 
+-//  DBG_PRINT("index %d\n", b->index);
++  //DBG_PRINT("csi_id %d: index %d\n", dev->csi_id, b->index);
+ 
+-  if (!(dev->flags & FLAG_BUFFERS_AVAILABLE)) {
+-    return -ENOMEM;
+-  }
+-  if (!FLAG_ISSET(FLAG_STREAM_ON) ||
+-      b->type != V4L2_BUF_TYPE_VIDEO_CAPTURE ||
+-      b->index >= dev->frames_num) {
+-    return -EINVAL;
+-  }
+-  if (list_empty(&dev->outqueue)) {
+-    if (dev->flags & FLAG_BUFFER_IN_SYNC) {
+-      if (file->f_flags & O_NONBLOCK) {
+-        return -EAGAIN;
+-      }
+-//      DBG_PRINT("wait_event outqueue\n");
+-      ret = wait_event_interruptible_timeout(dev->wait,
+-                                             !list_empty(&dev->outqueue),
+-                                             HZ);
+-    } else {
+-//      DBG_PRINT("wait_event BUFFER_IN_SYNC\n");
+-      ret = wait_event_interruptible_timeout(dev->wait,
+-                                             (dev->flags & FLAG_BUFFER_IN_SYNC),
+-                                             HZ);
+-    }
+-    if (ret == 0) {
+-      DBG_ERROR("csi_id: %d, Timeout expired\n", dev->csi_id);
+-      return -ETIMEDOUT;
+-    }
+-    if (ret < 0) {
+-      DBG_ERROR("csi_id: %d, Wait event\n", dev->csi_id);
+-      return ret;
+-    }
++  if (!wait_event_interruptible_timeout(dev->wait,
++                dev->enc_counter != 0,
++                10 * HZ)) {
++    DBG_ERROR("csi_id %d: timeout enc_counter %x\n",
++              dev->csi_id, dev->enc_counter);
++    return -ETIME;
++  } else if (signal_pending(current)) {
++    DBG_ERROR("csi_id %d: interrupt received\n", dev->csi_id);
++    return -ERESTARTSYS;
+   }
+ 
+-  spin_lock_irqsave(&dev->queue_lock, flags);
++  spin_lock_irqsave(&dev->queue_lock, lock_flags);
++  dev->enc_counter--;
++
+   frame = list_entry(dev->outqueue.next, struct altera_frame, frame);
+   list_del(dev->outqueue.next);
+-  spin_unlock_irqrestore(&dev->queue_lock, flags);
+ 
+   dma_sync_single_for_cpu(dev->dev,
+                           frame->buf_dmaa,
+                           frame->buf.length,
+                           DMA_FROM_DEVICE);
+ 
+-  frame->state = F_UNUSED;
++  if (frame->buf.flags & V4L2_BUF_FLAG_DONE) {
++    frame->buf.flags &= ~V4L2_BUF_FLAG_DONE;
++  } else if (frame->buf.flags & V4L2_BUF_FLAG_QUEUED) {
++    DBG_ERROR("csi_id: %d: Buffer not filled.\n", dev->csi_id);
++    frame->buf.flags &= ~V4L2_BUF_FLAG_QUEUED;
++    retval = -EINVAL;
++  } else if ((frame->buf.flags & 0x7) == V4L2_BUF_FLAG_MAPPED) {
++    DBG_ERROR("csi_id: %d: Buffer not queued.\n", dev->csi_id);
++    retval = -EINVAL;
++  }
++
+   memcpy(b, &frame->buf, sizeof(*b));
+   if (frame->vma_use_count) {
+     b->flags |= V4L2_BUF_FLAG_MAPPED;
+   }
+-  //b->field = V4L2_FIELD_INTERLACED;
+-  //DBG_PRINT("index %d pa %p\n", b->index, frame->buf_phys);
+ 
+-  // skip initial frames to clean deinterlacer buffers
+-  if ( dev->skip_frames>0 ) {
+-    DBG_PRINT("csi_id: %d, skip initial buffer index: %d\n",
+-              dev->csi_id, frame->buf.index);
+-    dev->skip_frames--;
+-    qbuf(file, priv, b);
+-    return -EAGAIN;
+-  }
+-  DBG_PRINT("csi_id: %d, index: %d\n",
+-            dev->csi_id, frame->buf.index);
+-//DBG_PRINT("dev @%p index %d\n", (void*)dev, b->index);
+-  return 0;
++  DBG_PRINT("csi_id: %d: dequeue buffer %d flags %08X\n",
++            dev->csi_id, b->index, b->flags);
++
++  spin_unlock_irqrestore(&dev->queue_lock, lock_flags);
++
++  return retval;
+ }
+ 
+ static int streamon(struct file *file, void  *priv, enum v4l2_buf_type type)
+@@ -972,19 +992,23 @@
+   int                   i;
+   unsigned long         reg;
+ 
+-  dev_dbg(dev->v4l2_dev.dev, "%s()\n", __func__);
++  DBG_PRINT("csi_id %d\n", dev->csi_id);
+ 
+   if (type != V4L2_BUF_TYPE_VIDEO_CAPTURE){
+-    DBG_ERROR("csi_id: %d, type != V4L2_BUF_TYPE_VIDEO_CAPTURE\n", dev->csi_id);
++    DBG_ERROR("csi_id %d: type != V4L2_BUF_TYPE_VIDEO_CAPTURE\n", dev->csi_id);
+     return -EINVAL;
+   }
+-  if (!(dev->flags & FLAG_BUFFERS_AVAILABLE)){
+-    DBG_ERROR("csi_id: %d, FLAG_BUFFERS_AVAILABLE)\n", dev->csi_id);
++  if (FLAG_ISCLR(FLAG_BUFFERS_AVAILABLE)) {
++    DBG_ERROR("csi_id %d: FLAG_BUFFERS_AVAILABLE)\n", dev->csi_id);
+     return -ENOMEM;
+   }
+-  if ( FLAG_ISSET(FLAG_STREAM_ON) ) {
++  if (FLAG_ISSET(FLAG_STREAM_ON)) {
+     return 0;
+   }
++  if (list_empty(&dev->inqueue)){
++    DBG_ERROR("csi_id %d: buffer has not been queued yet\n", dev->csi_id);
++    return -EINVAL;
++  }
+   if (!list_empty(&dev->outqueue)){
+     spin_lock_irqsave(&dev->queue_lock, flags);
+     INIT_LIST_HEAD(&dev->outqueue);
+@@ -998,26 +1022,30 @@
+ 
+   altera_dcdi_hw_init(dev->dc_regs, dev->di_regs,
+                       720, 578, dev->dcdi_buf0_p, dev->dcdi_buf1_p);
+-
+   altera_fw_hw_init(dev->fw_regs,                   // device regs base address
+                     0,                              // double buffer
+-                    0,                              // sync type
++                    0,                              // sync type  0 Master
+                     dev->v2f.fmt.pix.width,         // hres
+                     dev->v2f.fmt.pix.height,        // vres
+                     dev->v2f.fmt.pix.pixelformat);  // oputput format
+ 
+-  reinit_framequeues(dev);
+-
+   /*
+    * get first buffer from inqueue, put it in the dma queue and
+    * write video buffer address where frame writer will stream data
+    */
+   spin_lock_irqsave(&dev->queue_lock, flags);
+   frame = list_entry(dev->inqueue.next, struct altera_frame, frame);
++  frame->buf.flags |= V4L2_BUF_FLAG_QUEUED;
++  frame->buf_num = dev->buf_num;
+   list_move_tail(&frame->frame, &dev->dmaqueue);
++  dev->buf_num = (dev->buf_num == 0) ? 1 : 0;
+   spin_unlock_irqrestore(&dev->queue_lock, flags);
+-  DBG_PRINT("csi_id: %d, write base0: %p, size: %08X, index: %d\n",
+-            dev->csi_id, frame->buf_phys, dev->frame_buf_size, frame->buf.index);
++  DBG_PRINT("csi_id %d: frame: %p, address: %p %p, size: %08X, index: %d\n",
++            dev->csi_id,
++            (void*)frame,
++            (void*)frame->buf_phys,
++            (void*)frame->buf.m.offset,
++            dev->frame_buf_size, frame->buf.index);
+   altera_fw_hw_addr0(dev->fw_regs, frame->buf_phys, dev->frame_buf_size);
+ 
+   dev->capture_pid = current->pid;
+@@ -1025,12 +1053,10 @@
+ 
+   /* start acquisition */
+   FLAG_SET(FLAG_STREAM_ON);
+-  FLAG_SET(FLAG_BUFFER_IN_SYNC);
+-//  FLAG_SET(FLAG_FIRST_FRAME);
+ 
+-  DBG_PRINT("csi_id: %d, Start decoder and deinterlacer\n", dev->csi_id);
++  DBG_PRINT("csi_id %d: Start decoder, deinterlacer and frame writer\n",
++            dev->csi_id);
+   altera_dcdi_hw_start(dev->dc_regs, dev->di_regs);
+-  DBG_PRINT("csi_id: %d, Start frame writer\n", dev->csi_id);
+   altera_fw_hw_start(dev->fw_regs);
+ 
+   /*
+@@ -1042,8 +1068,8 @@
+       break;
+     }
+   }
+-  if (i>=CVIFW_TIMEOUT) {
+-    DBG_ERROR("csi_id: %d, frame writer first buffer loading timeout\n",
++  if (i >= CVIFW_TIMEOUT) {
++    DBG_ERROR("csi_id %d: frame writer first buffer loading timeout\n",
+               dev->csi_id);
+     return -1;
+   }
+@@ -1051,43 +1077,31 @@
+   {
+     unsigned long res;
+     res = altera_dc_hw_res_get(dev->dc_regs);
+-    DBG_PRINT("csi_id: %d, decoded resolution %d x %d\n",
++    DBG_PRINT("csi_id %d: decoded resolution %d x %d\n",
+               dev->csi_id, (res & 0xFFFF), (res >> 16));
+   }
+ 
+   /*
+-   * set initial frame to skip to clear deinterlacer buffers
+-   */
+-  dev->skip_frames = 0;
+-
+-  /*
+    * get next buffer from inqueue, put it in the dma queue and
+    * write video buffer address, where frame writer will stream data,
+    * the buffer will be dequeued from cvifw_isr function
+    */
+   spin_lock_irqsave(&dev->queue_lock, flags);
+   frame = list_entry(dev->inqueue.next, struct altera_frame, frame);
++  frame->buf.flags |= V4L2_BUF_FLAG_QUEUED;
++  frame->buf_num = dev->buf_num;
+   list_move_tail(&frame->frame, &dev->dmaqueue);
++  dev->buf_num = (dev->buf_num == 0) ? 1 : 0;
+   spin_unlock_irqrestore(&dev->queue_lock, flags);
+-  DBG_PRINT("csi_id: %d, write base0: %p, size: %08X, index: %d\n",
+-            dev->csi_id, frame->buf_phys, dev->frame_buf_size, frame->buf.index);
++  DBG_PRINT("csi_id %d: frame: %p, address: %p %p, size: %08X, index: %d\n",
++            dev->csi_id,
++            (void*)frame,
++            (void*)frame->buf_phys,
++            (void*)frame->buf.m.offset,
++            dev->frame_buf_size, frame->buf.index);
+   altera_fw_hw_addr0(dev->fw_regs, frame->buf_phys, dev->frame_buf_size);
+ 
+   /*
+-   * wait for framewriter complete acquisition on first buffer
+-   *//*
+-  for (i=0; i<CVIFW_TIMEOUT; i++) {
+-    reg = altera_fw_hw_int_clr(dev->fw_regs);
+-    if ( (reg & FW_STS_BUSY)==0 ) {
+-      break;
+-    }
+-  }
+-  if (i>=CVIFW_TIMEOUT) {
+-    DBG_ERROR("csi_id: %d, frame writer first buffer acquisition timeout\n",
+-              dev->csi_id);
+-    return -1;
+-  }*/
+-  /*
+    * Enable interrupt
+    */
+   altera_fw_hw_int_ena(dev->fw_regs);
+@@ -1099,8 +1113,6 @@
+ {
+   struct cvifw_vdev    *dev = video_drvdata(file);
+ 
+-  dev_dbg(dev->v4l2_dev.dev, "%s()\n", __func__);
+-
+   if (type != V4L2_BUF_TYPE_VIDEO_CAPTURE)
+     return -EINVAL;
+ 
+@@ -1110,8 +1122,7 @@
+     altera_dcdi_hw_stop(dev->dc_regs, dev->di_regs);
+ 
+     FLAG_CLR(FLAG_STREAM_ON);
+-    FLAG_CLR(FLAG_BUFFER_IN_SYNC);
+-    wake_up(&dev->wait);
++    empty_framequeues(dev);
+   }
+ 
+   return 0;
+@@ -1364,7 +1375,7 @@
+   .vidioc_g_fmt_vid_cap     = g_fmt,
+   .vidioc_s_fmt_vid_cap     = s_fmt,
+   .vidioc_try_fmt_vid_cap   = s_fmt,
+-/* TODO verificare se servono
++/* TODO
+   int (*vidioc_enum_fmt_vid_overlay) (struct file *file, void *fh, struct v4l2_fmtdesc *f);
+   int (*vidioc_g_fmt_vid_overlay)(struct file *file, void *fh, struct v4l2_format *f);
+   int (*vidioc_s_fmt_vid_overlay)(struct file *file, void *fh, struct v4l2_format *f);
+@@ -1455,55 +1466,66 @@
+   for(i=0; i<2; i++){
+     dev = &cvifwDevice->vdev[i];
+     reg = altera_fw_hw_int_clr(dev->fw_regs);
+-//DBG_IRQ_PRINT("dev[%d] @ %p sts %08X\n", i, dev, reg);
++    //DBG_IRQ_PRINT("dev[%d] @ %p sts %08X\n", i, dev, reg);
+     if (reg & FW_STS_INT_S) {
+-      if (FLAG_ISSET(FLAG_BUFFER_IN_SYNC)) {
+ 
+-        if (!list_empty(&dev->dmaqueue)) {
+-          /*
+-           * remove the entry from the dmaqueue, set buffer's parameters
+-           * and put it in the outqueue. Wake up dequeue function dqbuf.
+-           */
+-          spin_lock(&dev->queue_lock);
+-          frame = list_entry(dev->dmaqueue.next, struct altera_frame, frame);
+-          do_gettimeofday(&frame->buf.timestamp);
++      spin_lock(&dev->queue_lock);
++
++      if (!list_empty(&dev->dmaqueue)) {
++        frame = list_entry(dev->dmaqueue.next, struct altera_frame, frame);
++        DBG_IRQ_PRINT("csi_id: %d from dmaqueue get frame %d flags %08X, buf_num %d\n",
++                      dev->csi_id, frame->buf.index, frame->buf.flags, frame->buf_num);
++        if (frame->buf_num != dev->buf_num) {
++          goto next;
++        }
++        /*
++         * Set the current time to done frame buffer's
++         * timestamp. Users can use this information to judge
++         * the frame's usage.
++         */
++        do_gettimeofday(&frame->buf.timestamp);
++
++        if (frame->buf.flags & V4L2_BUF_FLAG_QUEUED) {
++          frame->buf.flags |= V4L2_BUF_FLAG_DONE;
++          frame->buf.flags &= ~V4L2_BUF_FLAG_QUEUED;
+           frame->buf.sequence++;
+-          frame->state = F_DONE;
+           frame->buf.bytesused = frame->buf.length;
++
++          /* Move frame to the done queue */
+           list_move_tail(&frame->frame, &dev->outqueue);
+-          spin_unlock(&dev->queue_lock);
+-          wake_up(&dev->wait);
+-//DBG_IRQ_PRINT("csi_id: %d, get frame %d\n", dev->csi_id, frame->buf.index);
+-        }
++          DBG_IRQ_PRINT("csi_id: %d from dmaqueue put frame %d in outqueue\n",
++                        dev->csi_id, frame->buf.index);
+ 
+-        if (!list_empty(&dev->inqueue)) {
+-          /*
+-           * get buffer from inqueue, move to dmaqueue, set framewriter
+-           * address.
+-           */
+-          spin_lock(&dev->queue_lock);
+-          frame = list_entry(dev->inqueue.next, struct altera_frame, frame);
+-          list_move_tail(&frame->frame, &dev->dmaqueue);
+-          spin_unlock(&dev->queue_lock);
+-          altera_fw_hw_addr0(dev->fw_regs, frame->buf_phys, dev->frame_buf_size);
+-//DBG_IRQ_PRINT("csi_id: %d, put frame %d\n", dev->csi_id, frame->buf.index);
++          /* Wake up the queue */
++          dev->enc_counter++;
++          wake_up_interruptible(&dev->wait);
+         } else {
+-          // input queue is empty go in out of sync
+-//DBG_IRQ_PRINT("csi_id: %d input queue is empty go in out of sync\n", dev->csi_id);
+-          FLAG_CLR(FLAG_BUFFER_IN_SYNC);
++          DBG_IRQ_PRINT("ERROR: buffer not queued\n");
+         }
+-
++      }
++next:
++      if (!list_empty(&dev->inqueue)) {
++        frame = list_entry(dev->inqueue.next, struct altera_frame, frame);
++        altera_fw_hw_addr0(dev->fw_regs, frame->buf_phys, dev->frame_buf_size);
++        frame->buf_num = dev->buf_num;
++        frame->buf.flags |= V4L2_BUF_FLAG_QUEUED;
++        list_move_tail(&frame->frame, &dev->dmaqueue);
++        DBG_IRQ_PRINT("csi_id: %d from inqueue put frame %d in dmaqueue\n",
++                      dev->csi_id, frame->buf.index);
+       } else {
+-        // out of sync
+-        if (!list_empty(&dev->inqueue)) {
+-//DBG_IRQ_PRINT("csi_id: %d resync\n", dev->csi_id);
+-          FLAG_SET(FLAG_BUFFER_IN_SYNC);
+-        }
++        DBG_IRQ_PRINT("csi_id: %d dummy frame\n",
++                      dev->csi_id);
++        altera_fw_hw_addr0(dev->fw_regs, dev->dummy_frame.buf_phys, dev->frame_buf_size);
+       }
++
++      dev->buf_num = (dev->buf_num == 0) ? 1 : 0;
++
++      spin_unlock(&dev->queue_lock);
++
+     }
+   }
+ 
+-  if ( cvifwDevice->isrHook ) {
++  if (cvifwDevice->isrHook) {
+     cvifwDevice->isrHook(cvifwDevice->isrArg);
+   }
+ 
+@@ -1522,17 +1544,12 @@
+ 
+   DBG_PRINT("vdev [%p] minor %d csi_id %d\n",
+             dev, iminor(file->f_path.dentry->d_inode), dev->csi_id);
+-  if (dev->flags & FLAG_DEVICE_IN_USE)
++  if (FLAG_ISSET(FLAG_DEVICE_IN_USE)) {
+     return -EBUSY;
++  }
+ 
+   mutex_lock(&dev->fops_lock);
+ 
+-//  dev->flags &= ~FLAG_DEINTERLACE;
+-
+-//  dev->output_format = V4L2_PIX_FMT_RGB32;
+-//  dev->output_bpp = 32;
+-
+-//  dev->frame_buf_size = dev->video_norm.width  * dev->video_norm.height * dev->output_bpp / 8;
+ /*TODO
+   // possible cropping area
+   dev->cropcap.bounds.left   = 0;
+@@ -1554,15 +1571,16 @@
+ */
+ 
+   if (!dev->sensor) {
+-    DBG_ERROR("Slave not found!\n");
++    DBG_ERROR("csi_id %d: Slave not found!\n", dev->csi_id);
+     mutex_unlock(&dev->fops_lock);
+     return -EBADF;
+   }
+   // initial pix format data
+-  DBG_PRINT("call vidioc_int_g_fmt_cap\n");
++  DBG_PRINT("csi_id %d: call vidioc_int_g_fmt_cap\n", dev->csi_id);
+   slv_fmt.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+   ret = vidioc_int_g_fmt_cap(dev->sensor, &slv_fmt);
+-  DBG_PRINT("vidioc_int_g_fmt_cap return %d W: %d, H: %d\n",
++  DBG_PRINT("csi_id %d: vidioc_int_g_fmt_cap return %d W: %d, H: %d\n",
++            dev->csi_id,
+             ret,
+             slv_fmt.fmt.pix.width,
+             slv_fmt.fmt.pix.height);
+@@ -1576,10 +1594,11 @@
+   dev->v2f.fmt.pix.colorspace   = V4L2_COLORSPACE_SRGB;
+   dev->v2f.fmt.pix.priv         = 0;
+ 
+-DBG_PRINT("v2f.fmt.pix sizeimage %d, width %d, height %d\n",
+-          dev->v2f.fmt.pix.sizeimage,
+-          dev->v2f.fmt.pix.width,
+-          dev->v2f.fmt.pix.height);
++  DBG_PRINT("csi_id %d: v2f.fmt.pix sizeimage %d, width %d, height %d\n",
++            dev->csi_id,
++            dev->v2f.fmt.pix.sizeimage,
++            dev->v2f.fmt.pix.width,
++            dev->v2f.fmt.pix.height);
+ 
+   vidioc_int_s_power(dev->sensor, 1);
+   vidioc_int_init(dev->sensor);
+@@ -1587,26 +1606,38 @@
+ 
+   file->private_data = dev;
+ 
+-  dev->flags &= ~FLAG_DO_UPDATE;
++  dev->enc_counter = 0;
++
++  streamoff(file, NULL, V4L2_BUF_TYPE_VIDEO_CAPTURE);
++  empty_framequeues(dev);
++
+   FLAG_CLR(FLAG_STREAM_ON);
+-  dev->flags |= FLAG_DEVICE_IN_USE;
++  FLAG_SET(FLAG_DEVICE_IN_USE);
+ 
+   mutex_unlock(&dev->fops_lock);
+ 
++  DBG_PRINT("csi_id %d: DONE\n", dev->csi_id);
+   return v4l2_fh_open(file);
+ }
+ 
+ static int cvifw_release(struct file *file)
+ {
+   struct cvifw_vdev   *dev = video_drvdata(file);
++
++  DBG_PRINT("csi_id %d\n", dev->csi_id);
+   mutex_lock(&dev->fops_lock);
+ 
+-  altera_fw_hw_stop(dev->fw_regs);
++  streamoff(file, NULL, V4L2_BUF_TYPE_VIDEO_CAPTURE);
+ 
+-  dev->flags &= ~FLAG_DEVICE_IN_USE;
+-  if (dev->flags & FLAG_BUFFERS_AVAILABLE)
++  /* Wake up the queue */
++  wake_up_interruptible(&dev->wait);
++  dev->enc_counter++;
++
++  FLAG_CLR(FLAG_DEVICE_IN_USE);
++  if (FLAG_ISSET(FLAG_BUFFERS_AVAILABLE)) {
++    DBG_PRINT("csi_id %d: release buffer\n", dev->csi_id);
+     release_buffers(dev);
+-
++  }
+   mutex_unlock(&dev->fops_lock);
+ 
+   return v4l2_fh_release(file);
+@@ -1650,9 +1681,9 @@
+   int                 i;
+   int                 ret = -EINVAL;
+ 
+-  DBG_PRINT("Map address %p\n", vma->vm_pgoff << PAGE_SHIFT);
++  DBG_PRINT("Map address %p\n", (void*)(vma->vm_pgoff << PAGE_SHIFT));
+ 
+-  if (!(dev->flags & FLAG_BUFFERS_AVAILABLE)) {
++  if (FLAG_ISCLR(FLAG_BUFFERS_AVAILABLE)) {
+     return -ENOMEM;
+   }
+   if (mutex_lock_interruptible(&dev->fops_lock)) {
+@@ -1686,13 +1717,14 @@
+     goto error_unlock;
+   }
+   vma->vm_ops = &vm_ops;
+-  vma->vm_private_data = &dev->frame[i];
++  vma->vm_private_data = &(dev->frame[i]);
+   vm_open(vma);
+ 
+ error_unlock:
+   mutex_unlock(&dev->fops_lock);
+   return ret;
+ }
++
+ #ifdef DEBUG
+ char* v4l2_ioctl_des(unsigned int ioctlnr){
+   switch (ioctlnr) {
+@@ -1726,12 +1758,13 @@
+ }
+ #endif
+ 
+-static unsigned int cvifw_ioctl(struct file *file, unsigned int ioctlnr, void *arg)
++static long cvifw_ioctl(struct file *file, unsigned int ioctlnr, unsigned long arg)
+ {
+-	struct cvifw_vdev  *dev = video_drvdata(file);
++//  struct cvifw_vdev  *dev = video_drvdata(file);
++
++//  DBG_PRINT("csi_id %d: ioctlnr %08X %s arg %08X\n",
++//            dev->csi_id, ioctlnr, v4l2_ioctl_des(ioctlnr), arg);
+ 
+-//DBG_PRINT("ioctlnr %08X %s\n", ioctlnr, v4l2_ioctl_des(ioctlnr));
+-//TODO controlli e attesa evento (vedi mxc_v4l2_capture.c
+   switch (ioctlnr) {
+   case VIDIOC_DBG_G_CHIP_IDENT: return g_chip_ident   (file, NULL, (void*)arg);
+   case VIDIOC_QUERYCAP        : return querycap       (file, NULL, (struct v4l2_capability *)arg);
+@@ -1784,7 +1817,6 @@
+   .release        = cvifw_release,
+   .read           = cvifw_read,
+   .mmap           = cvifw_mmap,
+-//  .unlocked_ioctl = video_ioctl2,
+   .unlocked_ioctl = cvifw_ioctl,
+   .poll           = cvifw_poll,
+ };
+@@ -1795,14 +1827,14 @@
+ static int v4l2_master_attach(struct v4l2_int_device *slave)
+ {
+   struct cvifw_vdev  *vdev  = slave->u.slave->master->priv;
+-  struct sensor_data *sdata = slave->priv;
++//  struct sensor_data *sdata = slave->priv;
+   struct v4l2_format  slv_fmt;
+ 
+ 
+   DBG_PRINT("Enter:slave.name = %s, master.name = %s\n",
+             slave->name, slave->u.slave->master->name);
+-  DBG_PRINT("%s: sdata->csi: %d, cam->csi: %d\n",
+-            slave->name, sdata->csi, vdev->csi_id);
++  //DBG_PRINT("%s: sdata->csi: %d, cam->csi: %d\n",
++  //          slave->name, sdata->csi, vdev->csi_id);
+ 
+   vdev->sensor = slave;
+ 
+@@ -2012,7 +2044,6 @@
+   return 0;
+ }
+ 
+-
+ /**
+  */
+ static int v4l2_int_reg(struct cvifw_vdev *dev)
+Index: git/drivers/media/platform/mxc/capture/altera-cvidi-hw.c
+===================================================================
+--- git.orig/drivers/media/platform/mxc/capture/altera-cvidi-hw.c	2019-02-11 16:58:24.719514615 +0100
++++ git/drivers/media/platform/mxc/capture/altera-cvidi-hw.c	2019-02-11 16:59:02.975513471 +0100
+@@ -70,7 +70,8 @@
+   unsigned long wlen;
+   unsigned long stride;
+ 
+-  ctrl  = DC_CTRL_D_BUFFER;
++//  ctrl  = DC_CTRL_D_BUFFER;
++  ctrl  = 0;//DC_CTRL_D_BUFFER;
+   hcrop = 0;
+   vcrop = 0;
+   burst = 4;
+@@ -94,7 +95,8 @@
+   // update
+   __raw_writel(1, dc_reg + DC_UPDATE);
+ 
+-  ctrl   = DI_CTRL_DEINT_EN | DI_CTRL_DOUBLE_BUFFER;
++//  ctrl   = DI_CTRL_DEINT_EN | DI_CTRL_DOUBLE_BUFFER;
++  ctrl   = DI_CTRL_DEINT_EN;
+   wlen   = hres / 4;
+   stride = (1024 - hres + burst*4)*2;
+ DBG_PRINT("deinterlacer @ %p init\n"

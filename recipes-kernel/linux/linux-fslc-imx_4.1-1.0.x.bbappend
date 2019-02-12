@@ -35,6 +35,7 @@ SRC_URI_append_tera-he = " \
   file://0026-Fix_altera_cvifw_for_gst.patch \
   file://0027-Fix_regulator.patch \
   file://0028-Fix_mxc_v4l2_capture_memory_allocation.patch \
+  file://0030-Fix_altera_cvi_driver.patch \
 "
 
 SRC_URI_append_tera-he-dep = " \
@@ -48,6 +49,7 @@ SRC_URI_append_tera-he-dep = " \
   file://0006-mcp251x-spi-reduce-latency.patch \
   file://0007-WDOG-Assert-WDOG_B-on-Time-out.patch \
   file://0015-FIX_v4l2-videobuf2_core.patch \
+  file://0030-Fix_altera_cvi_driver.patch \
   file://defconfig \
 "
 do_configure_append_tera-he-dep() {
